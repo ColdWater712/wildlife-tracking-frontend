@@ -10,8 +10,14 @@ import { ErrorState } from "@/components/ui/error-state";
 import type { ApiErrorKind } from "@/types/api.type";
 
 const loginSchema = z.object({
-  email: z.string().email("Format email tidak valid").min(1, "Email wajib diisi"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email wajib diisi")
+    .email("Format email tidak valid"),
+
   password: z.string().min(1, "Kata sandi wajib diisi"),
+
   rememberMe: z.boolean(),
 });
 
