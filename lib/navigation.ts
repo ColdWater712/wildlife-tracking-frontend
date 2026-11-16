@@ -21,11 +21,13 @@ export const COMMON_ITEMS: NavItem[] = [
 
 const CONSERVATION_ITEMS: NavItem[] = [
   { label: "Satwa", href: "/master-data/animals", icon: "paw" },
+  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
   { label: "Insiden", href: "/incidents", icon: "alert" },
 ];
 
 const RESEARCH_ITEMS: NavItem[] = [
   { label: "Satwa", href: "/master-data/animals", icon: "paw" },
+  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
   { label: "Spesies", href: "/master-data/species", icon: "species" },
   { label: "Perangkat", href: "/master-data/devices", icon: "device" },
 ];
