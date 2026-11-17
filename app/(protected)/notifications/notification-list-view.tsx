@@ -8,7 +8,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-
+import { useToast } from "@/components/providers/toast-provider";
 import { ErrorState } from "@/components/ui/error-state";
 import { Loading } from "@/components/ui/loading";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -59,7 +59,7 @@ export function NotificationListView() {
   } = useNotifications(load);
 
   const markAsRead = useMarkNotificationAsRead();
-
+  const { showToast } = useToast();
   const notifications = data?.data ?? [];
 
   return (
@@ -278,7 +278,22 @@ export function NotificationListView() {
                         <button
                           type="button"
                           onClick={() =>
-                            markAsRead.mutate(notification.notif_id)
+                            markAsRead.mutate(notification.notif_id, {
+                              onSuccess: () => {
+                                showToast(
+                                  "Notifikasi berhasil ditandai sudah dibaca.",
+                                  "success",
+                                );
+                              },
+                              onError: (error) => {
+                                showToast(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Gagal menandai notifikasi sudah dibaca.",
+                                  "error",
+                                );
+                              },
+                            })
                           }
                           disabled={markAsRead.isPending}
                           className="mt-3 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
@@ -287,6 +302,7 @@ export function NotificationListView() {
                             ? "Memproses..."
                             : "Tandai sudah dibaca"}
                         </button>
+
                       ) : (
                         <p className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
                           <CheckCircle className="size-4 text-emerald-700" />

@@ -1,6 +1,8 @@
+
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ToastProvider } from "@/components/providers/toast-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +19,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="id" className="h-full antialiased">
       <body className="min-h-full bg-background text-foreground">
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

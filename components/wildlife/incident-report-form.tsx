@@ -4,6 +4,7 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useCreateIncidentReport } from "@/hooks/incident-report.hook";
+import { useToast } from "@/components/providers/toast-provider";
 
 type IncidentReportFormProps = {
   onSuccess: () => void;
@@ -23,6 +24,7 @@ export function IncidentReportForm({
   onCancel,
 }: IncidentReportFormProps) {
   const createMutation = useCreateIncidentReport();
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     incident_type: "observasi",
@@ -33,7 +35,6 @@ export function IncidentReportForm({
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (
     event: ChangeEvent<
@@ -53,8 +54,6 @@ export function IncidentReportForm({
       ...previous,
       [fieldName]: undefined,
     }));
-
-    setErrorMessage("");
   };
 
   const validateForm = (): boolean => {
@@ -66,31 +65,59 @@ export function IncidentReportForm({
     const description = form.description.trim();
     const photoUrl = form.photo_url.trim();
 
-    // Backend: required|string|max:50
+    const allowedIncidentTypes = [
+      "observasi",
+      "konflik",
+      "perambahan",
+      "device_alert",
+      "system",
+    ];
+
+    // Validasi jenis insiden
     if (!incidentType) {
-      newErrors.incident_type = "Jenis insiden wajib dipilih.";
-    } else if (incidentType.length > 50) {
-      newErrors.incident_type = "Maksimal 50 karakter.";
+      newErrors.incident_type = "Jenis insiden wajib diisi.";
+    } else if (!allowedIncidentTypes.includes(incidentType)) {
+      newErrors.incident_type = "Jenis insiden tidak valid.";
     }
 
-    // Backend: nullable|string|max:50
+    // Validasi kode satwa
     if (animalCode.length > 50) {
-      newErrors.animal_code = "Kode satwa maksimal 50 karakter.";
+      newErrors.animal_code =
+        "Kode satwa maksimal 50 karakter.";
+    } else if (
+      animalCode &&
+      !/^[a-zA-Z0-9-]+$/.test(animalCode)
+    ) {
+      newErrors.animal_code =
+        "Kode satwa hanya boleh berisi huruf, angka, dan strip.";
     }
 
-    // Backend: required|string|max:255
+    // Validasi lokasi
     if (!location) {
       newErrors.location = "Lokasi wajib diisi.";
     } else if (location.length > 255) {
-      newErrors.location = "Lokasi maksimal 255 karakter.";
+      newErrors.location =
+        "Lokasi maksimal 255 karakter.";
+    } else if (!/^[a-zA-Z0-9\s,.-]+$/.test(location)) {
+      newErrors.location =
+        "Lokasi mengandung karakter tidak valid.";
     }
 
-    // Backend: required|string
+    // Validasi deskripsi
     if (!description) {
       newErrors.description = "Deskripsi wajib diisi.";
+    } else if (description.length < 10) {
+      newErrors.description =
+        "Deskripsi minimal 10 karakter.";
+    } else if (description.length > 1000) {
+      newErrors.description =
+        "Deskripsi maksimal 1000 karakter.";
+    } else if (/[<>{}]/.test(description)) {
+      newErrors.description =
+        "Deskripsi tidak boleh mengandung HTML tags.";
     }
 
-    // Backend: nullable|url|regex ekstensi gambar
+    // Validasi URL foto
     if (photoUrl) {
       const imageExtension =
         /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -100,10 +127,11 @@ export function IncidentReportForm({
 
         if (!imageExtension.test(photoUrl)) {
           newErrors.photo_url =
-            "URL harus berakhiran .jpg, .jpeg, .png, .gif, .webp, .bmp, atau .svg.";
+            "URL harus menggunakan ekstensi gambar yang diizinkan.";
         }
       } catch {
-        newErrors.photo_url = "Format URL foto tidak valid.";
+        newErrors.photo_url =
+          "Format URL foto tidak valid.";
       }
     }
 
@@ -112,16 +140,17 @@ export function IncidentReportForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
-    setErrorMessage("");
 
     if (!validateForm()) {
       return;
     }
 
     try {
-      await createMutation.mutateAsync({
+      const response = await createMutation.mutateAsync({
         incident_type: form.incident_type.trim(),
         animal_code: form.animal_code.trim() || null,
         location: form.location.trim(),
@@ -129,13 +158,19 @@ export function IncidentReportForm({
         photo_url: form.photo_url.trim() || null,
       });
 
+      showToast(
+        response.message || "Laporan insiden berhasil dibuat.",
+        "success",
+      );
+
       onSuccess();
     } catch (error) {
-      setErrorMessage(
+      const message =
         error instanceof Error
           ? error.message
-          : "Gagal menambahkan laporan insiden.",
-      );
+          : "Gagal menambahkan laporan insiden.";
+
+      showToast(message, "error");
     }
   };
 
@@ -153,16 +188,27 @@ export function IncidentReportForm({
         <h3 className="text-lg font-semibold text-zinc-900">
           Tambah Laporan Insiden
         </h3>
+
         <p className="mt-1 text-sm text-zinc-500">
           Masukkan informasi kejadian yang ditemukan di lapangan.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="space-y-4"
+      >
+        {/* Jenis Insiden */}
         <div>
-          <label htmlFor="incident_type" className={labelStyle}>
-            Jenis Insiden <span className="text-red-500">*</span>
+          <label
+            htmlFor="incident_type"
+            className={labelStyle}
+          >
+            Jenis Insiden{" "}
+            <span className="text-red-500">*</span>
           </label>
+
           <select
             id="incident_type"
             name="incident_type"
@@ -174,17 +220,28 @@ export function IncidentReportForm({
             <option value="observasi">Observasi</option>
             <option value="konflik">Konflik</option>
             <option value="perambahan">Perambahan</option>
-            <option value="device_alert">Peringatan Perangkat</option>
+            <option value="device_alert">
+              Peringatan Perangkat
+            </option>
+            <option value="system">Sistem</option>
           </select>
+
           {errors.incident_type && (
-            <p className={errorStyle}>{errors.incident_type}</p>
+            <p className={errorStyle}>
+              {errors.incident_type}
+            </p>
           )}
         </div>
 
+        {/* Kode Satwa */}
         <div>
-          <label htmlFor="animal_code" className={labelStyle}>
+          <label
+            htmlFor="animal_code"
+            className={labelStyle}
+          >
             Kode Satwa
           </label>
+
           <input
             id="animal_code"
             name="animal_code"
@@ -194,15 +251,23 @@ export function IncidentReportForm({
             maxLength={50}
             className={inputStyle}
           />
+
           {errors.animal_code && (
-            <p className={errorStyle}>{errors.animal_code}</p>
+            <p className={errorStyle}>
+              {errors.animal_code}
+            </p>
           )}
         </div>
 
+        {/* Lokasi */}
         <div>
-          <label htmlFor="location" className={labelStyle}>
+          <label
+            htmlFor="location"
+            className={labelStyle}
+          >
             Lokasi <span className="text-red-500">*</span>
           </label>
+
           <input
             id="location"
             name="location"
@@ -213,34 +278,55 @@ export function IncidentReportForm({
             className={inputStyle}
             required
           />
+
           {errors.location && (
-            <p className={errorStyle}>{errors.location}</p>
+            <p className={errorStyle}>
+              {errors.location}
+            </p>
           )}
         </div>
 
+        {/* Deskripsi */}
         <div>
-          <label htmlFor="description" className={labelStyle}>
+          <label
+            htmlFor="description"
+            className={labelStyle}
+          >
             Deskripsi <span className="text-red-500">*</span>
           </label>
+
           <textarea
             id="description"
             name="description"
             value={form.description}
             onChange={handleChange}
+            maxLength={1000}
             placeholder="Jelaskan kejadian yang ditemukan..."
             rows={4}
             className={inputStyle}
             required
           />
+
           {errors.description && (
-            <p className={errorStyle}>{errors.description}</p>
+            <p className={errorStyle}>
+              {errors.description}
+            </p>
           )}
+
+          <p className="mt-1 text-xs text-zinc-500">
+            Maksimal 1000 karakter.
+          </p>
         </div>
 
+        {/* URL Foto */}
         <div>
-          <label htmlFor="photo_url" className={labelStyle}>
+          <label
+            htmlFor="photo_url"
+            className={labelStyle}
+          >
             URL Foto
           </label>
+
           <input
             id="photo_url"
             name="photo_url"
@@ -250,21 +336,20 @@ export function IncidentReportForm({
             placeholder="https://example.com/foto-insiden.jpg"
             className={inputStyle}
           />
+
           {errors.photo_url && (
-            <p className={errorStyle}>{errors.photo_url}</p>
+            <p className={errorStyle}>
+              {errors.photo_url}
+            </p>
           )}
+
           <p className="mt-1 text-xs text-zinc-500">
             Opsional. Masukkan URL gambar valid dengan ekstensi
             JPG, JPEG, PNG, GIF, WEBP, BMP, atau SVG.
           </p>
         </div>
 
-        {errorMessage && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
-
+        {/* Tombol */}
         <div className="flex flex-wrap justify-end gap-3 border-t border-zinc-100 pt-4">
           <button
             type="button"

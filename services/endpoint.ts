@@ -1,17 +1,41 @@
 import { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
 
-const buildListQuery = (params?: Partial<QUERY_PARAMS_API_GET_ALL>): string => {
+const RESERVED_KEYS = new Set([
+  "page",
+  "per_page",
+  "order",
+  "orderBy",
+  "search",
+]);
+
+const isMeaningful = (value: unknown): boolean =>
+  value !== undefined &&
+  value !== null &&
+  value !== "" &&
+  value !== "all";
+
+const buildListQuery = (
+  params?: Partial<QUERY_PARAMS_API_GET_ALL>,
+): string => {
   if (!params) return "";
 
   const query = new URLSearchParams();
 
-  query.set("order", params.order ?? "asc");
+  query.set("order", (params.order as string) ?? "asc");
 
   if (params.page !== undefined) query.set("page", String(params.page));
-  if (params.per_page !== undefined) query.set("per_page", String(params.per_page));
-  if (params.orderBy !== undefined) query.set("orderBy", params.orderBy);
-  if (params.search !== undefined && params.search !== "") {
+  if (params.per_page !== undefined)
+    query.set("per_page", String(params.per_page));
+  if (params.orderBy !== undefined) query.set("orderBy", String(params.orderBy));
+  if (typeof params.search === "string" && params.search !== "") {
     query.set("search", params.search);
+  }
+
+  for (const [key, value] of Object.entries(params)) {
+    if (RESERVED_KEYS.has(key)) continue;
+    if (!isMeaningful(value)) continue;
+
+    query.set(key, String(value));
   }
 
   return query.toString();
@@ -30,10 +54,10 @@ export const WILDLIFE_BASE_PATH = "/api/backend";
 
 export const API_ENDPOINT = {
   AUTH: {
-  LOGIN: "/api/auth/login",
-  LOGOUT: "/api/backend/logout",
-  ME: "/api/backend/me",
-},
+    LOGIN: "/api/auth/login",
+    LOGOUT: "/api/backend/logout",
+    ME: "/api/backend/me",
+  },
   WILDLIFE: {
     USER: {
       GET_ALL: (params?: Partial<QUERY_PARAMS_API_GET_ALL>) =>

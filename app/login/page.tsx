@@ -6,33 +6,31 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { ErrorState } from "@/components/ui/error-state";
-import type { ApiErrorKind } from "@/types/api.type";
+import { useToast } from "@/components/providers/toast-provider";
 
 const loginSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Email wajib diisi")
-    .email("Format email tidak valid"),
+    .min(1, "Email wajib diisi.")
+    .email("Format email tidak valid.")
+    .max(150, "Email maksimal 150 karakter."),
 
-  password: z.string().min(1, "Kata sandi wajib diisi"),
+  password: z
+    .string()
+    .min(1, "Password wajib diisi.")
+    .min(6, "Password minimal 6 karakter.")
+    .max(255, "Password maksimal 255 karakter."),
 
   rememberMe: z.boolean(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-type LoginFailure = {
-  kind: ApiErrorKind;
-  status: number;
-  message: string;
-  errors: Record<string, string[]> | null;
-};
-
 export default function LoginPage() {
   const router = useRouter();
-  const [failure, setFailure] = useState<LoginFailure | null>(null);
+  const { showToast } = useToast();
+
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -49,8 +47,6 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    setFailure(null);
-
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -62,40 +58,53 @@ export default function LoginPage() {
       });
 
       const body: unknown = await response.json().catch(() => null);
+
       const record =
         typeof body === "object" && body !== null
           ? (body as Record<string, unknown>)
           : null;
 
       if (!response.ok || record?.success !== true) {
-        setFailure({
-          kind:
-            response.status === 422
-              ? "validation"
-              : resolveKind(response.status),
-          status: response.status,
-          message:
-            typeof record?.message === "string"
+        const backendErrors =
+          typeof record?.errors === "object" &&
+          record.errors !== null &&
+          !Array.isArray(record.errors)
+            ? (record.errors as Record<string, string[]>)
+            : null;
+
+        const firstField = backendErrors
+          ? Object.keys(backendErrors)[0]
+          : null;
+
+        const firstMessage = firstField
+          ? backendErrors?.[firstField]?.[0]
+          : null;
+
+        const message =
+          firstField && firstMessage
+            ? `${firstField}: ${firstMessage}`
+            : typeof record?.message === "string"
               ? record.message
-              : "Login gagal. Silakan coba lagi.",
-          errors:
-            typeof record?.errors === "object" &&
-            record.errors !== null
-              ? (record.errors as Record<string, string[]>)
-              : null,
-        });
+              : "Login gagal. Silakan coba lagi.";
+
+        showToast(message, "error");
         return;
       }
+
+      showToast(
+        typeof record?.message === "string"
+          ? record.message
+          : "Login berhasil.",
+        "success",
+      );
 
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setFailure({
-        kind: "network",
-        status: 0,
-        message: "Tidak dapat menghubungi server aplikasi.",
-        errors: null,
-      });
+      showToast(
+        "Tidak dapat menghubungi server aplikasi.",
+        "error",
+      );
     }
   };
 
@@ -118,13 +127,16 @@ export default function LoginPage() {
           <div className="relative z-10 flex items-center gap-3 text-white">
             <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5">
               <img
-              src="/images/logo-tngl.png"
-              alt="Logo Taman Nasional Gunung Leuser"
-              className="h-full w-full object-contain"
+                src="/images/logo-tngl.png"
+                alt="Logo Taman Nasional Gunung Leuser"
+                className="h-full w-full object-contain"
               />
-              </div>
+            </div>
+
             <div>
-              <p className="text-sm font-semibold">Balai Taman Nasional</p>
+              <p className="text-sm font-semibold">
+                Balai Taman Nasional
+              </p>
               <p className="text-xs text-white/75">
                 Gunung Leuser
               </p>
@@ -132,7 +144,6 @@ export default function LoginPage() {
           </div>
 
           <div className="relative z-10 max-w-md py-12 text-white">
-
             <h1 className="text-3xl font-bold leading-tight xl:text-4xl">
               Menjaga Satwa,
               <br />
@@ -157,11 +168,12 @@ export default function LoginPage() {
             <div className="mb-9 flex items-center gap-3 lg:hidden">
               <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5">
                 <img
-                src="/images/logo-tngl.png"
-                alt="Logo Taman Nasional Gunung Leuser"
-                className="h-full w-full object-contain"
+                  src="/images/logo-tngl.png"
+                  alt="Logo Taman Nasional Gunung Leuser"
+                  className="h-full w-full object-contain"
                 />
-                </div>
+              </div>
+
               <div>
                 <p className="font-semibold text-[#0f172a]">
                   Wildlife Monitoring
@@ -176,9 +188,11 @@ export default function LoginPage() {
               <p className="mb-3 text-sm font-semibold text-[#4d8050]">
                 SELAMAT DATANG
               </p>
+
               <h2 className="text-3xl font-bold tracking-tight text-[#0f172a] sm:text-4xl">
                 Masuk ke akun
               </h2>
+
               <p className="mt-3 text-sm leading-6 text-slate-500">
                 Masukkan email dan kata sandi untuk mengakses
                 sistem pemantauan satwa liar.
@@ -190,6 +204,7 @@ export default function LoginPage() {
               noValidate
               className="flex flex-col gap-5"
             >
+              {/* Email */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="email"
@@ -197,6 +212,7 @@ export default function LoginPage() {
                 >
                   Email
                 </label>
+
                 <input
                   id="email"
                   type="email"
@@ -213,6 +229,7 @@ export default function LoginPage() {
                       : "border-slate-200"
                   }`}
                 />
+
                 {errors.email && (
                   <p
                     id="email-error"
@@ -224,6 +241,7 @@ export default function LoginPage() {
                 )}
               </div>
 
+              {/* Password */}
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="password"
@@ -239,7 +257,9 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     aria-invalid={errors.password !== undefined}
                     aria-describedby={
-                      errors.password ? "password-error" : undefined
+                      errors.password
+                        ? "password-error"
+                        : undefined
                     }
                     {...register("password")}
                     placeholder="Masukkan kata sandi"
@@ -251,26 +271,52 @@ export default function LoginPage() {
                   />
 
                   <button
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute inset-y-0 right-4 flex items-center text-[#4d8050] hover:text-[#416e44]"
-                  aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    className="absolute inset-y-0 right-4 flex items-center text-[#4d8050] hover:text-[#416e44]"
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan kata sandi"
+                        : "Tampilkan kata sandi"
+                    }
                   >
                     {showPassword ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="21"
+                        height="21"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M3 3l18 18" />
                         <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
                         <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.2 2.2-2.3 3.3" />
                         <path d="M6.2 6.2C3.9 7.6 2.7 9.7 2.5 12c.5 1.2 1.7 3.1 4.1 4.8A9.8 9.8 0 0 0 12 19c1.1 0 2.1-.2 3-.5" />
-                        </svg>
-                        ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-                          <circle cx="12" cy="12" r="3" />
-                          </svg>
-                        )}
-                        </button>
-                        </div>
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="21"
+                        height="21"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
 
                 {errors.password && (
                   <p
@@ -283,6 +329,7 @@ export default function LoginPage() {
                 )}
               </div>
 
+              {/* Remember me */}
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
                 <input
                   type="checkbox"
@@ -292,25 +339,17 @@ export default function LoginPage() {
                 Ingat saya
               </label>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="mt-1 flex h-12 w-full items-center justify-center rounded-2xl bg-[#4d8050] px-4 text-sm font-semibold text-white shadow-lg shadow-[#4d8050]/15 transition hover:bg-[#416e44] focus:outline-none focus:ring-4 focus:ring-[#4d8050]/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "Memproses..." : "Masuk ke Dashboard"}
+                {isSubmitting
+                  ? "Memproses..."
+                  : "Masuk ke Dashboard"}
               </button>
             </form>
-
-            {failure && (
-              <div className="mt-5">
-                <ErrorState
-                  kind={failure.kind}
-                  message={failure.message}
-                  status={failure.status}
-                  errors={failure.errors}
-                />
-              </div>
-            )}
 
             <p className="mt-8 text-center text-xs leading-5 text-slate-400">
               Sistem Pelacakan Pergerakan Satwa Liar
@@ -323,9 +362,3 @@ export default function LoginPage() {
     </main>
   );
 }
-
-const resolveKind = (status: number): ApiErrorKind => {
-  if (status === 401 || status === 403) return "unauthorized";
-  if (status === 422) return "validation";
-  return status >= 500 ? "server" : "unknown";
-};

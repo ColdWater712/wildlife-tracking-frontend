@@ -3,10 +3,12 @@ import type { DeviceCondition } from "@/types/tracking-device.type";
 
 export type DeviceConditionFilter = "all" | "normal" | "damaged" | "lost";
 
+export type DeviceActiveFilter = "all" | "active" | "inactive";
+
 export type DeviceFilterValues = FilterValues & {
   search: string;
   device_condition: DeviceConditionFilter;
-  only_active: string;
+  only_active: DeviceActiveFilter;
 };
 
 export const DEFAULT_DEVICE_FILTERS: DeviceFilterValues = {
@@ -24,8 +26,8 @@ export const CONDITION_OPTIONS: FilterOption[] = [
 
 export const ACTIVE_OPTIONS: FilterOption[] = [
   { label: "Semua", value: "all" },
-  { label: "Aktif", value: "true" },
-  { label: "Tidak Aktif", value: "false" },
+  { label: "Aktif", value: "active" },
+  { label: "Tidak Aktif", value: "inactive" },
 ];
 
 export const toDeviceCondition = (
@@ -36,5 +38,5 @@ export const toDeviceCondition = (
 export const toOnlyActiveDevice = (value: string): boolean | undefined => {
   if (value === "all" || value === "") return undefined;
 
-  return value === "true";
+  return value === "active";
 };

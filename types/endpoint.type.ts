@@ -1,11 +1,12 @@
 export type TYPE_ORDER_DIRECTION = "asc" | "desc";
 
 export type QUERY_PARAMS_API_GET_ALL = {
-  page: number;
-  per_page: number;
+  page?: number;
+  per_page?: number;
   order?: TYPE_ORDER_DIRECTION;
   orderBy?: string;
   search?: string;
+  [key: string]: string | number | boolean | undefined;
 };
 
 export type QUERY_PARAMS_API_GET_ALL_FILTERS = Omit<
