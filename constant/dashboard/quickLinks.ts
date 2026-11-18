@@ -1,5 +1,5 @@
 
-export const DUMMY_DASHBOARD_QUICK_LINKS = [
+export const DASHBOARD_QUICK_LINKS = [
   {
     title: "Peta Pelacakan",
     description: "Lihat lokasi satwa pada peta",

@@ -95,7 +95,7 @@ export const API_ENDPOINT = {
       GET_ALL: (params?: Partial<QUERY_PARAMS_API_GET_ALL>) =>
         listPath("gps-readings", params),
       GET_BY_ID: (id: number) => `/gps-readings/${id}`,
-      GET_BY_ANIMAL: (animalId: number) => `/gps-readings/${animalId}`,
+      GET_BY_ANIMAL: (animalId: number) => `/animals/${animalId}/track`,
       CREATE: "/gps-readings",
       UPDATE: (id: number) => `/gps-readings/${id}`,
       DELETE: (id: number) => `/gps-readings/${id}`,

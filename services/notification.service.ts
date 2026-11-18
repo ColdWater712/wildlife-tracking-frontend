@@ -56,7 +56,7 @@ export const getUnreadNotifications = async (): Promise<
 export const markNotificationAsRead = async (
   id: number,
 ): Promise<ApiResponse<unknown>> => {
-  return api.put<ApiResponse<unknown>>(
+  return api.patch<ApiResponse<unknown>>(
     `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.NOTIFICATIONS.MARK_AS_READ(id)}`,
   );
 };

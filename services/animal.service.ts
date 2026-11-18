@@ -1,7 +1,4 @@
 
-import { USE_MOCK_DATA } from "@/services/data-source";
-import { ANIMAL_MOCK_SERVICE } from "@/services/animal-mock.service";
-
 import { api, unwrapData } from "@/services/api-client";
 import { API_ENDPOINT, WILDLIFE_BASE_PATH } from "@/services/endpoint";
 
@@ -47,6 +44,21 @@ const mapAnimalFromApi = (animal: API_ANIMAL): TYPE_ANIMAL => ({
   updated_at: animal.updated_at ?? "",
 });
 
+const mapAnimalPayloadToApi = (
+  payload: TYPE_ANIMAL_PAYLOAD,
+) => ({
+  species_id: payload.species_id,
+  name: payload.animal_code,
+  birth_date: payload.birth_date,
+  gender:
+    payload.gender === "Jantan"
+      ? "male"
+      : payload.gender === "Betina"
+        ? "female"
+        : "unknown",
+  is_active: payload.is_active,
+});
+
 const buildGetAllResponse = (
   items: TYPE_ANIMAL[],
 ): ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE> => ({
@@ -79,10 +91,6 @@ export const ANIMAL_SERVICE = {
   GET_ALL: async (
     params?: Partial<QUERY_PARAMS_API_GET_ALL>,
   ): Promise<ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE>> => {
-    if (USE_MOCK_DATA) {
-      return ANIMAL_MOCK_SERVICE.GET_ALL(params);
-    }
-
     const response = await api.get<ApiResponse<API_ANIMAL[]>>(
       `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_ALL(params)}`,
     );
@@ -93,66 +101,60 @@ export const ANIMAL_SERVICE = {
     return buildGetAllResponse(items);
   },
 
-  
   GET_BY_ID: async (
     id: number,
   ): Promise<ApiResponse<TYPE_ANIMAL_GET_BY_ID_RESPONSE>> => {
-    if (USE_MOCK_DATA) {
-      return ANIMAL_MOCK_SERVICE.GET_BY_ID(id);
-    }
-
-    const response = await api.get<ApiResponse<API_ANIMAL[]>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_ALL()}`,
+    const response = await api.get<ApiResponse<API_ANIMAL>>(
+      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_BY_ID(id)}`,
     );
 
-    const animals = unwrapData(response);
-
-    const animal = animals.find(
-      (item) => Number(item.animal_id) === Number(id),
-    );
+    const animal = unwrapData(response);
 
     return buildGetByIdResponse(
       animal ? mapAnimalFromApi(animal) : null,
     );
   },
 
-
   CREATE: async (
     payload: TYPE_ANIMAL_PAYLOAD,
   ): Promise<ApiResponse<TYPE_ANIMAL>> => {
-    if (USE_MOCK_DATA) {
-      return ANIMAL_MOCK_SERVICE.CREATE(payload);
-    }
-
-    return api.post<ApiResponse<TYPE_ANIMAL>>(
+    const response = await api.post<ApiResponse<API_ANIMAL>>(
       `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.CREATE}`,
       {
-        body: payload,
+        body: mapAnimalPayloadToApi(payload),
       },
     );
+
+    const animal = unwrapData(response);
+
+    return {
+      success: true,
+      message: response.message,
+      data: mapAnimalFromApi(animal),
+    };
   },
 
   UPDATE: async (
     id: number,
     payload: TYPE_ANIMAL_PAYLOAD,
   ): Promise<ApiResponse<TYPE_ANIMAL>> => {
-    if (USE_MOCK_DATA) {
-      return ANIMAL_MOCK_SERVICE.UPDATE(id, payload);
-    }
-
-    return api.put<ApiResponse<TYPE_ANIMAL>>(
+    const response = await api.put<ApiResponse<API_ANIMAL>>(
       `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.UPDATE(id)}`,
       {
-        body: payload,
+        body: mapAnimalPayloadToApi(payload),
       },
     );
+
+    const animal = unwrapData(response);
+
+    return {
+      success: true,
+      message: response.message,
+      data: mapAnimalFromApi(animal),
+    };
   },
 
   DELETE: async (id: number): Promise<ApiResponse<null>> => {
-    if (USE_MOCK_DATA) {
-      return ANIMAL_MOCK_SERVICE.DELETE(id);
-    }
-
     return api.delete<ApiResponse<null>>(
       `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.DELETE(id)}`,
     );
