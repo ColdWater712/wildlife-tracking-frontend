@@ -29,6 +29,7 @@ import {
 } from "@/hooks/animal.hook";
 import { useSpecies } from "@/hooks/species.hook";
 import { useGpsReadings } from "@/hooks/gps-reading.hook";
+import { useToast } from "@/components/providers/toast-provider";
 
 import type { TYPE_ANIMAL } from "@/types/animal.type";
 
@@ -47,20 +48,18 @@ const INITIAL_FILTERS: AnimalFilterValues = {
 type AnimalRow = TYPE_ANIMAL;
 
 export default function AnimalListView() {
-  // State filter
   const [filters, setFilters] =
     useState<AnimalFilterValues>(INITIAL_FILTERS);
 
-  // State modal tambah dan edit
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] =
     useState<TYPE_ANIMAL | null>(null);
 
-  // State dialog hapus
   const [selectedDeleteAnimal, setSelectedDeleteAnimal] =
     useState<TYPE_ANIMAL | null>(null);
 
-  // Hooks API
+  const { showToast } = useToast();
+
   const animalQuery = useAnimals();
   const speciesQuery = useSpecies();
   const gpsQuery = useGpsReadings();
@@ -69,7 +68,6 @@ export default function AnimalListView() {
     selectedDeleteAnimal?.animal_id ?? 0,
   );
 
-  // Data dari API
   const animals = animalQuery.data?.data?.items ?? [];
   const speciesList = speciesQuery.data?.data?.items ?? [];
   const gpsReadings = gpsQuery.data?.data ?? [];
@@ -79,13 +77,11 @@ export default function AnimalListView() {
     speciesQuery.isLoading ||
     gpsQuery.isLoading;
 
-  // Menutup modal tambah/edit
   const closeForm = () => {
     setIsCreateOpen(false);
     setSelectedAnimal(null);
   };
 
-  // Menutup dialog hapus
   const closeDeleteDialog = () => {
     if (deleteAnimalMutation.isPending) return;
 
@@ -93,18 +89,25 @@ export default function AnimalListView() {
     deleteAnimalMutation.reset();
   };
 
-  // Menghapus satwa
   const handleDeleteAnimal = () => {
     if (!selectedDeleteAnimal) return;
 
     deleteAnimalMutation.mutate(undefined, {
       onSuccess: () => {
+        showToast("Satwa berhasil dihapus.", "success");
         setSelectedDeleteAnimal(null);
+      },
+      onError: (error) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Gagal menghapus satwa. Silakan coba lagi.";
+
+        showToast(errorMessage, "error");
       },
     });
   };
 
-  // Mengambil GPS terbaru berdasarkan perangkat
   const latestGpsByDevice = useMemo(() => {
     const gpsMap = new Map<
       number,
@@ -128,7 +131,6 @@ export default function AnimalListView() {
     return gpsMap;
   }, [gpsReadings]);
 
-  // Field filter
   const filterFields = useMemo<FilterField[]>(
     () => [
       {
@@ -175,7 +177,6 @@ export default function AnimalListView() {
     [speciesList],
   );
 
-  // Filter data satwa
   const filteredAnimals = useMemo(() => {
     const search = filters.search.toLowerCase().trim();
 
@@ -201,11 +202,14 @@ export default function AnimalListView() {
           ? animal.is_active
           : !animal.is_active);
 
-      return matchesSearch && matchesSpecies && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesSpecies &&
+        matchesStatus
+      );
     });
   }, [animals, filters]);
 
-  // Kolom tabel
   const columns = useMemo<ColumnDef<AnimalRow>[]>(
     () => [
       {
@@ -280,11 +284,14 @@ export default function AnimalListView() {
 
           return birthDate ? (
             <span className="text-sm text-zinc-700">
-              {new Date(birthDate).toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+              {new Date(birthDate).toLocaleDateString(
+                "id-ID",
+                {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                },
+              )}
             </span>
           ) : (
             <span className="text-zinc-400">-</span>
@@ -324,10 +331,12 @@ export default function AnimalListView() {
           return reading ? (
             <div className="text-sm text-zinc-700">
               <p>
-                Lat: {Number(reading.latitude).toFixed(6)}
+                Lat:{" "}
+                {Number(reading.latitude).toFixed(6)}
               </p>
               <p>
-                Long: {Number(reading.longitude).toFixed(6)}
+                Long:{" "}
+                {Number(reading.longitude).toFixed(6)}
               </p>
             </div>
           ) : (
@@ -350,10 +359,13 @@ export default function AnimalListView() {
 
           return recordedAt ? (
             <span className="text-sm text-zinc-700">
-              {new Date(recordedAt).toLocaleString("id-ID", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
+              {new Date(recordedAt).toLocaleString(
+                "id-ID",
+                {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                },
+              )}
             </span>
           ) : (
             <span className="text-zinc-400">-</span>
@@ -365,7 +377,6 @@ export default function AnimalListView() {
         header: "Aksi",
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            {/* Tombol Edit */}
             <button
               type="button"
               onClick={() => {
@@ -379,7 +390,6 @@ export default function AnimalListView() {
               Edit
             </button>
 
-            {/* Tombol Hapus */}
             <button
               type="button"
               onClick={() => {
@@ -397,12 +407,10 @@ export default function AnimalListView() {
     [latestGpsByDevice],
   );
 
-  // Statistik satwa aktif
   const activeCount = animals.filter(
     (animal) => animal.is_active,
   ).length;
 
-  // Tampilan jika API gagal
   if (
     animalQuery.isError ||
     speciesQuery.isError ||
@@ -429,7 +437,6 @@ export default function AnimalListView() {
 
   return (
     <div className="min-h-full space-y-6 bg-[#F7F9F6] p-1">
-      {/* Header halaman */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-[#E5F0E7] p-2 text-[#174C35]">
@@ -447,7 +454,6 @@ export default function AnimalListView() {
         </p>
       </div>
 
-      {/* Statistik */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="group rounded-2xl border border-[#DDE8DE] bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
@@ -512,7 +518,6 @@ export default function AnimalListView() {
         </div>
       </div>
 
-      {/* Filter satwa */}
       <section className="overflow-hidden rounded-2xl border border-[#DDE8DE] bg-white shadow-sm">
         <div className="border-b border-[#E7EEE7] bg-[#F4F8F3] px-5 py-4 sm:px-6">
           <div className="flex items-start gap-3">
@@ -541,12 +546,13 @@ export default function AnimalListView() {
                 ...values,
               }))
             }
-            onReset={() => setFilters({ ...INITIAL_FILTERS })}
+            onReset={() =>
+              setFilters({ ...INITIAL_FILTERS })
+            }
           />
         </div>
       </section>
 
-      {/* Daftar satwa */}
       <section className="overflow-hidden rounded-2xl border border-[#DDE8DE] bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-[#E7EEE7] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
@@ -592,7 +598,6 @@ export default function AnimalListView() {
         </div>
       </section>
 
-      {/* Modal Tambah dan Edit Satwa */}
       {(isCreateOpen || selectedAnimal !== null) && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -638,7 +643,6 @@ export default function AnimalListView() {
         </div>
       )}
 
-      {/* Dialog Konfirmasi Hapus */}
       {selectedDeleteAnimal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
           <div
@@ -674,7 +678,9 @@ export default function AnimalListView() {
 
             {deleteAnimalMutation.isError && (
               <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-                Gagal menghapus data satwa. Silakan coba lagi.
+                {deleteAnimalMutation.error instanceof Error
+                  ? deleteAnimalMutation.error.message
+                  : "Gagal menghapus data satwa. Silakan coba lagi."}
               </p>
             )}
 

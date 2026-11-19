@@ -63,12 +63,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {toast && (
         <div
-          className="fixed right-4 top-4 z-[2000] w-[calc(100%-2rem)] max-w-sm"
+          className="fixed left-1/2 top-4 z-[2000] flex w-[calc(100%-2rem)] -translate-x-1/2 justify-center pointer-events-none"
           role="status"
           aria-live="polite"
         >
           <div
-            className={`flex items-start gap-3 rounded-xl border bg-white p-4 shadow-lg ${
+            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border bg-white p-4 shadow-lg ${
               toast.type === "success"
                 ? "border-emerald-200"
                 : "border-red-200"

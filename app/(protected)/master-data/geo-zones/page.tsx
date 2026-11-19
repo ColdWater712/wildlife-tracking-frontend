@@ -3,7 +3,10 @@
 
 import { useMemo, useState } from "react";
 
-import { useGeoZones } from "@/hooks/use-geo-zones";
+import { useGeoZones, useGeoZoneDelete } from "@/hooks/use-geo-zones";
+
+import { GeoZoneForm } from "@/components/geo-zones/geo-zone-form";
+import { useToast } from "@/components/providers/toast-provider";
 
 import type { GeoZone } from "@/types/geo-zone";
 
@@ -15,10 +18,26 @@ export default function GeoZonesPage() {
     refetch,
   } = useGeoZones();
 
+  const { showToast } = useToast();
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("Semua");
-  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
-  
+
+  const [selectedZoneId, setSelectedZoneId] =
+    useState<number | null>(null);
+
+  const [editingZone, setEditingZone] =
+    useState<GeoZone | null>(null);
+
+  const [deletingZone, setDeletingZone] =
+    useState<GeoZone | null>(null);
+
+  const [showForm, setShowForm] = useState(false);
+
+  const deleteMutation = useGeoZoneDelete(
+    deletingZone?.zone_id ?? 0,
+  );
+
   const selectedZone = zones.find(
     (zone) => zone.zone_id === selectedZoneId,
   );
@@ -32,39 +51,49 @@ export default function GeoZonesPage() {
         zone.zone_type.toLowerCase().includes(keyword);
 
       const matchesType =
-        typeFilter === "Semua" || zone.zone_type === typeFilter;
+        typeFilter === "Semua" ||
+        zone.zone_type === typeFilter;
 
       return matchesSearch && matchesType;
     });
   }, [zones, search, typeFilter]);
 
-  // Statistik zona
   const radiusCount = zones.filter(
-    (zone) => zone.radius_km !== null && zone.radius_km !== "",
+    (zone) =>
+      zone.radius_km !== null &&
+      zone.radius_km !== "",
   ).length;
 
   const polygonCount = zones.filter(
     (zone) => zone.polygon_geojson !== null,
   ).length;
 
-  // Format nilai
   const formatValue = (
     value: number | string | null | undefined,
   ) => {
-    if (value === null || value === undefined || value === "") {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
       return "—";
     }
 
     return String(value);
   };
 
-  // Format GeoJSON
-  const formatGeoJSON = (value: GeoZone["polygon_geojson"]) => {
+  const formatGeoJSON = (
+    value: GeoZone["polygon_geojson"],
+  ) => {
     if (value === null) return "—";
 
     if (typeof value === "string") {
       try {
-        return JSON.stringify(JSON.parse(value), null, 2);
+        return JSON.stringify(
+          JSON.parse(value),
+          null,
+          2,
+        );
       } catch {
         return value;
       }
@@ -73,9 +102,52 @@ export default function GeoZonesPage() {
     return JSON.stringify(value, null, 2);
   };
 
-  // Tutup modal detail
   const closeDetail = () => {
     setSelectedZoneId(null);
+  };
+
+  const openCreateForm = () => {
+    setEditingZone(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (zone: GeoZone) => {
+    setEditingZone(zone);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingZone(null);
+  };
+
+  const handleFormSuccess = () => {
+    closeForm();
+    refetch();
+  };
+
+  const handleDelete = async () => {
+    if (!deletingZone) return;
+
+    try {
+      await deleteMutation.mutateAsync();
+
+      showToast(
+        "Zona berhasil dihapus.",
+        "success",
+      );
+
+      setDeletingZone(null);
+      setSelectedZoneId(null);
+      refetch();
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Gagal menghapus zona.",
+        "error",
+      );
+    }
   };
 
   return (
@@ -94,7 +166,9 @@ export default function GeoZonesPage() {
       {/* Statistik */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-500">Total Zona</p>
+          <p className="text-sm text-gray-500">
+            Total Zona
+          </p>
 
           <p className="mt-2 text-3xl font-semibold text-gray-900">
             {isLoading ? "..." : zones.length}
@@ -106,7 +180,9 @@ export default function GeoZonesPage() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-500">Zona Beradius</p>
+          <p className="text-sm text-gray-500">
+            Zona Beradius
+          </p>
 
           <p className="mt-2 text-3xl font-semibold text-green-700">
             {isLoading ? "..." : radiusCount}
@@ -118,7 +194,9 @@ export default function GeoZonesPage() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-500">Zona Berpoligon</p>
+          <p className="text-sm text-gray-500">
+            Zona Berpoligon
+          </p>
 
           <p className="mt-2 text-3xl font-semibold text-gray-600">
             {isLoading ? "..." : polygonCount}
@@ -143,9 +221,13 @@ export default function GeoZonesPage() {
             </p>
           </div>
 
-          <span className="w-fit rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">
-            {filteredZones.length} zona ditemukan
-          </span>
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="w-fit rounded-lg bg-[#286747] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#174C35]"
+          >
+            + Tambah Zona
+          </button>
         </div>
 
         {/* Filter */}
@@ -153,19 +235,25 @@ export default function GeoZonesPage() {
           <input
             type="text"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) =>
+              setSearch(event.target.value)
+            }
             placeholder="Cari nama atau jenis zona..."
             className="min-w-0 flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
           />
 
           <select
             value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
+            onChange={(event) =>
+              setTypeFilter(event.target.value)
+            }
             className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-700"
           >
             <option value="Semua">Semua Jenis</option>
             <option value="jalan_raya">Jalan Raya</option>
-            <option value="koridor_ekologis">Koridor Ekologis</option>
+            <option value="koridor_ekologis">
+              Koridor Ekologis
+            </option>
             <option value="perkebunan">Perkebunan</option>
             <option value="permukiman">Permukiman</option>
           </select>
@@ -173,16 +261,30 @@ export default function GeoZonesPage() {
 
         {/* Tabel */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] text-left text-sm">
+          <table className="w-full min-w-[1050px] text-left text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
-                <th className="px-5 py-4 font-medium">No.</th>
-                <th className="px-5 py-4 font-medium">Nama Zona</th>
-                <th className="px-5 py-4 font-medium">Jenis Zona</th>
-                <th className="px-5 py-4 font-medium">Latitude</th>
-                <th className="px-5 py-4 font-medium">Longitude</th>
-                <th className="px-5 py-4 font-medium">Radius (km)</th>
-                <th className="px-5 py-4 font-medium">Aksi</th>
+                <th className="px-5 py-4 font-medium">
+                  No.
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Nama Zona
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Jenis Zona
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Latitude
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Longitude
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Radius (km)
+                </th>
+                <th className="px-5 py-4 font-medium">
+                  Aksi
+                </th>
               </tr>
             </thead>
 
@@ -198,7 +300,10 @@ export default function GeoZonesPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
+                  <td
+                    colSpan={7}
+                    className="px-5 py-12 text-center"
+                  >
                     <p className="text-red-600">
                       Gagal mengambil data zona geografis.
                     </p>
@@ -244,15 +349,33 @@ export default function GeoZonesPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedZoneId(zone.zone_id)
-                          }
-                          className="font-medium text-green-700 hover:text-green-900"
-                        >
-                          Detail
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedZoneId(zone.zone_id)
+                            }
+                            className="font-medium text-green-700 hover:text-green-900"
+                          >
+                            Detail
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditForm(zone)}
+                            className="font-medium text-blue-600 hover:text-blue-800"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingZone(zone)}
+                            className="font-medium text-red-600 hover:text-red-800"
+                          >
+                            Hapus
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -275,10 +398,50 @@ export default function GeoZonesPage() {
 
         {/* Footer tabel */}
         <div className="border-t border-gray-200 px-5 py-4 text-sm text-gray-500">
-          Menampilkan {isLoading || error ? 0 : filteredZones.length} dari{" "}
-          {isLoading || error ? 0 : zones.length} zona
+          Menampilkan{" "}
+          {isLoading || error ? 0 : filteredZones.length}{" "}
+          dari {isLoading || error ? 0 : zones.length} zona
         </div>
       </section>
+
+      {/* Modal Form Create / Edit */}
+      {showForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeForm}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="zone-form-title"
+            className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5">
+              <h2
+                id="zone-form-title"
+                className="text-xl font-semibold text-gray-900"
+              >
+                {editingZone
+                  ? "Edit Zona"
+                  : "Tambah Zona"}
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                {editingZone
+                  ? "Perbarui informasi zona geografis."
+                  : "Masukkan informasi zona geografis baru."}
+              </p>
+            </div>
+
+            <GeoZoneForm
+              zone={editingZone}
+              onSuccess={handleFormSuccess}
+              onCancel={closeForm}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modal Detail Zona */}
       {selectedZoneId !== null && (
@@ -293,7 +456,6 @@ export default function GeoZonesPage() {
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* Header Modal */}
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2
@@ -318,81 +480,98 @@ export default function GeoZonesPage() {
               </button>
             </div>
 
-            {/* Loading */}
             {!selectedZone ? (
               <p className="py-8 text-center text-gray-500">
                 Data zona tidak ditemukan.
               </p>
             ) : (
               <>
-                {/* Isi Detail */}
                 <div className="mt-6 space-y-4">
                   <div>
-                    <p className="text-sm text-gray-500">ID Zona</p>
+                    <p className="text-sm text-gray-500">
+                      ID Zona
+                    </p>
                     <p className="mt-1 font-medium text-gray-900">
                       {selectedZone.zone_id}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Nama Zona</p>
+                    <p className="text-sm text-gray-500">
+                      Nama Zona
+                    </p>
                     <p className="mt-1 font-medium text-gray-900">
                       {selectedZone.zone_name}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Jenis Zona</p>
+                    <p className="text-sm text-gray-500">
+                      Jenis Zona
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {selectedZone.zone_type}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Latitude</p>
+                    <p className="text-sm text-gray-500">
+                      Latitude
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {formatValue(selectedZone.center_lat)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Longitude</p>
+                    <p className="text-sm text-gray-500">
+                      Longitude
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {formatValue(selectedZone.center_lon)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Radius (km)</p>
+                    <p className="text-sm text-gray-500">
+                      Radius (km)
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {formatValue(selectedZone.radius_km)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Dibuat oleh (ID)</p>
+                    <p className="text-sm text-gray-500">
+                      Dibuat oleh (ID)
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {formatValue(selectedZone.created_by)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">Tanggal Dibuat</p>
+                    <p className="text-sm text-gray-500">
+                      Tanggal Dibuat
+                    </p>
                     <p className="mt-1 text-gray-900">
                       {formatValue(selectedZone.created_at)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-500">GeoJSON</p>
+                    <p className="text-sm text-gray-500">
+                      GeoJSON
+                    </p>
 
                     <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
-                      {formatGeoJSON(selectedZone.polygon_geojson)}
+                      {formatGeoJSON(
+                        selectedZone.polygon_geojson,
+                      )}
                     </pre>
                   </div>
                 </div>
 
-                {/* Tombol Tutup */}
                 <div className="mt-6 flex justify-end">
                   <button
                     type="button"
@@ -404,6 +583,59 @@ export default function GeoZonesPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus */}
+      {deletingZone && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+          onClick={() => {
+            if (!deleteMutation.isPending) {
+              setDeletingZone(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-gray-900">
+              Hapus Zona?
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-600">
+              Apakah kamu yakin ingin menghapus zona{" "}
+              <span className="font-semibold text-gray-900">
+                {deletingZone.zone_name}
+              </span>
+              ? Data yang sudah dihapus tidak dapat dikembalikan.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingZone(null)}
+                disabled={deleteMutation.isPending}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleteMutation.isPending
+                  ? "Menghapus..."
+                  : "Ya, Hapus"}
+              </button>
+            </div>
           </div>
         </div>
       )}

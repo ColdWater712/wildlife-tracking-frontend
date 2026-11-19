@@ -14,7 +14,28 @@ import type {
 } from "@/types/tracking-device.type";
 
 const LOW_BATTERY_THRESHOLD = 20;
-const WEAK_SIGNAL_THRESHOLD = 30;
+const WEAK_SIGNAL_THRESHOLD = 3;
+
+export type TYPE_TRACKING_DEVICE_PAYLOAD = {
+  animal_id: number | null;
+  model: string;
+  installation_date: string | null;
+  battery_life_months: number | null;
+  battery_level: number | null;
+  signal_strength: number | null;
+  device_condition: DeviceCondition;
+};
+
+export type TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD = {
+  animal_id?: number | null;
+  model?: string;
+  installation_date?: string | null;
+  battery_life_months?: number | null;
+  battery_level?: number | null;
+  signal_strength?: number | null;
+  device_condition?: DeviceCondition;
+  is_active?: boolean;
+};
 
 type API_TRACKING_DEVICE = {
   device_id: number;
@@ -146,7 +167,6 @@ const sortDevices = (devices: TrackingDevice[]) =>
 
 const getSpeciesList = async (): Promise<TYPE_SPECIES[]> => {
   const response = await SPECIES_SERVICE.GET_ALL();
-
   return response.data.items;
 };
 
@@ -187,8 +207,35 @@ export const getTrackingDeviceById = async (
   return {
     success: true,
     message: "OK",
-    data: mapDeviceFromApi(device, speciesList),
+    data: device ? mapDeviceFromApi(device, speciesList) : null,
   };
+};
+
+export const createTrackingDevice = async (
+  payload: TYPE_TRACKING_DEVICE_PAYLOAD,
+): Promise<ApiResponse<API_TRACKING_DEVICE>> => {
+  return api.post<ApiResponse<API_TRACKING_DEVICE>>(
+    `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.DEVICES.CREATE}`,
+    { body: payload },
+  );
+};
+
+export const updateTrackingDevice = async (
+  deviceId: number,
+  payload: TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD,
+): Promise<ApiResponse<API_TRACKING_DEVICE>> => {
+  return api.put<ApiResponse<API_TRACKING_DEVICE>>(
+    `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.DEVICES.UPDATE(deviceId)}`,
+    { body: payload },
+  );
+};
+
+export const deleteTrackingDevice = async (
+  deviceId: number,
+): Promise<ApiResponse<null>> => {
+  return api.delete<ApiResponse<null>>(
+    `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.DEVICES.DELETE(deviceId)}`,
+  );
 };
 
 export const getDeviceAlerts = async (): Promise<

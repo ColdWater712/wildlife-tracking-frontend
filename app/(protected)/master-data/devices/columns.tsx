@@ -1,8 +1,15 @@
+
 import type { ColumnDef } from "@tanstack/react-table";
+import { Pencil, Trash2 } from "lucide-react";
+
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { BadgeVariant } from "@/components/ui/status-badge";
 import { formatDate } from "@/utils/format";
-import type { DeviceCondition, TrackingDevice } from "@/types/tracking-device.type";
+
+import type {
+  DeviceCondition,
+  TrackingDevice,
+} from "@/types/tracking-device.type";
 
 const CONDITION_LABEL: Record<DeviceCondition, string> = {
   normal: "Normal",
@@ -24,7 +31,15 @@ const batteryVariant = (level: number | null): BadgeVariant => {
   return "success";
 };
 
-export const getDeviceColumns = (): ColumnDef<TrackingDevice, unknown>[] => [
+type DeviceColumnActions = {
+  onEdit: (device: TrackingDevice) => void;
+  onDelete: (device: TrackingDevice) => void;
+};
+
+export const getDeviceColumns = ({
+  onEdit,
+  onDelete,
+}: DeviceColumnActions): ColumnDef<TrackingDevice, unknown>[] => [
   {
     accessorKey: "device_id",
     header: "ID Perangkat",
@@ -40,15 +55,23 @@ export const getDeviceColumns = (): ColumnDef<TrackingDevice, unknown>[] => [
     header: "Satwa",
     cell: ({ row }) =>
       row.original.animal ? (
-        <span className="text-zinc-800">{row.original.animal.animal_code}</span>
+        <span className="text-zinc-800">
+          {row.original.animal.animal_code}
+        </span>
       ) : (
-        <span className="text-xs text-zinc-400">Belum dipasangkan</span>
+        <span className="text-xs text-zinc-400">
+          Belum dipasangkan
+        </span>
       ),
   },
   {
     accessorKey: "model",
     header: "Model",
-    cell: ({ row }) => <span className="text-zinc-800">{row.original.model}</span>,
+    cell: ({ row }) => (
+      <span className="text-zinc-800">
+        {row.original.model}
+      </span>
+    ),
   },
   {
     accessorKey: "installation_date",
@@ -86,12 +109,34 @@ export const getDeviceColumns = (): ColumnDef<TrackingDevice, unknown>[] => [
   },
   {
     id: "actions",
-    header: "",
+    header: "Aksi",
     enableSorting: false,
     cell: ({ row }) => (
-      <span className="text-xs font-medium text-zinc-600">
-        Lihat {row.original.device_id}
-      </span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit(row.original);
+          }}
+          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+        >
+          <Pencil size={14} />
+          Edit
+        </button>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(row.original);
+          }}
+          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+        >
+          <Trash2 size={14} />
+          Hapus
+        </button>
+      </div>
     ),
   },
 ];

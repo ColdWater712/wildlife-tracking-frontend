@@ -32,6 +32,7 @@ export default function LoginPage() {
   const { showToast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const {
     register,
@@ -47,6 +48,8 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    setLoginError(null);
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -65,34 +68,12 @@ export default function LoginPage() {
           : null;
 
       if (!response.ok || record?.success !== true) {
-        const backendErrors =
-          typeof record?.errors === "object" &&
-          record.errors !== null &&
-          !Array.isArray(record.errors)
-            ? (record.errors as Record<string, string[]>)
-            : null;
-
-        const firstField = backendErrors
-          ? Object.keys(backendErrors)[0]
-          : null;
-
-        const firstMessage = firstField
-          ? backendErrors?.[firstField]?.[0]
-          : null;
-
-        const message =
-          firstField && firstMessage
-            ? `${firstField}: ${firstMessage}`
-            : typeof record?.message === "string"
-              ? record.message
-              : "Login gagal. Silakan coba lagi.";
-
-        showToast(message, "error");
+        setLoginError("Email atau password salah");
         return;
       }
 
       showToast(
-        typeof record?.message === "string"
+        typeof record.message === "string"
           ? record.message
           : "Login berhasil.",
         "success",
@@ -101,16 +82,13 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      showToast(
-        "Tidak dapat menghubungi server aplikasi.",
-        "error",
-      );
+      setLoginError("Tidak dapat menghubungi server aplikasi.");
     }
   };
 
   return (
-    <main className="min-h-screen w-full bg-white">
-      <div className="grid min-h-screen w-full overflow-hidden bg-white lg:grid-cols-2">
+    <main className="min-h-screen w-full overflow-x-hidden bg-white lg:h-screen lg:overflow-hidden">
+      <div className="grid min-h-screen w-full overflow-hidden bg-white lg:h-full lg:grid-cols-2">
         {/* Panel gambar */}
         <section className="relative hidden min-h-[300px] overflow-hidden bg-[#416e44] lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12">
           <div
@@ -162,7 +140,7 @@ export default function LoginPage() {
         </section>
 
         {/* Panel form login */}
-        <section className="flex items-center justify-center px-5 py-10 sm:px-10 sm:py-12 lg:px-12 xl:px-16">
+        <section className="flex items-center justify-center px-5 py-6 sm:px-10 sm:py-8 lg:px-12 lg:py-6 xl:px-16">
           <div className="w-full max-w-md">
             {/* Identitas untuk layar kecil */}
             <div className="mb-9 flex items-center gap-3 lg:hidden">
@@ -257,9 +235,7 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     aria-invalid={errors.password !== undefined}
                     aria-describedby={
-                      errors.password
-                        ? "password-error"
-                        : undefined
+                      errors.password ? "password-error" : undefined
                     }
                     {...register("password")}
                     placeholder="Masukkan kata sandi"
@@ -345,10 +321,19 @@ export default function LoginPage() {
                 disabled={isSubmitting}
                 className="mt-1 flex h-12 w-full items-center justify-center rounded-2xl bg-[#4d8050] px-4 text-sm font-semibold text-white shadow-lg shadow-[#4d8050]/15 transition hover:bg-[#416e44] focus:outline-none focus:ring-4 focus:ring-[#4d8050]/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting
-                  ? "Memproses..."
-                  : "Masuk ke Dashboard"}
+                {isSubmitting ? "Memproses..." : "Masuk"}
               </button>
+
+              {/* Pesan error login khusus halaman ini */}
+              {loginError && (
+                <p
+                  role="alert"
+                  aria-live="polite"
+                  className="text-center text-sm font-medium text-red-600"
+                >
+                  {loginError}
+                </p>
+              )}
             </form>
 
             <p className="mt-8 text-center text-xs leading-5 text-slate-400">

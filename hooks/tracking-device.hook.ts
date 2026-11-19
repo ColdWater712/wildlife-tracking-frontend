@@ -1,14 +1,33 @@
+
 "use client";
 
-import { useCallback } from "react";
 import {
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { getTrackingDevices, getTrackingDeviceById, getDeviceAlerts } from "@/services/tracking-device.service";
-import type { TrackingDevice, DeviceAlert, TrackingDeviceListParams } from "@/types/tracking-device.type";
+
+import {
+  getTrackingDevices,
+  getTrackingDeviceById,
+  getDeviceAlerts,
+  createTrackingDevice,
+  updateTrackingDevice,
+  deleteTrackingDevice,
+} from "@/services/tracking-device.service";
+
+import type {
+  TYPE_TRACKING_DEVICE_PAYLOAD,
+  TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD,
+} from "@/services/tracking-device.service";
+
+import type {
+  TrackingDevice,
+  DeviceAlert,
+  TrackingDeviceListParams,
+} from "@/types/tracking-device.type";
+
 import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
 import type { ApiResponse } from "@/types/api.type";
 
@@ -19,7 +38,25 @@ type TrackingDeviceGetAllResponse = {
 
 type TrackingDeviceApiResponse = ApiResponse<TrackingDevice[]>;
 
-export const useTrackingDevices = (params?: TrackingDeviceListParams) => {
+const invalidateTrackingDeviceQueries = async (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: ["tracking-devices"],
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ["tracking-devices-infinite"],
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ["device-alerts"],
+    }),
+  ]);
+};
+
+export const useTrackingDevices = (
+  params?: TrackingDeviceListParams,
+) => {
   return useQuery<TrackingDeviceApiResponse>({
     queryKey: ["tracking-devices", params],
     queryFn: () => getTrackingDevices(params),
@@ -32,12 +69,12 @@ export const useInfiniteTrackingDevices = (
   return useInfiniteQuery<TrackingDeviceApiResponse>({
     queryKey: ["tracking-devices-infinite", params],
     queryFn: ({ pageParam = 1 }) =>
-      getTrackingDevices({ ...params, page: pageParam as number } as TrackingDeviceListParams),
+      getTrackingDevices({
+        ...params,
+        page: pageParam as number,
+      } as TrackingDeviceListParams),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      // The backend doesn't provide pagination meta for tracking-devices
-      return undefined;
-    },
+    getNextPageParam: () => undefined,
   });
 };
 
@@ -53,5 +90,56 @@ export const useDeviceAlerts = () => {
   return useQuery<ApiResponse<DeviceAlert[]>>({
     queryKey: ["device-alerts"],
     queryFn: () => getDeviceAlerts(),
+  });
+};
+
+// CREATE TRACKING DEVICE
+export const useTrackingDeviceCreate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: TYPE_TRACKING_DEVICE_PAYLOAD) =>
+      createTrackingDevice(payload),
+
+    onSuccess: async () => {
+      await invalidateTrackingDeviceQueries(queryClient);
+    },
+  });
+};
+
+// UPDATE TRACKING DEVICE
+export const useTrackingDeviceUpdate = (deviceId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD) =>
+      updateTrackingDevice(deviceId, payload),
+
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateTrackingDeviceQueries(queryClient),
+        queryClient.invalidateQueries({
+          queryKey: ["tracking-devices", deviceId],
+        }),
+      ]);
+    },
+  });
+};
+
+// DELETE TRACKING DEVICE
+export const useTrackingDeviceDelete = (deviceId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => deleteTrackingDevice(deviceId),
+
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateTrackingDeviceQueries(queryClient),
+        queryClient.removeQueries({
+          queryKey: ["tracking-devices", deviceId],
+        }),
+      ]);
+    },
   });
 };
