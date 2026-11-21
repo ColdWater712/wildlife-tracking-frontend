@@ -20,6 +20,19 @@ export type TYPE_TRACKING_DEVICE = {
   last_recorded_at: string | null;
 };
 
+export type API_ANIMAL = {
+  animal_id: number;
+  species_id: number;
+  name: string;
+  birth_date: string | null;
+  gender: "male" | "female" | "unknown";
+  is_active: boolean;
+  species?: TYPE_ANIMAL["species"];
+  trackingDevice?: TYPE_TRACKING_DEVICE | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
 export type TYPE_ANIMAL = {
   animal_id: number;
   species_id: number;

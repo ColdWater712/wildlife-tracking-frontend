@@ -18,14 +18,11 @@ import {
 } from "@/services/device.service";
 
 import type {
+  DeviceAlert,
+  TrackingDevice,
+  TrackingDeviceListParams,
   TYPE_TRACKING_DEVICE_PAYLOAD,
   TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD,
-} from "@/services/device.service";
-
-import type {
-  TrackingDevice,
-  DeviceAlert,
-  TrackingDeviceListParams,
 } from "@/types/device.type";
 
 import type { ApiResponse } from "@/types/api.type";

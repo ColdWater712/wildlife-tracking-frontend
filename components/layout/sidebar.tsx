@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, LogOut, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { LogOut, X } from "lucide-react";
 import { NavIconGlyph } from "@/components/layout/nav-icon";
 import { NAV_SECTIONS, isRouteActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,6 @@ type SidebarProps = {
   user: SessionUser;
   onLogout: () => void;
   variant?: "desktop" | "mobile";
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
   onNavigate?: () => void;
   onClose?: () => void;
   isHidden?: boolean;
@@ -26,8 +24,6 @@ export function Sidebar({
   user,
   onLogout,
   variant = "desktop",
-  collapsed = false,
-  onToggleCollapse,
   onNavigate,
   onClose,
   isHidden = false,
@@ -35,9 +31,26 @@ export function Sidebar({
   const pathname = usePathname();
   const sections = NAV_SECTIONS[user.role];
   const isMobile = variant === "mobile";
-  const showLabels = !isMobile && !collapsed;
+
+  const [hovered, setHovered] = useState(false);
+  const leaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showLabels = !isMobile && hovered;
   const tabIndex = isHidden ? -1 : undefined;
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleMouseEnter = () => {
+    if (isMobile) return;
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    setHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (isMobile) return;
+    leaveTimeoutRef.current = setTimeout(() => setHovered(false), 200);
+  };
 
   useEffect(() => {
     if (isMobile && !isHidden) {
@@ -45,35 +58,42 @@ export function Sidebar({
     }
   }, [isMobile, isHidden]);
 
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || user.name.slice(0, 1).toUpperCase();
+  useEffect(() => {
+    return () => {
+      if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+    };
+  }, []);
+
+  const initials =
+    user.name
+      .split(" ")
+      .map((n) => n[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || user.name.slice(0, 1).toUpperCase();
 
   return (
     <aside
       aria-label="Navigasi utama"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "flex h-full min-h-0 flex-col bg-surface",
+        "group flex h-full min-h-0 flex-col bg-surface",
         isMobile
           ? "w-full"
           : cn(
-              "sticky top-0 z-30 h-dvh shrink-0 transition-[width] duration-300 ease-out",
-              collapsed ? "w-[4.75rem]" : "w-72",
+              "sticky top-0 z-30 h-dvh shrink-0 border-r border-line transition-[width] duration-300 ease-out",
+              hovered ? "w-72" : "w-[4.75rem]",
             ),
       )}
     >
-      {/* Header / Brand */}
       <div
         className={cn(
           "relative flex h-20 shrink-0 items-center overflow-hidden border-b border-line",
           showLabels ? "gap-3 px-5" : "justify-center px-2",
         )}
       >
-        {/* Subtle decorative gradient */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-soft/40 via-transparent to-transparent"
@@ -81,7 +101,7 @@ export function Sidebar({
 
         <div
           className={cn(
-            "relative shrink-0 overflow-hidden rounded-xl ring-1 ring-line",
+            "relative shrink-0 overflow-hidden rounded-xl ring-1 ring-line transition-all duration-300",
             showLabels ? "size-11" : "size-10",
           )}
         >
@@ -120,43 +140,6 @@ export function Sidebar({
         ) : null}
       </div>
 
-      {/* Collapse toggle (desktop only) */}
-      {!isMobile && onToggleCollapse ? (
-        <div className="relative flex shrink-0 items-center px-3 py-2">
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? "Perluas navigasi" : "Ciutkan navigasi"}
-            title={collapsed ? "Perluas navigasi" : "Ciutkan navigasi"}
-            className={cn(
-              "group inline-flex items-center rounded-full border border-line bg-surface text-ink-soft shadow-sm transition",
-              "hover:border-primary/50 hover:bg-primary-soft hover:text-primary",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
-              collapsed
-                ? "mx-auto size-9 justify-center p-0"
-                : "ml-auto gap-1.5 px-3 py-1.5 text-xs font-semibold",
-            )}
-          >
-            {collapsed ? (
-              <ChevronRight
-                aria-hidden="true"
-                className="size-4 transition-transform group-hover:translate-x-0.5"
-              />
-            ) : (
-              <>
-                <ChevronLeft
-                  aria-hidden="true"
-                  className="size-4 transition-transform group-hover:-translate-x-0.5"
-                />
-                <span>Ciutkan</span>
-              </>
-            )}
-          </button>
-        </div>
-      ) : null}
-
-      {/* Navigation */}
       <nav
         aria-label="Daftar halaman"
         className={cn(
@@ -192,7 +175,7 @@ export function Sidebar({
                       aria-label={showLabels ? undefined : item.label}
                       title={showLabels ? undefined : item.label}
                       className={cn(
-                        "group relative flex items-center rounded-xl text-sm font-medium transition-all duration-200",
+                        "group/item relative flex items-center rounded-xl text-sm font-medium transition-all duration-200",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
                         showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-3",
                         active
@@ -212,8 +195,8 @@ export function Sidebar({
                         <span
                           aria-hidden="true"
                           className={cn(
-                            "absolute left-0 top-1/2 h-0 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-all duration-200 group-hover:h-5",
-                            !showLabels && "group-hover:h-4",
+                            "absolute left-0 top-1/2 h-0 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-all duration-200 group-hover/item:h-5",
+                            !showLabels && "group-hover/item:h-4",
                           )}
                         />
                       )}
@@ -221,7 +204,7 @@ export function Sidebar({
                         icon={item.icon}
                         className={cn(
                           "size-5 shrink-0 transition-transform duration-200",
-                          "group-hover:scale-110",
+                          "group-hover/item:scale-110",
                           active && "drop-shadow-sm",
                         )}
                       />
@@ -237,7 +220,6 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* Profile & Logout */}
       <div
         className={cn(
           "shrink-0 border-t border-line bg-gradient-to-b from-transparent to-surface-muted/40",

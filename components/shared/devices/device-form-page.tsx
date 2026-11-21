@@ -24,7 +24,7 @@ export function DeviceFormPage({ recordId }: DeviceFormPageProps) {
     <FormPage
       eyebrow="Master Data"
       title={isEditMode ? "Ubah Perangkat" : "Tambah Perangkat"}
-      description="Kontrak penulisan perangkat mengikuti TrackingDeviceController Laravel."
+      description="Kelola identitas, kondisi, dan performa perangkat pelacak satwa."
       backHref="/devices"
       isLoading={isEditMode && detailQuery.isPending}
       loadingLabel="Memuat data perangkat..."
@@ -32,13 +32,13 @@ export function DeviceFormPage({ recordId }: DeviceFormPageProps) {
       notFound={
         isEditMode &&
         !detailQuery.isPending &&
-        (record === null || recordId === undefined || !Number.isFinite(recordId))
+        !detailQuery.isError &&
+        record === null
       }
       notFoundTitle="Perangkat tidak ditemukan"
       onRetry={isEditMode ? () => void detailQuery.refetch() : undefined}
     >
       <DeviceForm
-        standalone
         device={isEditMode ? record : null}
         onSuccess={() => router.push("/devices")}
         onCancel={() => router.push("/devices")}

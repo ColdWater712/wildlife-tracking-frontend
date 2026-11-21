@@ -1,25 +1,6 @@
 import { loginAction, logoutAction } from "@/services/backend-actions";
 import type { LogoutActionResult } from "@/types/backend-action.type";
-import type {
-  TYPE_LOGIN_REQUEST,
-  TYPE_LOGIN_SESSION_USER,
-} from "@/types/auth.type";
-
-export type LoginAttempt =
-  | {
-      ok: true;
-      status: number;
-      message: string;
-      errors: null;
-      user: TYPE_LOGIN_SESSION_USER;
-    }
-  | {
-      ok: false;
-      status: number;
-      message: string;
-      errors: Record<string, string[]> | null;
-      user: null;
-    };
+import type { LoginAttempt, TYPE_LOGIN_REQUEST } from "@/types/auth.type";
 
 export const loginRequest = async (
   payload: TYPE_LOGIN_REQUEST,

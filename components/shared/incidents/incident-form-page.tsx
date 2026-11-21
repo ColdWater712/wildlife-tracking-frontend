@@ -24,7 +24,7 @@ export function IncidentFormPage({ recordId }: IncidentFormPageProps) {
     <FormPage
       eyebrow="Operasional"
       title={isEditMode ? "Ubah Laporan Insiden" : "Tambah Laporan Insiden"}
-      description="Data insiden disimpan langsung ke endpoint Laravel /api/incidents."
+      description="Dokumentasikan insiden lapangan dan hubungkan dengan data satwa terkait."
       backHref="/incidents"
       isLoading={isEditMode && detailQuery.isPending}
       loadingLabel="Memuat laporan insiden..."
@@ -32,7 +32,8 @@ export function IncidentFormPage({ recordId }: IncidentFormPageProps) {
       notFound={
         isEditMode &&
         !detailQuery.isPending &&
-        (record === null || recordId === undefined || !Number.isFinite(recordId))
+        !detailQuery.isError &&
+        record === null
       }
       notFoundTitle="Laporan insiden tidak ditemukan"
       onRetry={isEditMode ? () => void detailQuery.refetch() : undefined}

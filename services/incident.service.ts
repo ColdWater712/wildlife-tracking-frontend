@@ -2,49 +2,13 @@ import { api, unwrapData } from "@/services/api";
 import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
 import type {
+  ApiIncidentReport,
+  CreateIncidentReportPayload,
   IncidentReport,
   IncidentReportListParams,
   IncidentSyncStatus,
+  UpdateIncidentReportPayload,
 } from "@/types/incident.type";
-
-export type CreateIncidentReportPayload = {
-  incident_type: string;
-  description: string;
-  timestamp: string;
-  latitude: number;
-  longitude: number;
-  location?: string | null;
-  animal_id?: number | null;
-  species_id?: number | null;
-  status?: string;
-};
-
-export type UpdateIncidentReportPayload = Partial<CreateIncidentReportPayload>;
-
-type ApiIncidentReport = {
-  report_id: number;
-  user_id?: number | null;
-  reported_by?: number | null;
-  incident_type: string;
-  description: string;
-  timestamp: string;
-  latitude: number | string | null;
-  longitude: number | string | null;
-  location?: string | null;
-  animal_id?: number | null;
-  species_id?: number | null;
-  status?: string;
-  sync_status?: string;
-  animal?: {
-    animal_id: number;
-    name?: string;
-    animal_code?: string;
-  } | null;
-  species?: {
-    species_id: number;
-    common_name?: string;
-  } | null;
-};
 
 const mapSyncStatus = (value: string | undefined): IncidentSyncStatus => {
   if (value === "synced") return "synced";

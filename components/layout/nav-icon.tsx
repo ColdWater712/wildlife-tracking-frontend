@@ -10,6 +10,8 @@ const ICON_PATHS: Record<NavIcon, string> = {
   device: "M7 3h10v18H7zM10 18h4M10 6h4",
   zone: "M12 2 3 7v10l9 5 9-5V7l-9-5zM12 22V12l9-5M12 12 3 7",
   chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  ai: "M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+  report: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
 };
 
 export function NavIconGlyph({ icon, className }: { icon: NavIcon; className?: string }) {

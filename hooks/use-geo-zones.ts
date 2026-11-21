@@ -17,10 +17,9 @@ import {
 
 import type {
   GeoZoneCreatePayload,
+  GeoZoneListParams,
   GeoZoneUpdatePayload,
-} from "@/services/geo-zone.service";
-
-import type { GeoZoneListParams } from "@/types/geo-zone.type";
+} from "@/types/geo-zone.type";
 
 export function useGeoZones(params?: GeoZoneListParams) {
   return useQuery({

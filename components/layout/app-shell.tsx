@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useState } from "react";
 import type { ReactNode } from "react";
 
 import { useLogout } from "@/hooks/use-logout";
@@ -18,53 +18,12 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-const SIDEBAR_STORAGE_KEY = "wms-sidebar-collapsed";
-const sidebarListeners = new Set<() => void>();
-let sidebarPreference: boolean | null = null;
-
-const subscribeSidebar = (listener: () => void) => {
-  sidebarListeners.add(listener);
-
-  return () => {
-    sidebarListeners.delete(listener);
-  };
-};
-
-const getSidebarSnapshot = () => {
-  if (typeof window === "undefined") return false;
-
-  if (sidebarPreference === null) {
-    const storedValue = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    sidebarPreference =
-      storedValue === null
-        ? window.matchMedia("(max-width: 1023px)").matches
-        : storedValue === "true";
-  }
-
-  return sidebarPreference;
-};
-
-const getServerSidebarSnapshot = () => false;
-
 export function AppShell({ user, children }: AppShellProps) {
   const logout = useLogout();
   const pathname = usePathname();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
-  const isSidebarCollapsed = useSyncExternalStore(
-    subscribeSidebar,
-    getSidebarSnapshot,
-    getServerSidebarSnapshot,
-  );
 
   const closeMobileNav = useCallback(() => setIsMobileNavOpen(false), []);
-  const toggleSidebar = useCallback(() => {
-    sidebarPreference = !getSidebarSnapshot();
-    window.localStorage.setItem(
-      SIDEBAR_STORAGE_KEY,
-      String(sidebarPreference),
-    );
-    sidebarListeners.forEach((listener) => listener());
-  }, []);
 
   if (!canAccessRoute(user.role, pathname)) {
     const allowedPath = getDefaultRouteForRole(user.role);
@@ -97,12 +56,7 @@ export function AppShell({ user, children }: AppShellProps) {
       </a>
 
       <div className="hidden shrink-0 md:block">
-        <Sidebar
-          user={user}
-          onLogout={logout}
-          collapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-        />
+        <Sidebar user={user} onLogout={logout} />
       </div>
 
       <MobileNav
@@ -117,8 +71,6 @@ export function AppShell({ user, children }: AppShellProps) {
           user={user}
           onLogout={logout}
           onMenuOpen={() => setIsMobileNavOpen(true)}
-          onToggleSidebar={toggleSidebar}
-          isSidebarCollapsed={isSidebarCollapsed}
         />
         <main
           id="main-content"

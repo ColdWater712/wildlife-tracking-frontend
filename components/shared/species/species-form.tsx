@@ -4,21 +4,28 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
+import { useToast } from "@/components/providers/toast-provider";
 import { Button } from "@/components/ui/button";
 import {
   FormActions,
   FormAlert,
   FormField,
+  FormGrid,
+  FormSection,
   SelectInput,
   TextInput,
 } from "@/components/ui/form";
-import { Modal } from "@/components/ui/modal";
-import { Panel, SectionHeader } from "@/components/ui/panel";
-import type {
-  TYPE_CONSERVATION_STATUS,
-  TYPE_SPECIES,
-  TYPE_SPECIES_PAYLOAD,
-} from "@/types/species.type";
+import {
+  useSpeciesCreate,
+  useSpeciesUpdate,
+} from "@/hooks/use-species";
+import {
+  firstIssueMessage,
+  issuesToFieldErrors,
+  type FormErrors,
+} from "@/lib/form";
+import { formatApiError, getApiFieldErrors } from "@/services/api";
+import type { TYPE_SPECIES, TYPE_SPECIES_PAYLOAD } from "@/types/species.type";
 import {
   TYPE_CONSERVATION_STATUS_LABELS,
   TYPE_CONSERVATION_STATUSES,
@@ -26,13 +33,11 @@ import {
 
 type SpeciesFormProps = {
   species: TYPE_SPECIES | null;
-  isSaving: boolean;
-  errorMessage: string;
-  fieldErrors?: Record<string, string>;
-  onClose: () => void;
-  onSubmit: (payload: TYPE_SPECIES_PAYLOAD) => void;
-  standalone?: boolean;
+  onSuccess: () => void;
+  onCancel: () => void;
 };
+
+type FieldName = keyof TYPE_SPECIES_PAYLOAD;
 
 const INITIAL_SPECIES_FORM: TYPE_SPECIES_PAYLOAD = {
   common_name: "",
@@ -40,13 +45,7 @@ const INITIAL_SPECIES_FORM: TYPE_SPECIES_PAYLOAD = {
   conservation_status: "Vulnerable",
 };
 
-type FieldErrors = {
-  common_name?: string;
-  scientific_name?: string;
-  conservation_status?: string;
-};
-
-const SPECIES_FIELDS: (keyof FieldErrors)[] = [
+const SPECIES_FIELDS: FieldName[] = [
   "common_name",
   "scientific_name",
   "conservation_status",
@@ -66,9 +65,9 @@ const speciesSchema = z.object({
   conservation_status: z
     .string()
     .refine(
-      (value): value is TYPE_CONSERVATION_STATUS =>
+      (value) =>
         TYPE_CONSERVATION_STATUSES.includes(
-          value as TYPE_CONSERVATION_STATUS,
+          value as TYPE_SPECIES_PAYLOAD["conservation_status"],
         ),
       "Status konservasi tidak valid.",
     ),
@@ -76,14 +75,15 @@ const speciesSchema = z.object({
 
 export function SpeciesForm({
   species,
-  isSaving,
-  errorMessage,
-  fieldErrors = {},
-  onClose,
-  onSubmit,
-  standalone = false,
+  onSuccess,
+  onCancel,
 }: SpeciesFormProps) {
-  const [formData, setFormData] = useState<TYPE_SPECIES_PAYLOAD>(() =>
+  const isEditMode = Boolean(species);
+  const { showToast } = useToast();
+  const createMutation = useSpeciesCreate();
+  const updateMutation = useSpeciesUpdate(species?.species_id ?? 0);
+
+  const [form, setForm] = useState<TYPE_SPECIES_PAYLOAD>(() =>
     species
       ? {
           common_name: species.common_name,
@@ -92,160 +92,172 @@ export function SpeciesForm({
         }
       : INITIAL_SPECIES_FORM,
   );
-  const [localErrors, setLocalErrors] = useState<FieldErrors>({});
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors<FieldName>>({});
 
-  const errors: FieldErrors = {
-    common_name: localErrors.common_name ?? fieldErrors.common_name,
-    scientific_name: localErrors.scientific_name ?? fieldErrors.scientific_name,
-    conservation_status:
-      localErrors.conservation_status ?? fieldErrors.conservation_status,
+  const isPending =
+    createMutation.isPending || updateMutation.isPending;
+  const mutationError = isEditMode
+    ? updateMutation.error
+    : createMutation.error;
+  const summaryMessage =
+    validationError ??
+    (mutationError
+      ? formatApiError(
+          mutationError,
+          isEditMode
+            ? "Gagal memperbarui spesies."
+            : "Gagal menambahkan spesies.",
+        )
+      : null);
+
+  const setField = <K extends FieldName>(key: K, value: TYPE_SPECIES_PAYLOAD[K]) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+    setValidationError(null);
+    setFieldErrors((previous) => ({ ...previous, [key]: undefined }));
   };
 
-  const clearError = (field: keyof FieldErrors) => {
-    setLocalErrors((previous) => ({ ...previous, [field]: undefined }));
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (isSaving) return;
+    if (isPending) return;
 
-    const parsed = speciesSchema.safeParse(formData);
+    setValidationError(null);
+    setFieldErrors({});
+
+    const parsed = speciesSchema.safeParse(form);
 
     if (!parsed.success) {
-      const nextErrors: FieldErrors = {};
-
-      for (const issue of parsed.error.issues) {
-        const field = String(
-          issue.path[0] ?? "",
-        ) as keyof FieldErrors;
-
-        if (SPECIES_FIELDS.includes(field)) {
-          nextErrors[field] = issue.message;
-        }
-      }
-
-      setLocalErrors(nextErrors);
+      setFieldErrors(issuesToFieldErrors(parsed.error.issues, SPECIES_FIELDS));
+      setValidationError(
+        firstIssueMessage(parsed.error.issues, "Periksa kembali isian form."),
+      );
       return;
     }
 
-    setLocalErrors({});
-    onSubmit(parsed.data);
+    const payload = parsed.data as TYPE_SPECIES_PAYLOAD;
+
+    try {
+      const response = isEditMode
+        ? await updateMutation.mutateAsync(payload)
+        : await createMutation.mutateAsync(payload);
+
+      showToast(
+        response.message ??
+          (isEditMode
+            ? "Data spesies berhasil diperbarui."
+            : "Spesies berhasil ditambahkan."),
+        "success",
+      );
+      onSuccess();
+    } catch (error) {
+      setFieldErrors(getApiFieldErrors(error) as FormErrors<FieldName>);
+      showToast(
+        formatApiError(
+          error,
+          isEditMode
+            ? "Gagal memperbarui spesies."
+            : "Gagal menambahkan spesies.",
+        ),
+        "error",
+      );
+    }
   };
 
-  const form = (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <FormField
-        label="Nama Umum"
-        htmlFor="common_name"
-        required
-        error={errors.common_name}
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      <FormSection
+        title="Identitas Spesies"
+        description="Gunakan nama umum dan nama ilmiah sesuai data taksonomi."
       >
-        <TextInput
-          id="common_name"
-          type="text"
-          value={formData.common_name}
-          onChange={(event) => {
-            setFormData((previous) => ({
-              ...previous,
-              common_name: event.target.value,
-            }));
-            clearError("common_name");
-          }}
-          maxLength={100}
-          placeholder="Contoh: Harimau Sumatra"
-          invalid={errors.common_name !== undefined}
-        />
-      </FormField>
+        <FormGrid>
+          <FormField
+            label="Nama Umum"
+            htmlFor="common_name"
+            required
+            error={fieldErrors.common_name}
+          >
+            <TextInput
+              id="common_name"
+              required
+              maxLength={100}
+              value={form.common_name}
+              onChange={(event) => setField("common_name", event.target.value)}
+              placeholder="Contoh: Harimau Sumatra"
+              invalid={fieldErrors.common_name !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
 
-      <FormField
-        label="Nama Ilmiah"
-        htmlFor="scientific_name"
-        required
-        error={errors.scientific_name}
-      >
-        <TextInput
-          id="scientific_name"
-          type="text"
-          value={formData.scientific_name}
-          onChange={(event) => {
-            setFormData((previous) => ({
-              ...previous,
-              scientific_name: event.target.value,
-            }));
-            clearError("scientific_name");
-          }}
-          maxLength={150}
-          placeholder="Contoh: Panthera tigris sumatrae"
-          invalid={errors.scientific_name !== undefined}
-          className="italic"
-        />
-      </FormField>
+          <FormField
+            label="Nama Ilmiah"
+            htmlFor="scientific_name"
+            required
+            error={fieldErrors.scientific_name}
+          >
+            <TextInput
+              id="scientific_name"
+              required
+              maxLength={150}
+              value={form.scientific_name}
+              onChange={(event) =>
+                setField("scientific_name", event.target.value)
+              }
+              placeholder="Contoh: Panthera tigris sumatrae"
+              invalid={fieldErrors.scientific_name !== undefined}
+              disabled={isPending}
+              className="italic"
+            />
+          </FormField>
+        </FormGrid>
+      </FormSection>
 
-      <FormField
-        label="Status Konservasi"
-        htmlFor="conservation_status"
-        required
-        error={errors.conservation_status}
+      <FormSection
+        title="Klasifikasi"
+        description="Status konservasi mengikuti kategori yang digunakan backend."
       >
-        <SelectInput
-          id="conservation_status"
-          value={formData.conservation_status}
-          onChange={(event) => {
-            setFormData((previous) => ({
-              ...previous,
-              conservation_status: event.target
-                .value as TYPE_CONSERVATION_STATUS,
-            }));
-            clearError("conservation_status");
-          }}
-          invalid={errors.conservation_status !== undefined}
+        <FormField
+          label="Status Konservasi"
+          htmlFor="conservation_status"
+          required
+          error={fieldErrors.conservation_status}
         >
-          {TYPE_CONSERVATION_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {TYPE_CONSERVATION_STATUS_LABELS[status]}
-            </option>
-          ))}
-        </SelectInput>
-      </FormField>
+          <SelectInput
+            id="conservation_status"
+            required
+            value={form.conservation_status}
+            onChange={(event) =>
+              setField(
+                "conservation_status",
+                event.target.value as TYPE_SPECIES_PAYLOAD["conservation_status"],
+              )
+            }
+            invalid={fieldErrors.conservation_status !== undefined}
+            disabled={isPending}
+          >
+            {TYPE_CONSERVATION_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {TYPE_CONSERVATION_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </SelectInput>
+        </FormField>
+      </FormSection>
 
-      {errorMessage !== "" ? <FormAlert message={errorMessage} /> : null}
+      {summaryMessage ? <FormAlert message={summaryMessage} /> : null}
 
       <FormActions>
-        <Button variant="outline" onClick={onClose} disabled={isSaving}>
+        <Button variant="outline" onClick={onCancel} disabled={isPending}>
           Batal
         </Button>
-        <Button type="submit" loading={isSaving}>
-          {isSaving
+        <Button type="submit" loading={isPending}>
+          {isPending
             ? "Menyimpan..."
-            : species
+            : isEditMode
               ? "Simpan Perubahan"
               : "Tambah Spesies"}
         </Button>
       </FormActions>
     </form>
-  );
-
-  if (standalone) {
-    return (
-      <Panel>
-        <SectionHeader
-          title={species ? "Ubah Spesies" : "Tambah Spesies"}
-          description="Lengkapi identitas spesies sesuai data taksonomi."
-        />
-        {form}
-      </Panel>
-    );
-  }
-
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={species ? "Edit Data Spesies" : "Tambah Spesies Baru"}
-      description="Lengkapi identitas spesies sesuai data taksonomi."
-    >
-      {form}
-    </Modal>
   );
 }

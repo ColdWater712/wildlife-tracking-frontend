@@ -15,9 +15,10 @@ import {
 } from "@/services/incident.service";
 import type {
   CreateIncidentReportPayload,
+  IncidentReport,
+  IncidentReportListParams,
   UpdateIncidentReportPayload,
-} from "@/services/incident.service";
-import type { IncidentReport, IncidentReportListParams } from "@/types/incident.type";
+} from "@/types/incident.type";
 import type { ApiResponse } from "@/types/api.type";
 
 type IncidentReportApiResponse = ApiResponse<IncidentReport[]>;

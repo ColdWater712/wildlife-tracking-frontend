@@ -23,6 +23,19 @@ export const formatDate = (value: DateValue) => {
   }).format(date);
 };
 
+export const formatDateTime = (value: DateValue) => {
+  const date = getValidDate(value);
+  if (!date) return value ?? "-";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
 export const formatDisplayValue = (
   value: number | string | null | undefined,
 ) => {

@@ -41,10 +41,11 @@ export function FormPage({
         eyebrow={eyebrow}
         title={title}
         description={description}
+        className="mb-4"
         actions={
           <Link
             href={backHref}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft transition hover:border-primary hover:text-primary"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft transition hover:border-primary hover:bg-primary-soft hover:text-primary"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
             Kembali

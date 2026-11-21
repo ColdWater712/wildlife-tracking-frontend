@@ -1,25 +1,18 @@
 import { forwardBackendAction } from "@/services/backend-actions";
 import { resolveErrorKind } from "@/types/api.type";
-import type { ApiErrorKind, ApiErrorState, ApiResponse } from "@/types/api.type";
+import type {
+  ApiClient,
+  ApiClientConfig,
+  ApiErrorKind,
+  ApiErrorState,
+  ApiResponse,
+  BlobResponse,
+  HttpMethod,
+  RequestOptions,
+} from "@/types/api.type";
+import type { BackendActionResult } from "@/types/backend-action.type";
 
 export { resolveErrorKind };
-export type { ApiErrorKind, ApiErrorState, ApiResponse };
-
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-export type RequestOptions = {
-  body?: unknown;
-  bodyText?: string;
-  params?: Record<string, string | number | boolean | undefined | null>;
-  headers?: Record<string, string>;
-  token?: string;
-  timeoutMs?: number;
-};
-
-export type ApiClientConfig = {
-  baseUrl?: string;
-  defaultHeaders?: Record<string, string>;
-};
 
 const DEFAULT_TIMEOUT_MS = 10000;
 const FALLBACK_BASE_URL = "http://127.0.0.1:8000/api";
@@ -63,8 +56,9 @@ const buildUrl = (config: ApiClientConfig, path: string): string => {
 const resolveBody = (
   method: HttpMethod,
   options: RequestOptions,
-): string | undefined => {
+): BodyInit | undefined => {
   if (method === "GET") return undefined;
+  if (options.formData) return options.formData;
   if (options.bodyText !== undefined) return options.bodyText;
   if (options.body === undefined) return undefined;
   return JSON.stringify(options.body);
@@ -136,7 +130,40 @@ export class ApiError extends Error {
   }
 }
 
-export const createApiClient = (config: ApiClientConfig = {}) => {
+const normalizeRequestError = (
+  error: unknown,
+  path: string,
+  timeoutMs: number,
+): never => {
+  if (error instanceof ApiError) throw error;
+
+  if (error instanceof DOMException && error.name === "AbortError") {
+    throw new ApiError(
+      0,
+      "network",
+      `Permintaan ke ${path} melewati batas waktu ${timeoutMs}ms.`,
+    );
+  }
+
+  throw new ApiError(
+    0,
+    "network",
+    "Tidak dapat terhubung ke server. Pastikan API backend berjalan.",
+  );
+};
+
+const decodeBase64ToBytes = (value: string): Uint8Array<ArrayBuffer> => {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+};
+
+export const createApiClient = (config: ApiClientConfig = {}): ApiClient => {
   const requestRaw = async (
     method: HttpMethod,
     path: string,
@@ -149,7 +176,7 @@ export const createApiClient = (config: ApiClientConfig = {}) => {
     try {
       const headers: Record<string, string> = {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        ...(options.formData ? {} : { "Content-Type": "application/json" }),
         ...config.defaultHeaders,
         ...options.headers,
       };
@@ -199,20 +226,46 @@ export const createApiClient = (config: ApiClientConfig = {}) => {
 
       return body as T;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
+      return normalizeRequestError(
+        error,
+        path,
+        options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      );
+    }
+  };
 
-      if (error instanceof DOMException && error.name === "AbortError") {
+  const getBlob = async (
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<BlobResponse> => {
+    try {
+      const response = await requestRaw("GET", path, options);
+
+      if (!response.ok) {
+        const body = await readJsonResponse(response);
         throw new ApiError(
-          0,
-          "network",
-          `Permintaan ke ${path} melewati batas waktu ${options.timeoutMs ?? DEFAULT_TIMEOUT_MS}ms.`,
+          response.status,
+          resolveErrorKind(response.status),
+          extractApiMessage(
+            body,
+            `Permintaan gagal dengan status ${response.status}.`,
+          ),
+          extractApiErrors(body),
         );
       }
 
-      throw new ApiError(
-        0,
-        "network",
-        "Tidak dapat terhubung ke server. Pastikan API backend berjalan.",
+      const blob = await response.blob();
+      const contentType =
+        response.headers.get("content-type") ??
+        blob.type ??
+        "application/octet-stream";
+
+      return { blob, contentType };
+    } catch (error) {
+      return normalizeRequestError(
+        error,
+        path,
+        options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       );
     }
   };
@@ -220,6 +273,7 @@ export const createApiClient = (config: ApiClientConfig = {}) => {
   return {
     request,
     requestRaw,
+    getBlob,
     get: <T>(path: string, options?: RequestOptions): Promise<T> =>
       request<T>("GET", path, options),
     post: <T>(path: string, options?: RequestOptions): Promise<T> =>
@@ -233,12 +287,8 @@ export const createApiClient = (config: ApiClientConfig = {}) => {
   };
 };
 
-export type ApiClient = ReturnType<typeof createApiClient>;
-
 export const createServerApiClient = (baseUrl: string): ApiClient =>
   createApiClient({ baseUrl });
-
-type BackendActionResult = Awaited<ReturnType<typeof forwardBackendAction>>;
 
 const runBackendAction = async (
   method: HttpMethod,
@@ -252,6 +302,7 @@ const runBackendAction = async (
       params: options.params,
       body: options.body,
       bodyText: options.bodyText,
+      formData: options.formData,
       headers: options.headers,
       timeoutMs: options.timeoutMs,
     });
@@ -299,15 +350,47 @@ const createActionApiClient = (): ApiClient => {
       return new Response(null, { status: result.status });
     }
 
+    if (result.base64) {
+      return new Response(decodeBase64ToBytes(result.base64).buffer, {
+        status: result.status,
+        headers: {
+          "Content-Type": result.contentType ?? "application/octet-stream",
+        },
+      });
+    }
+
     return new Response(JSON.stringify(result.body), {
       status: result.status,
       headers: { "Content-Type": "application/json" },
     });
   };
 
+  const getBlob = async (
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<BlobResponse> => {
+    const result = await runBackendAction("GET", path, options);
+
+    if (!result.ok) throw toActionApiError(result);
+
+    if (!result.base64) {
+      throw new ApiError(0, "unknown", "Respons file tidak dikenali.");
+    }
+
+    const contentType = result.contentType ?? "application/octet-stream";
+
+    return {
+      blob: new Blob([decodeBase64ToBytes(result.base64).buffer], {
+        type: contentType,
+      }),
+      contentType,
+    };
+  };
+
   return {
     request,
     requestRaw,
+    getBlob,
     get: <T>(path: string, options?: RequestOptions): Promise<T> =>
       request<T>("GET", path, options),
     post: <T>(path: string, options?: RequestOptions): Promise<T> =>

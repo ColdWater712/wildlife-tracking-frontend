@@ -4,25 +4,12 @@ import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
 
 import type {
+  API_ANIMAL,
   TYPE_ANIMAL,
   TYPE_ANIMAL_GET_ALL_RESPONSE,
   TYPE_ANIMAL_GET_BY_ID_RESPONSE,
   TYPE_ANIMAL_PAYLOAD,
-  TYPE_TRACKING_DEVICE,
 } from "@/types/animal.type";
-
-type API_ANIMAL = {
-  animal_id: number;
-  species_id: number;
-  name: string;
-  birth_date: string | null;
-  gender: "male" | "female" | "unknown";
-  is_active: boolean;
-  species?: TYPE_ANIMAL["species"];
-  trackingDevice?: TYPE_TRACKING_DEVICE | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
 
 const mapAnimalFromApi = (animal: API_ANIMAL): TYPE_ANIMAL => ({
   animal_id: animal.animal_id,

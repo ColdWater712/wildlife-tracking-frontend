@@ -43,7 +43,7 @@ export function FormField({
   children,
 }: FormFieldProps) {
   return (
-    <div className={cn("flex flex-col", className)}>
+    <div className={cn("flex min-w-0 flex-col", className)}>
       <label htmlFor={htmlFor} className="ui-label">
         {label}
         {required ? (
@@ -60,6 +60,103 @@ export function FormField({
       ) : null}
       {error !== undefined ? (
         <p id={`${htmlFor}-error`} role="alert" className="ui-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+type FormGridProps = {
+  children: ReactNode;
+  columns?: 1 | 2 | 3;
+  className?: string;
+};
+
+const GRID_COLUMNS: Record<NonNullable<FormGridProps["columns"]>, string> = {
+  1: "grid-cols-1",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 lg:grid-cols-3",
+};
+
+export function FormGrid({
+  children,
+  columns = 2,
+  className,
+}: FormGridProps) {
+  return (
+    <div
+      className={cn("grid grid-cols-1 gap-4", GRID_COLUMNS[columns], className)}
+    >
+      {children}
+    </div>
+  );
+}
+
+type FormSectionProps = {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  className?: string;
+};
+
+export function FormSection({
+  title,
+  description,
+  children,
+  className,
+}: FormSectionProps) {
+  return (
+    <section className={cn("ui-panel p-4 sm:p-5", className)}>
+      <div className="mb-4">
+        <h3 className="text-sm font-bold tracking-tight text-ink">{title}</h3>
+        {description !== undefined ? (
+          <p className="mt-1 text-xs leading-5 text-muted">{description}</p>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-4">{children}</div>
+    </section>
+  );
+}
+
+type FormCheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+  id: string;
+  label: string;
+  description?: string;
+  error?: string;
+};
+
+export function FormCheckbox({
+  id,
+  label,
+  description,
+  error,
+  className,
+  ...props
+}: FormCheckboxProps) {
+  return (
+    <div className={cn("flex min-w-0 flex-col", className)}>
+      <label
+        htmlFor={id}
+        className="flex items-start gap-3 rounded-xl border border-line-strong bg-surface px-3 py-2.5 text-sm font-medium text-ink-soft transition hover:border-primary hover:bg-primary-soft/40"
+      >
+        <input
+          id={id}
+          type="checkbox"
+          className="mt-0.5 size-4 shrink-0 accent-primary"
+          {...props}
+        />
+        <span className="min-w-0">
+          <span className="block">{label}</span>
+          {description !== undefined ? (
+            <span className="mt-0.5 block text-xs font-normal text-muted">
+              {description}
+            </span>
+          ) : null}
+        </span>
+      </label>
+      {error !== undefined ? (
+        <p id={`${id}-error`} role="alert" className="ui-error">
           {error}
         </p>
       ) : null}

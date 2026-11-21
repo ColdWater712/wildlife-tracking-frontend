@@ -24,7 +24,7 @@ export function GeoZoneFormPage({ recordId }: GeoZoneFormPageProps) {
     <FormPage
       eyebrow="Master Data"
       title={isEditMode ? "Ubah Zona" : "Tambah Zona"}
-      description="Kontrak penulisan zona mengikuti GeoZoneController Laravel."
+      description="Kelola zona risiko dan area konservasi pada peta pemantauan."
       backHref="/geo-zones"
       isLoading={isEditMode && detailQuery.isPending}
       loadingLabel="Memuat data zona..."
@@ -32,13 +32,13 @@ export function GeoZoneFormPage({ recordId }: GeoZoneFormPageProps) {
       notFound={
         isEditMode &&
         !detailQuery.isPending &&
-        (record === null || recordId === undefined || !Number.isFinite(recordId))
+        !detailQuery.isError &&
+        record === null
       }
       notFoundTitle="Zona tidak ditemukan"
       onRetry={isEditMode ? () => void detailQuery.refetch() : undefined}
     >
       <GeoZoneForm
-        standalone
         zone={isEditMode ? record : null}
         onSuccess={() => router.push("/geo-zones")}
         onCancel={() => router.push("/geo-zones")}

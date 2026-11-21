@@ -9,12 +9,19 @@ export type BackendActionPayload = {
   params?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
   bodyText?: string;
+  formData?: FormData;
   headers?: Record<string, string>;
   timeoutMs?: number;
 };
 
 export type BackendActionResult =
-  | { ok: true; status: number; body: unknown }
+  | {
+      ok: true;
+      status: number;
+      body: unknown;
+      base64?: string;
+      contentType?: string;
+    }
   | {
       ok: false;
       status: number;

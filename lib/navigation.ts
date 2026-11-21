@@ -1,6 +1,17 @@
 import type { TYPE_USER_ROLE } from "@/types/auth.type";
 
-export type NavIcon = "grid" | "map" | "bell" | "paw" | "alert" | "species" | "device" | "zone" | "chart";
+export type NavIcon =
+  | "grid"
+  | "map"
+  | "bell"
+  | "paw"
+  | "alert"
+  | "species"
+  | "device"
+  | "zone"
+  | "chart"
+  | "ai"
+  | "report";
 
 export type NavItem = {
   label: string;
@@ -17,6 +28,8 @@ export const COMMON_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "grid" },
   { label: "Live Map", href: "/tracking/live-map", icon: "map" },
   { label: "Notifikasi", href: "/notifications", icon: "bell" },
+  { label: "AI Vision", href: "/ai/vision", icon: "ai" },
+  { label: "Laporan AI", href: "/ai/reports", icon: "report" },
 ];
 
 const CONSERVATION_ITEMS: NavItem[] = [
@@ -48,7 +61,17 @@ export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
   ],
   peneliti_ekologi: [
     { title: "Umum", items: COMMON_ITEMS },
-    { title: "Penelitian", items: RESEARCH_ITEMS },
+    {
+      title: "Penelitian",
+      items: [
+        ...RESEARCH_ITEMS,
+        {
+          label: "Verifikasi AI",
+          href: "/ai/vision/pending",
+          icon: "ai",
+        },
+      ],
+    },
   ],
   administrator_sistem: [
     { title: "Umum", items: COMMON_ITEMS },

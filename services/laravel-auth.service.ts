@@ -5,26 +5,11 @@ import {
 } from "@/services/api";
 import { normalizeUserRole } from "@/types/auth.type";
 import type {
+  LaravelAuthResult,
+  LaravelCurrentUserResult,
   TYPE_LOGIN_REQUEST,
   TYPE_LOGIN_SESSION_USER,
 } from "@/types/auth.type";
-
-export type LaravelAuthResult =
-  | { ok: true; user: TYPE_LOGIN_SESSION_USER; token: string }
-  | {
-      ok: false;
-      status: number;
-      message: string;
-      errors: Record<string, string[]> | null;
-    };
-
-export type LaravelCurrentUserResult =
-  | { ok: true; user: TYPE_LOGIN_SESSION_USER }
-  | {
-      ok: false;
-      status: number;
-      message: string;
-    };
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null

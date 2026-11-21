@@ -20,3 +20,14 @@ export type GeoZoneListParams = {
   zoneType?: string;
   search?: string;
 };
+
+export type GeoZoneCreatePayload = {
+  zone_name: string;
+  zone_type: string;
+  center_lat?: number;
+  center_lon?: number;
+  radius_km?: number;
+  polygon_geojson?: string;
+};
+
+export type GeoZoneUpdatePayload = Partial<GeoZoneCreatePayload>;

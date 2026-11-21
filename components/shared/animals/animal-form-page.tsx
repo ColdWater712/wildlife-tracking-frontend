@@ -24,7 +24,7 @@ export function AnimalFormPage({ recordId }: AnimalFormPageProps) {
     <FormPage
       eyebrow="Master Data"
       title={isEditMode ? "Ubah Satwa" : "Tambah Satwa"}
-      description="Data satwa disimpan langsung ke endpoint Laravel /api/animals."
+      description="Kelola identitas, spesies, dan status pemantauan individu satwa."
       backHref="/animals"
       isLoading={isEditMode && detailQuery.isPending}
       loadingLabel="Memuat data satwa..."
@@ -32,15 +32,13 @@ export function AnimalFormPage({ recordId }: AnimalFormPageProps) {
       notFound={
         isEditMode &&
         !detailQuery.isPending &&
-        (record === null ||
-          recordId === undefined ||
-          !Number.isFinite(recordId))
+        !detailQuery.isError &&
+        record === null
       }
       notFoundTitle="Satwa tidak ditemukan"
       onRetry={isEditMode ? () => void detailQuery.refetch() : undefined}
     >
       <AnimalForm
-        standalone
         animal={isEditMode ? record : null}
         onSuccess={() => router.push("/animals")}
         onCancel={() => router.push("/animals")}

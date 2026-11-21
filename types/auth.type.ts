@@ -75,6 +75,48 @@ export type TYPE_LOGIN_SESSION_USER = {
   role: TYPE_USER_ROLE;
 };
 
+export type LoginAttempt =
+  | {
+      ok: true;
+      status: number;
+      message: string;
+      errors: null;
+      user: TYPE_LOGIN_SESSION_USER;
+    }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+      errors: Record<string, string[]> | null;
+      user: null;
+    };
+
+export type LaravelAuthResult =
+  | { ok: true; user: TYPE_LOGIN_SESSION_USER; token: string }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+      errors: Record<string, string[]> | null;
+    };
+
+export type LaravelCurrentUserResult =
+  | { ok: true; user: TYPE_LOGIN_SESSION_USER }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+    };
+
+export type VerifiedSessionResult =
+  | { ok: true; user: TYPE_LOGIN_SESSION_USER }
+  | {
+      ok: false;
+      reason: "missing_session" | "expired" | "invalid_user" | "backend";
+      status: number;
+      message: string;
+    };
+
 export type TYPE_LOGIN_RESULT = {
   token: string;
   expires_at: string;

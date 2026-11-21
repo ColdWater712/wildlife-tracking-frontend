@@ -2,16 +2,7 @@ import "server-only";
 
 import { getAuthTokenCookie, getSessionUser } from "@/lib/session";
 import { getCurrentUserFromLaravel } from "@/services/laravel-auth.service";
-import type { TYPE_LOGIN_SESSION_USER } from "@/types/auth.type";
-
-export type VerifiedSessionResult =
-  | { ok: true; user: TYPE_LOGIN_SESSION_USER }
-  | {
-      ok: false;
-      reason: "missing_session" | "expired" | "invalid_user" | "backend";
-      status: number;
-      message: string;
-    };
+import type { VerifiedSessionResult } from "@/types/auth.type";
 
 export const getVerifiedSession = async (): Promise<VerifiedSessionResult> => {
   const session = await getSessionUser();

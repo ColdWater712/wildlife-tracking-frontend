@@ -34,6 +34,24 @@ const unauthorizedResult = (): BackendActionResult => ({
   errors: null,
 });
 
+const encodeBytesToBase64 = (bytes: Uint8Array): string => {
+  const chunkSize = 0x8000;
+  let encoded = "";
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    let binary = "";
+    const end = Math.min(offset + chunkSize, bytes.length);
+
+    for (let index = offset; index < end; index += 1) {
+      binary += String.fromCharCode(bytes[index]);
+    }
+
+    encoded += btoa(binary);
+  }
+
+  return encoded;
+};
+
 export const loginAction = async (
   payload: TYPE_LOGIN_REQUEST,
 ): Promise<LoginActionResult> => {
@@ -140,6 +158,7 @@ export const forwardBackendAction = async (
         params: payload.params,
         body: payload.body,
         bodyText: payload.bodyText,
+        formData: payload.formData,
         headers,
         token,
         timeoutMs: payload.timeoutMs,
@@ -148,6 +167,24 @@ export const forwardBackendAction = async (
 
     if (response.status === 204) {
       return { ok: true, status: response.status, body: undefined };
+    }
+
+    const responseContentType = response.headers.get("content-type") ?? "";
+    const isBinaryResponse =
+      response.ok &&
+      (responseContentType.includes("image/") ||
+        responseContentType.includes("application/octet-stream"));
+
+    if (isBinaryResponse) {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+
+      return {
+        ok: true,
+        status: response.status,
+        body: undefined,
+        base64: encodeBytesToBase64(bytes),
+        contentType: responseContentType,
+      };
     }
 
     const body = await readJsonResponse(response);

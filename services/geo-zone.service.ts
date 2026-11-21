@@ -3,19 +3,10 @@ import { api, unwrapData } from "@/services/api";
 import type { ApiResponse } from "@/types/api.type";
 import type {
   GeoZone,
+  GeoZoneCreatePayload,
   GeoZoneListParams,
+  GeoZoneUpdatePayload,
 } from "@/types/geo-zone.type";
-
-export type GeoZoneCreatePayload = {
-  zone_name: string;
-  zone_type: string;
-  center_lat?: number;
-  center_lon?: number;
-  radius_km?: number;
-  polygon_geojson?: string;
-};
-
-export type GeoZoneUpdatePayload = Partial<GeoZoneCreatePayload>;
 
 export const getGeoZones = async (
   params?: GeoZoneListParams,

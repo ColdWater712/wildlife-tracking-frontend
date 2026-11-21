@@ -4,143 +4,169 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
+import { useToast } from "@/components/providers/toast-provider";
 import { Button } from "@/components/ui/button";
 import {
   FormActions,
   FormAlert,
+  FormCheckbox,
   FormField,
+  FormGrid,
+  FormSection,
   SelectInput,
   TextInput,
 } from "@/components/ui/form";
-import { Panel, SectionHeader } from "@/components/ui/panel";
-import { useToast } from "@/components/providers/toast-provider";
 import {
   useTrackingDeviceCreate,
   useTrackingDeviceUpdate,
 } from "@/hooks/use-devices";
+import {
+  firstIssueMessage,
+  issuesToFieldErrors,
+  stringOrEmpty,
+  type FormErrors,
+} from "@/lib/form";
 import { formatApiError, getApiFieldErrors } from "@/services/api";
-import type {
-  TYPE_TRACKING_DEVICE_PAYLOAD,
-  TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD,
-} from "@/services/device.service";
 import type {
   DeviceCondition,
   TrackingDevice,
+  TYPE_TRACKING_DEVICE_PAYLOAD,
 } from "@/types/device.type";
 
 type DeviceFormProps = {
   device?: TrackingDevice | null;
   onSuccess: () => void;
   onCancel: () => void;
-  standalone?: boolean;
 };
 
 type DeviceFormState = {
   model: string;
   installation_date: string;
-  battery_life_months: string;
-  device_condition: DeviceCondition;
-  battery_level: string;
-  signal_strength: string;
+  battery_life_months: number;
+  battery_level: number;
+  signal_strength: number;
   is_active: boolean;
+  device_condition: DeviceCondition;
+  last_recorded_at: string;
 };
 
-type DeviceFieldErrors = Partial<Record<keyof DeviceFormState, string>>;
+type FieldName = keyof DeviceFormState;
 
 const INITIAL_FORM: DeviceFormState = {
   model: "",
   installation_date: "",
-  battery_life_months: "",
-  device_condition: "normal",
-  battery_level: "",
-  signal_strength: "",
+  battery_life_months: 12,
+  battery_level: 100,
+  signal_strength: 0,
   is_active: true,
+  device_condition: "normal",
+  last_recorded_at: "",
 };
 
-const DEVICE_FIELDS: (keyof DeviceFormState)[] = [
+const DEVICE_FIELDS: FieldName[] = [
   "model",
   "installation_date",
   "battery_life_months",
-  "device_condition",
   "battery_level",
   "signal_strength",
   "is_active",
+  "device_condition",
+  "last_recorded_at",
 ];
 
-const DEVICE_CONDITIONS: DeviceCondition[] = [
-  "normal",
-  "damaged",
-  "lost",
-];
-
-const CONDITION_LABELS: Record<DeviceCondition, string> = {
-  normal: "Normal",
-  damaged: "Rusak",
-  lost: "Hilang",
-};
-
-const optionalInteger = (min: number, max: number, message: string) =>
-  z.string().refine((value) => {
-    if (value.trim() === "") return true;
-
-    const parsed = Number(value);
-
-    return Number.isInteger(parsed) && parsed >= min && parsed <= max;
-  }, message);
+const DEVICE_CONDITIONS = [
+  { value: "normal", label: "Normal" },
+  { value: "damaged", label: "Rusak" },
+  { value: "lost", label: "Hilang" },
+] as const;
 
 const deviceSchema = z.object({
-  model: z.string().trim().min(1, "Model perangkat wajib diisi.").max(100),
-  installation_date: z.string(),
-  battery_life_months: optionalInteger(
-    0,
-    65535,
-    "Masa pakai baterai harus berupa bilangan bulat 0 sampai 65535.",
-  ),
-  device_condition: z.enum(["normal", "damaged", "lost"]),
-  battery_level: optionalInteger(0, 100, "Level baterai harus 0 sampai 100."),
-  signal_strength: optionalInteger(
-    0,
-    100,
-    "Kekuatan sinyal harus 0 sampai 100.",
-  ),
+  model: z
+    .string()
+    .trim()
+    .min(1, "Model perangkat wajib diisi.")
+    .max(100, "Model perangkat maksimal 100 karakter."),
+  installation_date: z
+    .string()
+    .refine(
+      (value) =>
+        value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
+      "Format tanggal pemasangan tidak valid.",
+    ),
+  battery_life_months: z
+    .number()
+    .int("Masa pakai baterai harus bilangan bulat.")
+    .min(1, "Masa pakai baterai minimal 1 bulan.")
+    .max(120, "Masa pakai baterai maksimal 120 bulan."),
+  battery_level: z
+    .number()
+    .int("Level baterai harus bilangan bulat.")
+    .min(0, "Level baterai minimal 0.")
+    .max(100, "Level baterai maksimal 100."),
+  signal_strength: z
+    .number()
+    .int("Kekuatan sinyal harus bilangan bulat.")
+    .min(0, "Kekuatan sinyal minimal 0.")
+    .max(100, "Kekuatan sinyal maksimal 100."),
   is_active: z.boolean(),
+  device_condition: z
+    .string()
+    .refine(
+      (value) => value === "normal" || value === "damaged" || value === "lost",
+      "Kondisi perangkat tidak valid.",
+    ),
+  last_recorded_at: z.string(),
 });
-
-const stringOrEmpty = (value: number | string | null | undefined): string =>
-  value === null || value === undefined ? "" : String(value);
 
 export function DeviceForm({
   device,
   onSuccess,
   onCancel,
-  standalone = false,
 }: DeviceFormProps) {
   const isEditMode = Boolean(device);
   const { showToast } = useToast();
   const createMutation = useTrackingDeviceCreate();
   const updateMutation = useTrackingDeviceUpdate(device?.device_id ?? 0);
 
-  const [form, setForm] = useState<DeviceFormState>(() => ({
-    model: device?.model ?? INITIAL_FORM.model,
-    installation_date:
-      device?.installation_date ?? INITIAL_FORM.installation_date,
-    battery_life_months: stringOrEmpty(device?.battery_life_months),
-    device_condition:
-      device?.device_condition ?? INITIAL_FORM.device_condition,
-    battery_level: stringOrEmpty(device?.battery_level),
-    signal_strength: stringOrEmpty(device?.signal_strength),
-    is_active:
-      device === null || device === undefined
-        ? INITIAL_FORM.is_active
-        : device.is_active === true || device.is_active === 1,
-  }));
+  const [form, setForm] = useState<DeviceFormState>(() =>
+    device
+      ? {
+          model: device.model,
+          installation_date: stringOrEmpty(device.installation_date),
+          battery_life_months: device.battery_life_months ?? 12,
+          battery_level: device.battery_level ?? 100,
+          signal_strength: device.signal_strength ?? 0,
+          is_active: device.is_active === true || device.is_active === 1,
+          device_condition: device.device_condition,
+          last_recorded_at: stringOrEmpty(device.last_recorded_at),
+        }
+      : INITIAL_FORM,
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<DeviceFieldErrors>({});
+  const [fieldErrors, setFieldErrors] = useState<FormErrors<FieldName>>({});
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending =
+    createMutation.isPending || updateMutation.isPending;
   const mutationError = isEditMode
     ? updateMutation.error
     : createMutation.error;
+  const summaryMessage =
+    validationError ??
+    (mutationError
+      ? formatApiError(
+          mutationError,
+          "Gagal menyimpan data perangkat. Silakan coba lagi.",
+        )
+      : null);
+
+  const setField = <K extends FieldName>(
+    key: K,
+    value: DeviceFormState[K],
+  ) => {
+    setForm((previous) => ({ ...previous, [key]: value }));
+    setValidationError(null);
+    setFieldErrors((previous) => ({ ...previous, [key]: undefined }));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -153,19 +179,9 @@ export function DeviceForm({
     const parsed = deviceSchema.safeParse(form);
 
     if (!parsed.success) {
-      const nextErrors: DeviceFieldErrors = {};
-
-      for (const issue of parsed.error.issues) {
-        const field = String(issue.path[0] ?? "") as keyof DeviceFormState;
-
-        if (DEVICE_FIELDS.includes(field)) {
-          nextErrors[field] = issue.message;
-        }
-      }
-
-      setFieldErrors(nextErrors);
+      setFieldErrors(issuesToFieldErrors(parsed.error.issues, DEVICE_FIELDS));
       setValidationError(
-        parsed.error.issues[0]?.message ?? "Periksa kembali isian form.",
+        firstIssueMessage(parsed.error.issues, "Periksa kembali isian form."),
       );
       return;
     }
@@ -173,26 +189,17 @@ export function DeviceForm({
     const payload: TYPE_TRACKING_DEVICE_PAYLOAD = {
       model: parsed.data.model,
       installation_date: parsed.data.installation_date || undefined,
-      battery_life_months:
-        parsed.data.battery_life_months === ""
-          ? undefined
-          : Number(parsed.data.battery_life_months),
-      device_condition: parsed.data.device_condition,
-      battery_level:
-        parsed.data.battery_level === ""
-          ? undefined
-          : Number(parsed.data.battery_level),
-      signal_strength:
-        parsed.data.signal_strength === ""
-          ? undefined
-          : Number(parsed.data.signal_strength),
+      battery_life_months: parsed.data.battery_life_months,
+      battery_level: parsed.data.battery_level,
+      signal_strength: parsed.data.signal_strength,
       is_active: parsed.data.is_active,
+      device_condition: parsed.data.device_condition as DeviceCondition,
+      last_recorded_at: parsed.data.last_recorded_at || undefined,
     };
 
     try {
       if (device) {
-        const updatePayload: TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD = payload;
-        await updateMutation.mutateAsync(updatePayload);
+        await updateMutation.mutateAsync(payload);
         showToast("Data perangkat berhasil diperbarui.", "success");
       } else {
         await createMutation.mutateAsync(payload);
@@ -201,201 +208,190 @@ export function DeviceForm({
 
       onSuccess();
     } catch (error) {
-      setFieldErrors(getApiFieldErrors(error) as DeviceFieldErrors);
+      setFieldErrors(getApiFieldErrors(error) as FormErrors<FieldName>);
       showToast(
-        formatApiError(error, "Gagal menyimpan data perangkat."),
+        formatApiError(
+          error,
+          "Gagal menyimpan data perangkat. Silakan coba lagi.",
+        ),
         "error",
       );
     }
   };
 
-  const formNode = (
+  return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-      <FormField
-        label="Model Perangkat"
-        htmlFor="device-model"
-        required
-        error={fieldErrors.model}
+      <FormSection
+        title="Informasi Perangkat"
+        description="Identitas dan waktu pemasangan collar GPS di lapangan."
       >
-        <TextInput
-          id="device-model"
-          required
-          maxLength={100}
-          value={form.model}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              model: event.target.value,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({ ...previous, model: undefined }));
-          }}
-          placeholder="Contoh: GPS Tracker TK-102"
-          disabled={isPending}
-        />
-      </FormField>
+        <FormGrid>
+          <FormField
+            label="Model Perangkat"
+            htmlFor="device-model"
+            required
+            error={fieldErrors.model}
+          >
+            <TextInput
+              id="device-model"
+              required
+              maxLength={100}
+              value={form.model}
+              onChange={(event) => setField("model", event.target.value)}
+              placeholder="Contoh: GPS Collar V4"
+              invalid={fieldErrors.model !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
 
-      <FormField
-        label="Tanggal Pasang"
-        htmlFor="device-installation-date"
-        error={fieldErrors.installation_date}
+          <FormField
+            label="Tanggal Pemasangan"
+            htmlFor="device-installation-date"
+            error={fieldErrors.installation_date}
+          >
+            <TextInput
+              id="device-installation-date"
+              type="date"
+              value={form.installation_date ?? ""}
+              onChange={(event) =>
+                setField("installation_date", event.target.value)
+              }
+              invalid={fieldErrors.installation_date !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
+
+          <FormField
+            label="Pembacaan Terakhir"
+            htmlFor="device-last-recorded"
+            error={fieldErrors.last_recorded_at}
+            hint="Waktu pembacaan terakhir akan diisi sistem saat perangkat mengirim data."
+          >
+            <TextInput
+              id="device-last-recorded"
+              type="datetime-local"
+              value={form.last_recorded_at?.slice(0, 16) ?? ""}
+              onChange={(event) =>
+                setField("last_recorded_at", event.target.value)
+              }
+              invalid={fieldErrors.last_recorded_at !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
+        </FormGrid>
+      </FormSection>
+
+      <FormSection
+        title="Kondisi dan Performa"
+        description="Pantau kondisi fisik, daya baterai, dan kualitas sinyal perangkat."
       >
-        <TextInput
-          id="device-installation-date"
-          type="date"
-          value={form.installation_date}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              installation_date: event.target.value,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({
-              ...previous,
-              installation_date: undefined,
-            }));
-          }}
-          disabled={isPending}
-        />
-      </FormField>
+        <FormGrid>
+          <FormField
+            label="Kondisi Perangkat"
+            htmlFor="device-condition"
+            required
+            error={fieldErrors.device_condition}
+          >
+            <SelectInput
+              id="device-condition"
+              required
+              value={form.device_condition}
+              onChange={(event) =>
+                setField(
+                  "device_condition",
+                  event.target.value as DeviceCondition,
+                )
+              }
+              invalid={fieldErrors.device_condition !== undefined}
+              disabled={isPending}
+            >
+              {DEVICE_CONDITIONS.map((condition) => (
+                <option key={condition.value} value={condition.value}>
+                  {condition.label}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
 
-      <FormField
-        label="Masa Pakai Baterai (bulan)"
-        htmlFor="device-battery-life"
-        error={fieldErrors.battery_life_months}
-      >
-        <TextInput
-          id="device-battery-life"
-          type="number"
-          min={0}
-          max={65535}
-          value={form.battery_life_months}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              battery_life_months: event.target.value,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({
-              ...previous,
-              battery_life_months: undefined,
-            }));
-          }}
-          disabled={isPending}
-        />
-      </FormField>
+          <FormField
+            label="Masa Pakai Baterai (bulan)"
+            htmlFor="device-battery-life"
+            required
+            error={fieldErrors.battery_life_months}
+          >
+            <TextInput
+              id="device-battery-life"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={120}
+              required
+              value={form.battery_life_months}
+              onChange={(event) =>
+                setField("battery_life_months", Number(event.target.value))
+              }
+              invalid={fieldErrors.battery_life_months !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
 
-      <FormField
-        label="Kondisi"
-        htmlFor="device-condition"
-        required
-        error={fieldErrors.device_condition}
-      >
-        <SelectInput
-          id="device-condition"
-          value={form.device_condition}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              device_condition: event.target.value as DeviceCondition,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({
-              ...previous,
-              device_condition: undefined,
-            }));
-          }}
-          disabled={isPending}
-        >
-          {DEVICE_CONDITIONS.map((condition) => (
-            <option key={condition} value={condition}>
-              {CONDITION_LABELS[condition]}
-            </option>
-          ))}
-        </SelectInput>
-      </FormField>
+          <FormField
+            label="Level Baterai (%)"
+            htmlFor="device-battery-level"
+            required
+            error={fieldErrors.battery_level}
+          >
+            <TextInput
+              id="device-battery-level"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={100}
+              required
+              value={form.battery_level}
+              onChange={(event) =>
+                setField("battery_level", Number(event.target.value))
+              }
+              invalid={fieldErrors.battery_level !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
 
-      <FormField
-        label="Level Baterai (%)"
-        htmlFor="device-battery"
-        error={fieldErrors.battery_level}
-      >
-        <TextInput
-          id="device-battery"
-          type="number"
-          min={0}
-          max={100}
-          value={form.battery_level}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              battery_level: event.target.value,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({
-              ...previous,
-              battery_level: undefined,
-            }));
-          }}
-          disabled={isPending}
-        />
-      </FormField>
+          <FormField
+            label="Kekuatan Sinyal"
+            htmlFor="device-signal-strength"
+            required
+            error={fieldErrors.signal_strength}
+          >
+            <TextInput
+              id="device-signal-strength"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={100}
+              required
+              value={form.signal_strength}
+              onChange={(event) =>
+                setField("signal_strength", Number(event.target.value))
+              }
+              invalid={fieldErrors.signal_strength !== undefined}
+              disabled={isPending}
+            />
+          </FormField>
+        </FormGrid>
 
-      <FormField
-        label="Kekuatan Sinyal"
-        htmlFor="device-signal"
-        error={fieldErrors.signal_strength}
-      >
-        <TextInput
-          id="device-signal"
-          type="number"
-          min={0}
-          max={100}
-          value={form.signal_strength}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              signal_strength: event.target.value,
-            }));
-            setValidationError(null);
-            setFieldErrors((previous) => ({
-              ...previous,
-              signal_strength: undefined,
-            }));
-          }}
-          disabled={isPending}
-        />
-      </FormField>
-
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+        <FormCheckbox
+          id="device-is-active"
+          label="Perangkat aktif"
+          description="Perangkat aktif mengirim pembacaan GPS secara berkala."
           checked={form.is_active}
-          onChange={(event) => {
-            setForm((previous) => ({
-              ...previous,
-              is_active: event.target.checked,
-            }));
-            setFieldErrors((previous) => ({
-              ...previous,
-              is_active: undefined,
-            }));
-          }}
+          onChange={(event) => setField("is_active", event.target.checked)}
           disabled={isPending}
+          error={fieldErrors.is_active}
         />
-        Perangkat aktif
-      </label>
+      </FormSection>
 
-      {validationError ? <FormAlert message={validationError} /> : null}
-
-      {mutationError ? (
-        <FormAlert
-          message={formatApiError(
-            mutationError,
-            "Gagal menyimpan data perangkat.",
-          )}
-        />
-      ) : null}
+      {summaryMessage ? <FormAlert message={summaryMessage} /> : null}
 
       <FormActions>
         <Button variant="outline" onClick={onCancel} disabled={isPending}>
@@ -411,18 +407,4 @@ export function DeviceForm({
       </FormActions>
     </form>
   );
-
-  if (standalone) {
-    return (
-      <Panel>
-        <SectionHeader
-          title={isEditMode ? "Ubah Perangkat" : "Tambah Perangkat"}
-          description="Kontrak penulisan mengikuti controller TrackingDevice Laravel."
-        />
-        {formNode}
-      </Panel>
-    );
-  }
-
-  return formNode;
 }
