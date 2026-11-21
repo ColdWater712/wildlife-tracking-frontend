@@ -1,6 +1,4 @@
-
-import { api, unwrapData } from "@/services/api-client";
-import { API_ENDPOINT, WILDLIFE_BASE_PATH } from "@/services/endpoint";
+import { api, unwrapData } from "@/services/api";
 
 import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
@@ -44,9 +42,9 @@ export const SPECIES_SERVICE = {
   GET_ALL: async (
     params?: Partial<QUERY_PARAMS_API_GET_ALL>,
   ): Promise<ApiResponse<TYPE_SPECIES_GET_ALL_RESPONSE>> => {
-    const response = await api.get<ApiResponse<TYPE_SPECIES[]>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.SPECIES.GET_ALL(params)}`,
-    );
+    const response = await api.get<ApiResponse<TYPE_SPECIES[]>>("/species", {
+      params,
+    });
 
     const species = unwrapData(response);
 
@@ -57,7 +55,7 @@ export const SPECIES_SERVICE = {
     id: number,
   ): Promise<ApiResponse<TYPE_SPECIES_GET_BY_ID_RESPONSE>> => {
     const response = await api.get<ApiResponse<TYPE_SPECIES>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.SPECIES.GET_BY_ID(id)}`,
+      `/species/${id}`,
     );
 
     const species = unwrapData(response);
@@ -68,35 +66,21 @@ export const SPECIES_SERVICE = {
   CREATE: async (
     payload: TYPE_SPECIES_PAYLOAD,
   ): Promise<ApiResponse<TYPE_SPECIES>> => {
-    const response = await api.post<ApiResponse<TYPE_SPECIES>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.SPECIES.CREATE}`,
-      {
-        body: payload,
-      },
-    );
-
-    return response;
+    return api.post<ApiResponse<TYPE_SPECIES>>("/species", {
+      body: payload,
+    });
   },
 
   UPDATE: async (
     id: number,
     payload: TYPE_SPECIES_PAYLOAD,
   ): Promise<ApiResponse<TYPE_SPECIES>> => {
-    const response = await api.put<ApiResponse<TYPE_SPECIES>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.SPECIES.UPDATE(id)}`,
-      {
-        body: payload,
-      },
-    );
-
-    return response;
+    return api.put<ApiResponse<TYPE_SPECIES>>(`/species/${id}`, {
+      body: payload,
+    });
   },
 
-  DELETE: async (
-    id: number,
-  ): Promise<ApiResponse<null>> => {
-    return api.delete<ApiResponse<null>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.SPECIES.DELETE(id)}`,
-    );
+  DELETE: async (id: number): Promise<ApiResponse<null>> => {
+    return api.delete<ApiResponse<null>>(`/species/${id}`);
   },
 } as const;

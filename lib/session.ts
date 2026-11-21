@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
-import type { TYPE_USER_ROLE } from "@/types/user.type";
 
-export const SESSION_COOKIE = "wms_session";
+import { SESSION_COOKIE, TOKEN_COOKIE } from "@/lib/cookie-names";
+import { normalizeUserRole } from "@/types/auth.type";
+import type { TYPE_USER_ROLE } from "@/types/auth.type";
+
+export { SESSION_COOKIE };
 
 export type SessionUser = {
   user_id: number;
@@ -9,16 +12,6 @@ export type SessionUser = {
   email: string;
   role: TYPE_USER_ROLE;
 };
-
-const USER_ROLES: TYPE_USER_ROLE[] = [
-  "konservasionis_lapangan",
-  "peneliti_ekologi",
-  "administrator_sistem",
-  "pengambil_kebijakan",
-];
-
-const isUserRole = (value: unknown): value is TYPE_USER_ROLE =>
-  typeof value === "string" && USER_ROLES.includes(value as TYPE_USER_ROLE);
 
 const readString = (record: Record<string, unknown>, key: string): string => {
   const value = record[key];
@@ -32,9 +25,20 @@ const readNumber = (record: Record<string, unknown>, key: string): number => {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 };
 
-export const getSessionUser = async (): Promise<SessionUser | null> => {
+export const getSessionCookie = async (): Promise<string | null> => {
   const cookieStore = await cookies();
-  const raw = cookieStore.get(SESSION_COOKIE)?.value;
+
+  return cookieStore.get(SESSION_COOKIE)?.value ?? null;
+};
+
+export const getAuthTokenCookie = async (): Promise<string | null> => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get(TOKEN_COOKIE)?.value ?? null;
+};
+
+export const getSessionUser = async (): Promise<SessionUser | null> => {
+  const raw = await getSessionCookie();
 
   if (!raw) return null;
 
@@ -44,15 +48,16 @@ export const getSessionUser = async (): Promise<SessionUser | null> => {
     if (typeof parsed !== "object" || parsed === null) return null;
 
     const record = parsed as Record<string, unknown>;
+    const role = normalizeUserRole(record.role);
+    const user_id = readNumber(record, "user_id");
+    const name = readString(record, "name").trim();
+    const email = readString(record, "email").trim();
 
-    if (!isUserRole(record.role)) return null;
+    if (user_id <= 0 || name === "" || email === "" || role === null) {
+      return null;
+    }
 
-    return {
-      user_id: readNumber(record, "user_id"),
-      name: readString(record, "name"),
-      email: readString(record, "email"),
-      role: record.role,
-    };
+    return { user_id, name, email, role };
   } catch {
     return null;
   }

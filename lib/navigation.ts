@@ -1,4 +1,4 @@
-import type { TYPE_USER_ROLE } from "@/types/user.type";
+import type { TYPE_USER_ROLE } from "@/types/auth.type";
 
 export type NavIcon = "grid" | "map" | "bell" | "paw" | "alert" | "species" | "device" | "zone" | "chart";
 
@@ -20,21 +20,21 @@ export const COMMON_ITEMS: NavItem[] = [
 ];
 
 const CONSERVATION_ITEMS: NavItem[] = [
-  { label: "Satwa", href: "/master-data/animals", icon: "paw" },
+  { label: "Satwa", href: "/animals", icon: "paw" },
   { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
   { label: "Insiden", href: "/incidents", icon: "alert" },
 ];
 
 const RESEARCH_ITEMS: NavItem[] = [
-  { label: "Satwa", href: "/master-data/animals", icon: "paw" },
+  { label: "Satwa", href: "/animals", icon: "paw" },
   { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
-  { label: "Spesies", href: "/master-data/species", icon: "species" },
-  { label: "Perangkat", href: "/master-data/devices", icon: "device" },
+  { label: "Spesies", href: "/species", icon: "species" },
+  { label: "Perangkat", href: "/devices", icon: "device" },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
   ...RESEARCH_ITEMS,
-  { label: "Zona Geografis", href: "/master-data/geo-zones", icon: "zone" },
+  { label: "Zona Geografis", href: "/geo-zones", icon: "zone" },
 ];
 
 const POLICY_ITEMS: NavItem[] = [
@@ -61,6 +61,9 @@ export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
 };
 
 export const DEFAULT_ROLE: TYPE_USER_ROLE = "konservasionis_lapangan";
+
+export const getDefaultRouteForRole = (role: TYPE_USER_ROLE): string =>
+  NAV_SECTIONS[role][0]?.items[0]?.href ?? "/dashboard";
 
 export const isRouteActive = (pathname: string, href: string): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);

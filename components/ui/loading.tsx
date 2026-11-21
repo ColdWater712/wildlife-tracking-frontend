@@ -1,4 +1,5 @@
-export type BadgeVariant = "success" | "warning" | "danger" | "info" | "neutral";
+import { LoaderCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type LoadingProps = {
   label?: string;
@@ -10,17 +11,13 @@ export function Loading({ label = "Memuat data...", className }: LoadingProps) {
     <div
       role="status"
       aria-live="polite"
-      className={
-        className === undefined
-          ? "flex min-h-[12rem] w-full flex-col items-center justify-center gap-3 text-zinc-500"
-          : `flex min-h-[12rem] w-full flex-col items-center justify-center gap-3 text-zinc-500 ${className}`
-      }
+      className={cn(
+        "flex min-h-48 w-full flex-col items-center justify-center gap-3 rounded-card border border-dashed border-line bg-surface/60 text-muted",
+        className,
+      )}
     >
-      <span
-        aria-hidden="true"
-        className="size-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700"
-      />
-      <span className="text-sm">{label}</span>
+      <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
+      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }

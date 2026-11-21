@@ -1,6 +1,4 @@
-
-import { api, unwrapData } from "@/services/api-client";
-import { API_ENDPOINT, WILDLIFE_BASE_PATH } from "@/services/endpoint";
+import { api, unwrapData } from "@/services/api";
 
 import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
@@ -21,7 +19,7 @@ type API_ANIMAL = {
   gender: "male" | "female" | "unknown";
   is_active: boolean;
   species?: TYPE_ANIMAL["species"];
-  tracking_device?: TYPE_TRACKING_DEVICE | null;
+  trackingDevice?: TYPE_TRACKING_DEVICE | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -39,7 +37,7 @@ const mapAnimalFromApi = (animal: API_ANIMAL): TYPE_ANIMAL => ({
         : "Tidak Diketahui",
   is_active: animal.is_active,
   species: animal.species ?? null,
-  tracking_device: animal.tracking_device ?? null,
+  trackingDevice: animal.trackingDevice ?? null,
   created_at: animal.created_at ?? "",
   updated_at: animal.updated_at ?? "",
 });
@@ -91,9 +89,9 @@ export const ANIMAL_SERVICE = {
   GET_ALL: async (
     params?: Partial<QUERY_PARAMS_API_GET_ALL>,
   ): Promise<ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE>> => {
-    const response = await api.get<ApiResponse<API_ANIMAL[]>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_ALL(params)}`,
-    );
+    const response = await api.get<ApiResponse<API_ANIMAL[]>>("/animals", {
+      params,
+    });
 
     const animals = unwrapData(response);
     const items = animals.map(mapAnimalFromApi);
@@ -105,7 +103,7 @@ export const ANIMAL_SERVICE = {
     id: number,
   ): Promise<ApiResponse<TYPE_ANIMAL_GET_BY_ID_RESPONSE>> => {
     const response = await api.get<ApiResponse<API_ANIMAL>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_BY_ID(id)}`,
+      `/animals/${id}`,
     );
 
     const animal = unwrapData(response);
@@ -118,12 +116,9 @@ export const ANIMAL_SERVICE = {
   CREATE: async (
     payload: TYPE_ANIMAL_PAYLOAD,
   ): Promise<ApiResponse<TYPE_ANIMAL>> => {
-    const response = await api.post<ApiResponse<API_ANIMAL>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.CREATE}`,
-      {
-        body: mapAnimalPayloadToApi(payload),
-      },
-    );
+    const response = await api.post<ApiResponse<API_ANIMAL>>("/animals", {
+      body: mapAnimalPayloadToApi(payload),
+    });
 
     const animal = unwrapData(response);
 
@@ -139,7 +134,7 @@ export const ANIMAL_SERVICE = {
     payload: TYPE_ANIMAL_PAYLOAD,
   ): Promise<ApiResponse<TYPE_ANIMAL>> => {
     const response = await api.put<ApiResponse<API_ANIMAL>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.UPDATE(id)}`,
+      `/animals/${id}`,
       {
         body: mapAnimalPayloadToApi(payload),
       },
@@ -155,8 +150,6 @@ export const ANIMAL_SERVICE = {
   },
 
   DELETE: async (id: number): Promise<ApiResponse<null>> => {
-    return api.delete<ApiResponse<null>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.DELETE(id)}`,
-    );
+    return api.delete<ApiResponse<null>>(`/animals/${id}`);
   },
 } as const;

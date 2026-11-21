@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/session";
+
+import { getDefaultRouteForRole } from "@/lib/navigation";
+import { getVerifiedSession } from "@/services/session.service";
 
 export default async function RootPage() {
-  const user = await getSessionUser();
+  const session = await getVerifiedSession();
 
-  redirect(user === null ? "/login" : "/dashboard");
+  redirect(session.ok ? getDefaultRouteForRole(session.user.role) : "/login");
 }

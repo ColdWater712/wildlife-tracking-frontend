@@ -1,3 +1,5 @@
+export const SESSION_COOKIE = "wms_session";
+
 const FALLBACK_TOKEN_COOKIE = "wms_token";
 
 const readCookieName = (

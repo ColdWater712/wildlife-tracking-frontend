@@ -1,3 +1,7 @@
+import { SearchX } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 type EmptyStateProps = {
   title: string;
   description?: string;
@@ -13,22 +17,22 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={
-        className === undefined
-          ? "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 bg-white px-5 py-12 text-center"
-          : `flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 bg-white px-5 py-12 text-center ${className}`
-      }
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line bg-surface px-5 py-12 text-center",
+        className,
+      )}
     >
-      <p className="text-sm font-semibold text-zinc-800">{title}</p>
-      {description ? <p className="text-sm text-zinc-500">{description}</p> : null}
-      {action ? (
-        <button
-          type="button"
-          onClick={action.onClick}
-          className="mt-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
-        >
+      <span className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+        <SearchX aria-hidden="true" className="size-6" />
+      </span>
+      <p className="text-sm font-semibold text-ink">{title}</p>
+      {description !== undefined ? (
+        <p className="max-w-sm text-sm leading-6 text-muted">{description}</p>
+      ) : null}
+      {action !== undefined ? (
+        <Button variant="outline" size="sm" className="mt-3" onClick={action.onClick}>
           {action.label}
-        </button>
+        </Button>
       ) : null}
     </div>
   );

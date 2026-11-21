@@ -20,9 +20,8 @@ import type {
   GeoZoneUpdatePayload,
 } from "@/services/geo-zone.service";
 
-import type { GeoZoneListParams } from "@/types/geo-zone";
+import type { GeoZoneListParams } from "@/types/geo-zone.type";
 
-// READ: Mengambil daftar zona
 export function useGeoZones(params?: GeoZoneListParams) {
   return useQuery({
     queryKey: ["geo-zones", params],
@@ -30,7 +29,6 @@ export function useGeoZones(params?: GeoZoneListParams) {
   });
 }
 
-// READ: Mengambil detail zona
 export function useGeoZoneById(id: number) {
   return useQuery({
     queryKey: ["geo-zones", id],
@@ -39,7 +37,6 @@ export function useGeoZoneById(id: number) {
   });
 }
 
-// CREATE: Menambahkan zona
 export function useGeoZoneCreate() {
   const queryClient = useQueryClient();
 
@@ -55,7 +52,6 @@ export function useGeoZoneCreate() {
   });
 }
 
-// UPDATE: Memperbarui zona
 export function useGeoZoneUpdate(id: number) {
   const queryClient = useQueryClient();
 
@@ -76,7 +72,6 @@ export function useGeoZoneUpdate(id: number) {
   });
 }
 
-// DELETE: Menghapus zona
 export function useGeoZoneDelete(id: number) {
   const queryClient = useQueryClient();
 

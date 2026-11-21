@@ -1,18 +1,19 @@
 import "leaflet/dist/leaflet.css";
 import { redirect } from "next/navigation";
+
 import { AppShell } from "@/components/layout/app-shell";
-import { getSessionUser } from "@/lib/session";
+import { getVerifiedSession } from "@/services/session.service";
 
 export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getSessionUser();
+  const session = await getVerifiedSession();
 
-  if (user === null) {
-    redirect("/login");
+  if (!session.ok) {
+    redirect(`/login?reason=${session.reason}`);
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  return <AppShell user={session.user}>{children}</AppShell>;
 }

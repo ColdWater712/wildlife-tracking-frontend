@@ -1,1301 +1,664 @@
-# 🐾 Sistem Pelacakan Pergerakan Satwa Liar Berbasis Sensor GPS — Frontend
+# Sistem Pelacakan Pergerakan Satwa Liar — Frontend
 
-> **Klien:** Balai Taman Nasional Gunung Leuser (BTNGL)
-> **Repo ini:** antarmuka web (Next.js App Router) untuk *Wildlife Monitoring System*
-> **PIC Frontend:** **Yohana Sinaga**
+README terpadu untuk repository `wildlife-tracking-frontend`. Dokumen ini menjadi satu-satunya sumber dokumentasi frontend: arsitektur, komponen, konvensi UI/UX, integrasi API, autentikasi, lingkungan pengembangan, pengujian, serta batasan yang diketahui.
 
-Dokumen ini adalah **sumber kebenaran tunggal** untuk mengerjakan bagian frontend.
-Semua penjelasan ditulis dalam Bahasa Indonesia; nama file, kode, dan istilah teknis
-tetap dalam Bahasa Inggris.
+Frontend ini adalah klien web Next.js App Router untuk **Balai Taman Nasional Gunung Leuser (BTNGL)**. Frontend mengelola antarmuka dan alur interaksi; data, validasi akhir, autentikasi, otorisasi, dan logika bisnis berada di backend Laravel pada repository `wildlife-tracking-backend`.
 
----
+## Daftar isi
 
-## 👥 Tim Proyek
+- [1. Ringkasan proyek](#1-ringkasan-proyek)
+- [2. Tumpukan teknologi](#2-tumpukan-teknologi)
+- [3. Arsitektur sistem](#3-arsitektur-sistem)
+- [4. Struktur proyek](#4-struktur-proyek)
+- [5. Routing dan modul utama](#5-routing-dan-modul-utama)
+- [6. Komponen yang dapat digunakan kembali](#6-komponen-yang-dapat-digunakan-kembali)
+- [7. Panduan UI/UX dan desain responsif](#7-panduan-uiux-dan-desain-responsif)
+- [8. Hook, layanan, dan integrasi API](#8-hook-layanan-dan-integrasi-api)
+- [9. Autentikasi dan otorisasi](#9-autentikasi-dan-otorisasi)
+- [10. Instalasi dan konfigurasi lingkungan](#10-instalasi-dan-konfigurasi-lingkungan)
+- [11. Alur kerja dan konvensi pengembangan](#11-alur-kerja-dan-konvensi-pengembangan)
+- [12. Pengujian dan validasi](#12-pengujian-dan-validasi)
+- [13. Keterbatasan dan peningkatan lanjutan](#13-keterbatasan-dan-peningkatan-lanjutan)
+- [14. Panduan tim dan referensi](#14-panduan-tim-dan-referensi)
 
-| Nama                          | Peran                           |
-| ----------------------------- | ------------------------------- |
-| Farrellino Ulung Satya Amando | PIC AI & Integration            |
-| Nuevalen Refitra Alswando     | PIC Database                    |
-| **Yohana Sinaga**       | **PIC Frontend** ⭐       |
-| Laura Chyndearni Saragih      | PIC Database                    |
-| Yohanna Purnomo               | PIC Backend & PIC Documentation |
+## 1. Ringkasan proyek
 
-Repo terkait: `wildlife-tracking-backend` (REST API Laravel) · `wildlife-tracking-database` (desain skema)
+Sistem ini membantu pemantauan satwa liar di ekosistem Gunung Leuser melalui data satwa, spesies, perangkat GPS, pembacaan posisi, zona geografis, insiden lapangan, notifikasi, dan laporan. Frontend menyajikan alur kerja tersebut dalam antarmuka web yang responsif dan terhubung ke API Laravel.
 
----
+| Modul | Tujuan utama | Status pada kode saat ini |
+| --- | --- | --- |
+| Login dan sesi | Masuk dengan email dan kata sandi, menyimpan sesi httpOnly | Terimplementasi; memiliki keterbatasan yang tercantum di bagian 9 |
+| Dashboard | Ringkasan satwa, perangkat, insiden, dan prediksi AI | Terhubung ke API; agregasi dilakukan di klien |
+| Satwa | Daftar, detail, pencarian, filter, tambah, ubah, hapus | Terimplementasi melalui list view, detail view, dan modal form |
+| Spesies | Daftar, detail, pencarian, filter, tambah, ubah, hapus | Terimplementasi dengan pola yang sama dengan satwa |
+| Perangkat | Daftar, detail, kondisi perangkat, tambah, ubah, hapus | Terimplementasi dengan pola yang sama dengan satwa |
+| Zona geografis | Daftar zona, data peta, tambah, ubah, hapus | Terimplementasi; list view masih memakai tabel lokal |
+| Insiden | Daftar dan pembuatan laporan insiden lapangan | Terimplementasi |
+| Notifikasi | Daftar notifikasi dan penandaan sebagai dibaca | Terimplementasi |
+| Peta langsung | Visualisasi posisi satwa dan zona dengan Leaflet | Terimplementasi |
+| Statistik | Ringkasan numerik dan grafik berdasarkan data API | Terhubung ke hook data; bukan angka statis pada kode saat ini |
+| Wildlife Explorer | Eksplorasi satwa | Placeholder antarmuka |
+| Prediksi AI | Verifikasi prediksi spesies | Endpoint terdaftar, belum ada UI khusus |
 
-## 📑 Daftar Isi
+Hubungan antarrepository:
 
-1. [Gambaran Umum](#1-gambaran-umum)
-2. [Tech Stack](#2-tech-stack)
-3. [Struktur Proyek](#3-struktur-proyek)
-4. [Alur Data &amp; Autentikasi](#4-alur-data--autentikasi)
-5. [Konvensi Coding](#5-konvensi-coding-wajib-dihafal-)
-6. [Endpoint API](#6-endpoint-api-yang-tersedia)
-7. [Cara Menjalankan](#7-cara-menjalankan)
-8. [Kredensial Uji](#8-kredensial-uji)
-9. [Matriks Akses Berbasis Role](#9-matriks-akses-berbasis-role)
-10. [Status Sprint](#10-status-sprint)
-11. [Panduan Cepat untuk Frontend PIC](#11-panduan-cepat-untuk-frontend-pic-yohana-)
-12. [Masalah Umum &amp; Solusi](#12-masalah-umum--solusi)
-13. [Referensi](#13-referensi)
-14. [Kontak](#14-kontak)
+| Repository | Peran |
+| --- | --- |
+| `wildlife-tracking-frontend` | Antarmuka web, state klien, dan komunikasi dengan API |
+| `wildlife-tracking-backend` | REST API, Sanctum, validasi, Eloquent, aturan bisnis, dan modul AI |
+| `wildlife-tracking-database` | Dokumentasi ERD, kamus data, dan rancangan skema |
 
----
+Port pengembangan: frontend `3000`, backend `8000`, dan MySQL `3306` bila dipakai. Secara default backend dapat berjalan dengan SQLite; konfigurasi database final berada di repository backend.
 
-## ⚠️ Catatan Penting Sebelum Mulai
+## 2. Tumpukan teknologi
 
-Brief sprint awal menyebut **Next.js 14 / React 18**. Manifest di `package.json` yang
-terpasang saat ini adalah **Next.js 16.3.8 / React 19.2.8**. Yang dipakai dalam kode dan
-dokumen ini adalah **hasil baca langsung dari repository**, bukan brief lama.
-Daftar selisih yang sering menjadi sumber confusion:
+Versi berikut berasal dari `package.json`. Tanda `^` berarti rentang versi yang diizinkan npm.
 
-| Brief lama                                 | Kenyataan di repo                                                                   | Ikuti yang mana                |
-| ------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------ |
-| Next.js 14, React 18                       | **Next.js 16.3.8, React 19.2.8**                                              | ✅ Manifest                    |
-| `services/api.ts`                        | **`services/api-client.ts`** (mengekspor `api`, bukan default export)     | ✅ Repo                        |
-| `types/export.type.ts`                   | **belum ada**                                                                 | Jangan di-import sampai dibuat |
-| `app/auth/login/`                        | **`app/login/page.tsx`**                                                    | ✅ Repo                        |
-| `next.config.js`, `tailwind.config.ts` | **`next.config.ts`**, Tailwind 4 **tanpa** file config                | ✅ Repo                        |
-| `NEXT_PUBLIC_COOKIE_SESSION`             | Nama cookie sesi `wms_session` **hardcoded** di `lib/session.ts:4`        | ✅ Repo                        |
-| `.env.local`                             | Repo memakai **`.env`** (`.env*` sudah di-gitignore)                      | Keduanya bisa                  |
-| `GET /api/export/gps`                    | Rutenya **`/api/export/gps/csv`** dan **`/api/export/gps/geojson`** | ✅ Repo                        |
-| `GET /api/animals/{id}`                  | **Belum ada** di backend                                                      | Jangan dipanggil               |
+| Kategori | Paket | Versi | Penggunaan |
+| --- | --- | --- | --- |
+| Framework | `next` | `16.3.8` | App Router, Server Actions, build produksi |
+| UI | `react`, `react-dom` | `19.2.8` | Render antarmuka |
+| Bahasa | `typescript` | `^5` | `strict: true` melalui `tsconfig.json` |
+| Styling | `tailwindcss`, `@tailwindcss/postcss` | `^4` | CSS-first Tailwind 4 di `app/globals.css` |
+| Data async | `@tanstack/react-query` | `^5.104.4` | Query, mutasi, cache, invalidasi |
+| Tabel | `@tanstack/react-table` | `^8.21.3` | Sorting, filtering, pagination klien |
+| Form | `react-hook-form`, `@hookform/resolvers` | `^7.90.0`, `^5.9.2` | Form login dan validasi Zod |
+| Validasi | `zod` | `^4.6.5` | Skema validasi sisi klien |
+| Peta | `leaflet`, `@types/leaflet` | `^1.9.4`, `^1.9.22` | Peta langsung dan zona |
+| Ikon | `lucide-react` | `^1.60.0` | Ikon antarmuka |
+| Utilitas kelas | `clsx`, `tailwind-merge` | `^2.1.1`, `^3.7.0` | Penggabungan kelas melalui `cn()` |
+| Lint | `eslint`, `eslint-config-next` | `^9`, `16.3.8` | `core-web-vitals` dan aturan TypeScript Next.js |
 
-Alias import `@/` menunjuk ke **root frontend** (`tsconfig.json` → `"@/*": ["./*"]`).
-**Tidak ada folder `src/`.** Path bertuliskan `src/...` di dokumen lama itu salah.
+Tidak ada Axios. Seluruh HTTP browser melewati satu `fetch` di `services/api.ts`. Belum ada runner test, dan tidak ada script `typecheck`; pemeriksaan tipe dijalankan dengan `npx tsc --noEmit`.
 
----
+## 3. Arsitektur sistem
 
-## 1. Gambaran Umum
+Alur data yang berlaku:
 
-**Sistem Pelacakan Pergerakan Satwa Liar Berbasis Sensor GPS** adalah aplikasi web untuk
-memantau pergerakan satwa endemik yang terancam punah di kawasan Taman Nasional Gunung
-Leuser, Sumatera Utara — **Orangutan Sumatra**, **Harimau Sumatra**, **Badak Sumatra**, dan
-**Gajah Sumatra** — melalui perangkat pelacak GPS yang dipasang pada leher satwa.
-
-Fitur utama:
-
-- 📍 **Pemantauan GPS real-time** — posisi satwa dari GPS collar, dipetakan pada live map.
-- 📝 **Pelaporan insiden lapangan** — konflik satwa–manusia, penjarahan, dan hotspot kebakaran hutan.
-- 🗺️ **Manajemen zona berisiko** — permukiman, jalan nasional, perkebunan, koridor ekologi.
-- 🤖 **Deteksi spesies berbasis AI** — assisted identification dari foto/video lapangan.
-- 📊 **Dashboard per peran** — ringkasan statistik untuk konservasionis, peneliti,
-  administrator, dan pengambil kebijakan.
-
-Frontend **hanya** mengurus UI dan komunikasi HTTP. Frontend **tidak pernah** menyentuh
-database atau provider AI secara langsung — semuanya lewat backend Laravel.
-
-### Peran pengguna
-
-| Nilai role (enum `users.role`) | Label di UI             |
-| -------------------------------- | ----------------------- |
-| `konservasionis_lapangan`      | Konservasionis Lapangan |
-| `peneliti_ekologi`             | Peneliti Ekologi        |
-| `administrator_sistem`         | Administrator Sistem    |
-| `pengambil_kebijakan`          | Pengambil Kebijakan     |
-
-🔐 Role yang ditampilkan di sidebar hanya untuk **UX**. Otorisasi sesungguhnya ditegakkan backend
-(`auth:sanctum` + Policy).
-
----
-
-## 2. Tech Stack
-
-| Lapisan               | Teknologi                                                                      | Versi terpasang                                        |
-| --------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Framework             | Next.js (**App Router**)                                                 | `16.3.8`                                             |
-| UI Library            | React / React DOM                                                              | `19.2.8`                                             |
-| Bahasa                | TypeScript (`strict: true`)                                                  | `^5`                                                 |
-| Styling               | Tailwind CSS (CSS-first config)                                                | `^4`                                                 |
-| Data fetching & cache | `@tanstack/react-query`                                                      | `^5.104.4`                                           |
-| Tabel                 | `@tanstack/react-table`                                                      | `^8.21.3`                                            |
-| Form                  | `react-hook-form` + `@hookform/resolvers`                                  | `^7.90.0` / `^5.9.2`                               |
-| Validasi              | Zod                                                                            | `^4.6.5`                                             |
-| Utility class         | `clsx` + `tailwind-merge`                                                  | `^2.1.1` / `^3.7.0`                                |
-| HTTP client           | **Fetch API bawaan browser** (`services/api-client.ts`) — tanpa Axios | —                                                     |
-| Linter                | ESLint (flat config)                                                           | `^9`                                                 |
-| **Backend**     | Laravel                                                                        | `^13.17` (PHP `^8.3`) — `http://localhost:8000` |
-| **Database**    | MySQL                                                                          | `8.0` — `127.0.0.1:3306`                          |
-| **Auth**        | Laravel Sanctum (Bearer token disimpan di cookie httpOnly)                     | —                                                     |
-
-> **Tidak ada Axios.** Semua request memakai `fetch` bawaan browser melalui
-> `services/api-client.ts`.
-> **Tailwind 4 tidak punya `tailwind.config.ts`.** Token desain ditulis di
-> `app/globals.css` memakai `@import "tailwindcss"` dan blok `@theme`.
-
----
-
-## 3. Struktur Proyek
-
+```mermaid
+flowchart LR
+    UI["Komponen atau halaman"] --> View["Shared view components"]
+    View --> Hook["Hook TanStack Query atau state lokal"]
+    Hook --> Service["Service modul"]
+    Service --> Client["services/api.ts"]
+    Client --> Action["forwardBackendAction Server Action"]
+    Action --> Laravel["Laravel REST API"]
+    Laravel --> DB[("Database")]
 ```
+
+Prinsip utama:
+
+- `app/` hanya routing. Tidak ada `app/api/`, route handler, atau logika bisnis di dalam direktori tersebut.
+- Satu-satunya file `"use server"` adalah `services/backend-actions.ts`. File ini menjadi batas server untuk membaca cookie dan meneruskan request ke backend.
+- `services/api.ts` adalah satu-satunya API client. File ini menangani base URL, header standar, query string, timeout 10 detik, `ApiError`, parsing respons, `fetch`, dan response `204 No Content`.
+- Service modul menulis path resource relatif terhadap base URL Laravel `/api` dan memanggil method di `services/api.ts`.
+- Komponen tidak pernah memanggil `fetch` atau API langsung.
+- Backend belum menyediakan pagination server. Service menyintesis `meta` secara lokal agar bentuk data konsumen tetap stabil.
+- Cookie `wms_session` dan `wms_token` berupa httpOnly. Token bearer hanya ditambahkan di server.
+
+Perubahan konfigurasi atau penambahan endpoint harus mengikuti alur ini. Jangan memperkenalkan proxy baru, route handler baru, atau lapisan mock di dalam komponen.
+
+## 4. Struktur proyek
+
+Struktur aktual root frontend:
+
+```text
 wildlife-tracking-frontend/
-├── app/                                  # Next.js App Router (routing + route handlers)
-│   ├── (protected)/                      # Route group: halaman wajib login
-│   │   ├── layout.tsx                    # Baca cookie sesi; redirect /login bila kosong
-│   │   ├── dashboard/
-│   │   │   └── page.tsx                  # Dashboard (ringkasan per role)
-│   │   ├── master-data/                  # Modul master data
-│   │   │   ├── animals/
-│   │   │   │   ├── page.tsx              # Tipis: hanya render <AnimalListView />
-│   │   │   │   ├── animal-list-view.tsx  # Client view: tabel + filter + state UI
-│   │   │   │   ├── columns.tsx           # Definisi kolom TanStack Table
-│   │   │   │   ├── filter.ts             # State filter + opsi dropdown
-│   │   │   │   └── [id]/detail/
-│   │   │   │       ├── page.tsx          # Server micomponent pembungkus
-│   │   │   │       └── animal-detail-view.tsx
-│   │   │   ├── species/                  # Pola identik dengan animals
-│   │   │   └── devices/                  # Pola identik dengan animals
-│   │   ├── incidents/
-│   │   │   ├── page.tsx
-│   │   │   └── incident-list-view.tsx
-│   │   ├── notifications/
-│   │   │   ├── page.tsx
-│   │   │   └── notification-list-view.tsx
-│   │   └── tracking/
-│   │       └── live-map/
-│   │           ├── page.tsx
-│   │           └── live-map-view.tsx     # Placeholder; map provider belum diintegrasikan
-│   ├── api/                              # Route handler Next.js = lapisan proxy server
-│   │   ├── auth/
-│   │   │   ├── login/route.ts            # POST → Laravel /api/login, tulis cookie
-│   │   │   └── logout/route.ts           # POST → hapus semua cookie auth
-│   │   └── wildlife/[...path]/route.ts   # Proxy GET → Laravel (allow-list resource)
+├── app/
+│   ├── layout.tsx
+│   ├── globals.css
+│   ├── page.tsx
 │   ├── login/
-│   │   └── page.tsx                      # Halaman login (Sprint 1 ✅)
-│   ├── globals.css                       # @import "tailwindcss" + blok @theme
-│   ├── layout.tsx                        # Root layout + <QueryProvider>
-│   └── page.tsx                          # Redirect → /dashboard atau /login
-│
-├── components/                           # Komponen UI reusable
-│   ├── dashboard/
-│   │   └── dashboard-view.tsx
-│   ├── layout/                           # Chrome aplikasi
-│   │   ├── app-shell.tsx                 # Wrapper: sidebar + header + <main>
-│   │   ├── header.tsx                    # Top bar (user, notifikasi, logout)
-│   │   └── sidebar.tsx                   # Navigasi berdasarkan role
+│   │   └── page.tsx
+│   └── (protected)/
+│       ├── layout.tsx
+│       ├── dashboard/
+│       ├── animals/
+│       ├── species/
+│       ├── devices/
+│       ├── geo-zones/
+│       ├── incidents/
+│       ├── notifications/
+│       ├── tracking/live-map/
+│       ├── statistics/
+│       └── wildlife-explorer/
+├── components/
+│   ├── auth/
+│   ├── layout/
 │   ├── providers/
-│   │   └── query-provider.tsx            # QueryClientProvider global (sudah terpasang)
-│   ├── ui/                               # Komponen atomik
-│   │   ├── data-table.tsx                # Wrapper TanStack Table
-│   │   ├── data-filters.tsx              # Filter bar (search, select, date range)
-│   │   ├── loading.tsx                   # Spinner / skeleton
-│   │   ├── error-state.tsx               # Error boundary + pesan ApiError
-│   │   ├── status-badge.tsx              # Badge status (success/warning/danger/info/neutral)
-│   │   ├── empty-state.tsx               # Keadaan data kosong
-│   │   └── stat-card.tsx                 # Kartu statistik dashboard
-│   └── wildlife/
-│       └── device-alerts.tsx
-│
-├── hooks/                                # Hook React Query (SATU-SATUNYA akses data)
-│   ├── animal.hook.ts                    # useAnimal, useInfiniteAnimal, useAnimalById,
-│   │                                     # useAnimalCreate, useAnimalUpdate, useAnimalDelete
-│   ├── species.hook.ts                   # Pola sama untuk spesies
-│   ├── user.hook.ts                      # Pola sama untuk user
-│   ├── index.ts                          # Barrel export
-│   ├── useAsyncResource.ts               # ⚠️ LEGACY — jangan tiru untuk kode baru
-│   ├── use-debounce.ts                   # Helper umum
-│   ├── useDashboardSummary.ts            # ⚠️ LEGACY
-│   ├── useGeoZones.ts                    # ⚠️ LEGACY
-│   ├── useGPSReadings.ts                 # ⚠️ LEGACY
-│   ├── useIncidentReports.ts            # ⚠️ LEGACY
-│   ├── useNotifications.ts               # ⚠️ LEGACY
-│   └── useTrackingDevices.ts             # ⚠️ LEGACY
-│
-├── lib/                                  # Utilitas lintas fitur (server + client)
-│   ├── cookie-names.ts                   # Resolver nama cookie dari env + fallback
-│   ├── laravel-proxy.ts                  # fetch server-side ke Laravel, normalisasi payload
-│   ├── navigation.ts                     # Peta role → menu (NAV_SECTIONS)
-│   ├── session.ts                        # getSessionUser(), nama cookie wms_session
-│   └── utils.ts                          # cn() dan pembantu umum
-│
-├── services/                             # Service layer — HANYA lapisan yang memanggil API
-│   ├── api-client.ts                     # api.get/post/put/patch/delete + ApiError + timeout
-│   ├── endpoint.ts                       # API_ENDPOINT + WILDLIFE_BASE_PATH
-│   ├── cookieToken.ts                    # Server-only: baca/tulis cookie token
-│   ├── animal.service.ts                 # ANIMAL_SERVICE
-│   ├── species.service.ts                # SPECIES_SERVICE
-│   ├── user.service.ts                   # USER_SERVICE
-│   ├── tracking-device.service.ts        # ⚠️ LEGACY (getTrackingDevices, dll.)
-│   ├── gps-reading.service.ts            # ⚠️ LEGACY
-│   ├── geo-zone.service.ts               # ⚠️ LEGACY
-│   ├── incident-report.service.ts        # ⚠️ LEGACY
-│   ├── notification.service.ts           # ⚠️ LEGACY
-│   ├── dashboard.service.ts              # ⚠️ LEGACY
-│   └── index.ts                          # Barrel export
-│
-├── types/                                # Semua type TypeScript
-│   ├── api.type.ts                       # ApiResponse, ApiErrorKind, ApiErrorState
-│   ├── endpoint.type.ts                  # QUERY_PARAMS_API_GET_ALL, TYPE_MUTATION_RESULT
-│   ├── meta.type.ts                      # TYPE_META_PAGGINATION
-│   ├── user.type.ts                      # TYPE_USER, TYPE_USER_ROLE, TYPE_LOGIN_*
-│   ├── species.type.ts                   # TYPE_SPECIES, TYPE_CONSERVATION_STATUS
-│   ├── animal.type.ts                    # TYPE_ANIMAL, TYPE_ANIMAL_GENDER
-│   ├── tracking-device.type.ts           # ⚠️ LEGACY (belum .type.ts)
-│   ├── dashboard.ts                      # ⚠️ LEGACY
-│   ├── gps-reading.ts                    # ⚠️ LEGACY
-│   ├── geo-zone.ts                       # ⚠️ LEGACY
-│   ├── incident-report.ts                # ⚠️ LEGACY
-│   ├── notification.ts                   # ⚠️ LEGACY
-│   └── index.ts                          # Barrel export
-│
-├── schemas/                              # Skema Zod per entity (folder masih kosong)
+│   ├── shared/
+│   │   ├── animals/
+│   │   ├── dashboard/
+│   │   ├── devices/
+│   │   ├── geo-zones/
+│   │   ├── incidents/
+│   │   ├── notifications/
+│   │   ├── species/
+│   │   └── tracking/
+│   └── ui/
+├── hooks/
+├── lib/
+├── public/
+│   └── images/
+├── services/
+├── types/
 ├── utils/
-│   └── format.ts                         # formatDate, formatShortDate, formatNumber, dll.
-├── public/                               # Aset statis
-├── .env                                  # Environment lokal (gitignored)
-├── .gitignore
-├── eslint.config.mjs                     # ESLint 9 flat config
-├── next.config.ts                        # Konfigurasi Next.js
+├── .env.example
+├── eslint.config.mjs
+├── next.config.ts
+├── next-env.d.ts
 ├── package.json
-├── postcss.config.mjs                    # Plugin @tailwindcss/postcss
-└── tsconfig.json                         # strict: true, alias "@/*"
+├── package-lock.json
+├── postcss.config.mjs
+└── tsconfig.json
 ```
 
-> 📌 **Dua pola hidup berdampingan.** File `*.type.ts` + `[entity].service.ts` +
-> `[entity].hook.ts` adalah **pola terkini**. File `useXxx.ts` dan `types/xxx.ts`
-> (tanpa suffix `.type`) adalah **pola lama** yang belum dimigrasi. **Jangan menyalin
-> gaya kode legacy ke file baru.**
+Fungsi direktori:
 
-### Route yang tersedia
+| Direktori | Isi dan batas |
+| --- | --- |
+| `app/` | Halaman dan layout Next.js. Page sebaiknya tipis dan hanya merakit hook serta shared component. |
+| `components/ui/` | Primitif antarmuka generik: tombol, form, panel, dialog, tabel, filter, state, badge, statistik, breadcrumb. |
+| `components/shared/<domain>/` | View, list, detail, dan form spesifik domain. Komponen di sini boleh mengetahui bentuk data domain. |
+| `components/layout/` | `AppShell`, `Header`, `Sidebar`, `MobileNav`, dan `NavIcon`. |
+| `components/providers/` | `QueryClientProvider` dan `ToastProvider`. |
+| `components/auth/` | Form login dan komponen terkait autentikasi. |
+| `hooks/` | Semua custom hook, datar, dengan awalan `use-`. |
+| `services/` | HTTP client, Server Action, registry endpoint, cookie, konfigurasi server, dan service per domain. |
+| `types/` | Semua tipe TypeScript, datar, dengan akhiran `.type.ts`. |
+| `lib/` | Infrastruktur lintas modul: sesi, navigasi, nama cookie, dan utilitas kelas. |
+| `utils/` | Fungsi murni kecil seperti formatter. |
+| `public/` | Aset statis, termasuk logo BTNGL. |
 
-| URL                         | Keterangan                                 |
-| --------------------------- | ------------------------------------------ |
-| `/`                       | Redirect ke `/dashboard` atau `/login` |
-| `/login`                  | Form login (publik)                        |
-| `/dashboard`              | Ringkasan per role                         |
-| `/master-data/animals`    | Daftar satwa (+ `/[id]/detail`)          |
-| `/master-data/species`    | Daftar spesies (+ `/[id]/detail`)        |
-| `/master-data/devices`    | Daftar perangkat (+ `/[id]/detail`)      |
-| `/incidents`              | Daftar laporan insiden                     |
-| `/notifications`          | Daftar notifikasi                          |
-| `/tracking/live-map`      | Live map (provider map belum terintegrasi) |
-| `/api/wildlife/[...path]` | Proxy ke Laravel (**GET saja**)      |
-| `/api/auth/login`         | `POST` → Laravel `/api/login`         |
-| `/api/auth/logout`        | `POST` → hapus cookie auth              |
+Alias `@/*` menunjuk ke root frontend melalui `tsconfig.json`. Tidak ada direktori `src/`, `features/`, `schemas/`, atau `constants/`. Semua folder berada langsung di root repository.
 
-Route group `(protected)` **tidak mengubah URL**, hanya menambah proteksi.
+File baru ditempatkan sebagai berikut:
 
----
+| Kebutuhan | Lokasi |
+| --- | --- |
+| Halaman baru | `app/(protected)/<modul>/page.tsx` |
+| Tampilan domain baru | `components/shared/<modul>/` |
+| Komponen generik baru | `components/ui/` |
+| Hook pengambilan data baru | `hooks/use-<modul>.ts` |
+| Service API baru | `services/<modul>.service.ts` |
+| Tipe baru | `types/<modul>.type.ts` |
+| Entri menu | `lib/navigation.ts` |
+| Permintaan API baru | `api.get`/`api.post` di service modul; path relatif terhadap `/api` |
 
-## 4. Alur Data & Autentikasi
+Rute legacy `/master-data/animals`, `/master-data/species`, `/master-data/devices`, dan `/master-data/geo-zones` tetap berfungsi melalui rewrite di `next.config.ts` ke rute tanpa prefiks `/master-data`.
 
-```
-Component (client)
-   ↓ panggil hook
-Hook (useAnimal, useSpecies, …)  ← @tanstack/react-query
-   ↓ panggil service
-Service (ANIMAL_SERVICE, SPECIES_SERVICE, …)
-   ↓ panggil api-client
-services/api-client.ts  → fetch same-origin "/api/wildlife/..."
-   ↓ Next.js route handler
-app/api/wildlife/[...path]/route.ts   ← GET only, allow-list resource
-   ↓ lib/laravel-proxy.ts (server-side, HEADER Authorization: Bearer)
-Laravel http://localhost:8000/api
-```
+## 5. Routing dan modul utama
 
-**Kenapa harus lewat proxy?** Backend **tidak** mengirim header CORS. Panggilan langsung
-dari browser ke `:8000` akan diblokir. Karena itu semua request data harus **same-origin**
-(`/api/...`) lalu diteruskan server-side oleh Next.js.
+Grup `(protected)` tidak memengaruhi URL. Layout grup memeriksa cookie sesi dan mengalihkan ke `/login` bila sesi tidak ada.
 
-**Token tidak pernah menyentuh JavaScript client.** Setelah login berhasil,
-`app/api/auth/login/route.ts` menulis dua cookie **httpOnly**:
+| Rute | File halaman | Fungsi |
+| --- | --- | --- |
+| `/` | `app/page.tsx` | Alihkan ke `/dashboard` atau `/login` sesuai sesi |
+| `/login` | `app/login/page.tsx` | Form masuk |
+| `/dashboard` | `app/(protected)/dashboard/page.tsx` | Ringkasan operasional |
+| `/animals` | `app/(protected)/animals/page.tsx` | Daftar satwa |
+| `/animals/create` | `app/(protected)/animals/create/page.tsx` | Tambah satwa |
+| `/animals/[id]/detail` | `app/(protected)/animals/[id]/detail/page.tsx` | Detail satwa dan riwayat terkait |
+| `/animals/[id]/update` | `app/(protected)/animals/[id]/update/page.tsx` | Ubah satwa |
+| `/species` | `app/(protected)/species/page.tsx` | Daftar spesies |
+| `/species/create` | `app/(protected)/species/create/page.tsx` | Tambah spesies |
+| `/species/[id]/detail` | `app/(protected)/species/[id]/detail/page.tsx` | Detail spesies |
+| `/species/[id]/update` | `app/(protected)/species/[id]/update/page.tsx` | Ubah spesies |
+| `/devices` | `app/(protected)/devices/page.tsx` | Daftar perangkat GPS |
+| `/devices/create` | `app/(protected)/devices/create/page.tsx` | Tambah perangkat |
+| `/devices/[id]/detail` | `app/(protected)/devices/[id]/detail/page.tsx` | Detail perangkat |
+| `/devices/[id]/update` | `app/(protected)/devices/[id]/update/page.tsx` | Ubah perangkat |
+| `/geo-zones` | `app/(protected)/geo-zones/page.tsx` | Daftar dan peta zona |
+| `/geo-zones/create` | `app/(protected)/geo-zones/create/page.tsx` | Tambah zona |
+| `/geo-zones/[id]/update` | `app/(protected)/geo-zones/[id]/update/page.tsx` | Ubah zona |
+| `/incidents` | `app/(protected)/incidents/page.tsx` | Daftar insiden |
+| `/incidents/create` | `app/(protected)/incidents/create/page.tsx` | Tambah insiden |
+| `/incidents/[id]/update` | `app/(protected)/incidents/[id]/update/page.tsx` | Ubah insiden |
+| `/notifications` | `app/(protected)/notifications/page.tsx` | Daftar notifikasi |
+| `/tracking/live-map` | `app/(protected)/tracking/live-map/page.tsx` | Peta posisi langsung |
+| `/statistics` | `app/(protected)/statistics/page.tsx` | Statistik dari data API |
+| `/wildlife-explorer` | `app/(protected)/wildlife-explorer/page.tsx` | Placeholder eksplorasi |
 
-| Cookie          | Isi                                   | Dibaca oleh                                             |
-| --------------- | ------------------------------------- | ------------------------------------------------------- |
-| `wms_session` | Payload user (JSON) untuk gating role | `lib/session.ts`                                      |
-| `wms_token`   | Bearer token Sanctum                  | `services/cookieToken.ts` → `lib/laravel-proxy.ts` |
+Pola halaman yang disarankan: halaman menentukan judul/breadcrumb, memanggil shared view, dan menyerahkan pengambilan data ke hook. Halaman tidak boleh berisi loop request, manipulasi cookie, atau pembentukan header Authorization.
 
-> ⚠️ **Aturan keras:** hanya `lib/laravel-proxy.ts` yang boleh meng-import
-> `services/cookieToken.ts`. Jangan pernah meng-import `next/headers` di file yang akan
-> dieksekusi di browser.
+## 6. Komponen yang dapat digunakan kembali
 
-### Normalisasi envelope
+### 6.1 Primitif antarmuka
 
-Backend belum seragam: `/api/animals` dan `/api/species` mengirim `{ data: [...] }`,
-`/api/devices` mengirim `{ success, data }`, `/api/gps-readings` mengirim
-`{ success, data, total }`. `lib/laravel-proxy.ts` menormalkan semuanya menjadi
-`{ success, message, data }`. `meta` (pagination) **disintesis di service layer**
-sampai backend benar-benar mengimplementasikan pagination.
+| Komponen | Path | Perilaku utama |
+| --- | --- | --- |
+| `Button` | `components/ui/button.tsx` | Varian `primary`, `secondary`, `outline`, `ghost`, `danger`; ukuran `sm`, `md`, `lg`, `icon`; properti `loading` dan `icon`. |
+| `FormField`, `TextInput`, `SelectInput`, `TextArea`, `FormActions`, `FormAlert` | `components/ui/form.tsx` | Label, hint, error, `aria-invalid`, `role="alert"`, dan helper `fieldDescribedBy()`. |
+| `Panel`, `PageHeader`, `SectionHeader` | `components/ui/panel.tsx` | Kerangka kartu dan hierarki judul halaman. |
+| `Modal`, `ConfirmationDialog` | `components/ui/modal.tsx`, `components/ui/confirmation-dialog.tsx` | Form create/edit dan konfirmasi hapus. |
+| `DataTable` | `components/ui/data-table.tsx` | Sorting, filtering, pagination klien, state kosong, state pemuatan, klik dan keyboard baris. |
+| `DataFilters` | `components/ui/data-filters.tsx` | Baris pencarian dan filter dengan `resetable`. |
+| `Loading`, `EmptyState`, `ErrorState`, `StatusBadge`, `StatCard` | `components/ui/` | State standar dan kartu ringkasan. |
+| `Breadcrumb` | `components/ui/breadcrumb.tsx` | Breadcrumb halaman dari konfigurasi rute. |
+| `QueryProvider`, `ToastProvider` | `components/providers/` | Cache TanStack Query dan notifikasi singkat global. |
+| `AppShell`, `Header`, `Sidebar`, `MobileNav`, `NavIcon` | `components/layout/` | Chrome aplikasi, menu per role, dan navigasi mobile. |
+| `LoginForm` | `components/auth/login-form.tsx` | Form masuk dengan React Hook Form dan Zod. |
 
----
+### 6.2 Komponen domain
 
-## 5. Konvensi Coding (WAJIB DIHAFAL) 🔑
+Setiap domain memiliki pola yang konsisten:
 
-Tiga pola ini adalah inti dari seluruh codebase. Hafalkan, terapkan konsisten:
+- `<domain>-list-view.tsx`: memuat data, filter, `DataTable`, tombol aksi, dan konfirmasi hapus; tombol create/edit mengarah ke rute terkait.
+- `<domain>-form.tsx`: satu form untuk create dan edit; perbedaan hanya data awal dan handler submit.
+- `<domain>-form-page.tsx`: wrapper halaman Create/Update berdasarkan `components/shared/form-page.tsx`.
+- `<domain>-detail-view.tsx`: layout detail, ringkasan, dan aksi lanjutan.
+- `columns.tsx` dan `filter.ts`: definisi kolom dan filter pada domain yang memakai `DataTable`.
 
-| Lapisan | Pola                                                                                                                               | Contoh                                   |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Type    | `TYPE_[ENTITY]`, `TYPE_[ENTITY]_PAYLOAD`, `TYPE_[ENTITY]_GET_ALL_RESPONSE`, `TYPE_[ENTITY]_GET_BY_ID_RESPONSE`             | `TYPE_ANIMAL`, `TYPE_ANIMAL_PAYLOAD` |
-| Service | konstanta `[ENTITY]_SERVICE` dengan method `GET_ALL` / `GET_BY_ID` / `CREATE` / `UPDATE` / `DELETE`                    | `ANIMAL_SERVICE`                       |
-| Hook    | `use[Entity]`, `useInfinite[Entity]`, `use[Entity]ById`, `use[Entity]Create`, `use[Entity]Update`, `use[Entity]Delete` | `useAnimalById`                        |
+Contoh penggunaan form:
 
-> File name → nama symbol: `animal.type.ts` → `TYPE_ANIMAL`;
-> `animal.service.ts` → `ANIMAL_SERVICE`; `animal.hook.ts` → `useAnimal`.
-> **Tiga nama itu selalu berjalan beriringan.**
-
-### 5.1 Konvensi nama file
-
-| Jenis            | Format                                               | Contoh                                                                 |
-| ---------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Types            | `[entity].type.ts` (kecil, boleh hyphen)           | `user.type.ts`, `tracking-device.type.ts`, `gps-reading.type.ts` |
-| Service          | `[entity].service.ts`                              | `species.service.ts`, `tracking-device.service.ts`                 |
-| Hook             | `[entity].hook.ts`                                 | `animal.hook.ts`, `gps-reading.hook.ts`                            |
-| Komponen         | `PascalCase.tsx`                                   | `AnimalListView` di `animal-list-view.tsx`                         |
-| Kolom tabel      | `columns.tsx` di dalam folder modul                | `app/(protected)/master-data/animals/columns.tsx`                    |
-| Filter           | `filter.ts` di dalam folder modul                  | `.../animals/filter.ts`                                              |
-| View per halaman | `[nama]-list-view.tsx`, `[nama]-detail-view.tsx` | `incident-list-view.tsx`                                             |
-| Server component | `page.tsx`, `layout.tsx`                         | selalu                                                                 |
-
-> Teks UI, comment, dan pesan error **Bahasa Indonesia**.
-> Nama identifier, nama file, dan istilah teknis **Bahasa Inggris**.
-
-### 5.2 Konvensi nama type
-
-Semua type memakai awalan `TYPE_` dan HURUF BESAR. Empat type wajib per entity:
-
-| Type                                 | Isi                                                                           |
-| ------------------------------------ | ----------------------------------------------------------------------------- |
-| `TYPE_[ENTITY]`                    | Entitas tunggal                                                               |
-| `TYPE_[ENTITY]_PAYLOAD`            | Body untuk create/update                                                      |
-| `TYPE_[ENTITY]_GET_ALL_RESPONSE`   | `{ items: TYPE_X[]; meta: TYPE_META_PAGGINATION }`                          |
-| `TYPE_[ENTITY]_GET_BY_ID_RESPONSE` | `{ items: TYPE_X; meta: null }` — `items` **tunggal**, bukan array |
-
-📄 **`types/animal.type.ts` — contoh lengkap (file ini sudah ada, tiru persis):**
-
-```typescript
-import { TYPE_META_PAGGINATION } from "@/types/meta.type";
-import type { TYPE_SPECIES } from "@/types/species.type";
-
-export type TYPE_ANIMAL_GENDER = "Jantan" | "Betina" | "Tidak Diketahui";
-
-export type TYPE_ANIMAL = {
-  animal_id: number;
-  species_id: number;
-  animal_code: string;
-  birth_date: string | null;
-  gender: TYPE_ANIMAL_GENDER;
-  birth_date_label?: string;
-  is_active: boolean;
-  species?: TYPE_SPECIES | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type TYPE_ANIMAL_PAYLOAD = {
-  species_id: number;
-  animal_code: string;
-  birth_date: string | null;
-  gender: TYPE_ANIMAL_GENDER;
-  is_active: boolean;
-};
-
-export type TYPE_ANIMAL_GET_ALL_RESPONSE = {
-  items: TYPE_ANIMAL[];
-  meta: TYPE_META_PAGGINATION;
-};
-
-export type TYPE_ANIMAL_GET_BY_ID_RESPONSE = {
-  items: TYPE_ANIMAL;
-  meta: null;
-};
-
-export const TYPE_ANIMAL_GENDER_LABELS: Record<TYPE_ANIMAL_GENDER, string> = {
-  Jantan: "Jantan",
-  Betina: "Betina",
-  "Tidak Diketahui": "Tidak Diketahui",
-};
-
-export const TYPE_ANIMAL_GENDER_GLYPHS: Record<TYPE_ANIMAL_GENDER, string> = {
-  Jantan: "♂",
-  Betina: "♀",
-  "Tidak Diketahui": "?",
-};
+```tsx
+<FormField label="Email" htmlFor="email" required error={errors.email?.message}>
+  <TextInput
+    id="email"
+    type="email"
+    autoComplete="email"
+    invalid={errors.email !== undefined}
+    aria-describedby={fieldDescribedBy("email", false, errors.email !== undefined)}
+    {...register("email")}
+  />
+</FormField>
+<Button type="submit" loading={isSubmitting}>
+  Masuk
+</Button>
 ```
 
-📄 **`types/meta.type.ts`:**
+Contoh penggunaan tabel:
 
-```typescript
-export type TYPE_META_PAGGINATION = {
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-  total_items: number;
-};
+```tsx
+<DataTable
+  data={animals}
+  columns={columns}
+  loading={isLoading}
+  label="daftar satwa"
+  emptyTitle="Belum ada satwa"
+  onRowClick={(animal) => router.push(`/animals/${animal.animal_id}/detail`)}
+/>
 ```
 
-📄 **`types/endpoint.type.ts`:**
-
-```typescript
-export type TYPE_ORDER_DIRECTION = "asc" | "desc";
-
-export type QUERY_PARAMS_API_GET_ALL = {
-  page: number;
-  per_page: number;
-  order?: TYPE_ORDER_DIRECTION;
-  orderBy?: string;
-  search?: string;
-};
-
-export type TYPE_MUTATION_RESULT<T> = {
-  data: T;
-  isPending: boolean;
-  isSuccess: boolean;
-  isError: boolean;
-  error: unknown;
-  reset: () => void;
-};
-```
-
-📄 **`types/api.type.ts` (kontrak response API):**
-
-```typescript
-export type ApiResponse<T> = {
-  success: boolean;
-  message: string;
-  data: T;
-  errors?: Record<string, string[]> | null;
-};
-
-export type ApiErrorKind =
-  | "unauthorized"
-  | "forbidden"
-  | "validation"
-  | "not_found"
-  | "server"
-  | "network"
-  | "unknown";
-
-export type ApiErrorState = {
-  kind: ApiErrorKind;
-  status: number;
-  message: string;
-  errors: Record<string, string[]> | null;
-};
-```
-
-Aturan tambahan:
-
-- Gunakan `import type { … }` untuk type-only import.
-- **DILARANG** `interface` → selalu `type`.
-- **DILARANG** `any` → gunakan `unknown` lalu narrow.
-- Ekspor lewat `types/index.ts` (barrel) bila memang dipakai luas.
-- Enum domain (gender, status konservasi) diubah jadi **string union**, bukan `enum`.
-
-### 5.3 Konvensi service
-
-Satu konstanta **HURUF BESAR** per entity. Semua method mengembalikan
-`Promise<ApiResponse<T>>` yang sudah diberi tipe secara eksplisit. Body write dikirim sebagai
-**`{ body: payload }`**, bukan sebagai argumen kedua.
-
-📄 **`services/animal.service.ts` — contoh lengkap (sudah ada, tiru persis):**
-
-```typescript
-import { api } from "@/services/api-client";
-import { API_ENDPOINT, WILDLIFE_BASE_PATH } from "@/services/endpoint";
-import type { ApiResponse } from "@/types/api.type";
-import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
-import type {
-  TYPE_ANIMAL,
-  TYPE_ANIMAL_GET_ALL_RESPONSE,
-  TYPE_ANIMAL_GET_BY_ID_RESPONSE,
-  TYPE_ANIMAL_PAYLOAD,
-} from "@/types/animal.type";
-
-export const ANIMAL_SERVICE = {
-  GET_ALL: async (
-    params?: Partial<QUERY_PARAMS_API_GET_ALL>,
-  ): Promise<ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE>> => {
-    return api.get<ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_ALL(params)}`,
-    );
-  },
-
-  GET_BY_ID: async (
-    id: number,
-  ): Promise<ApiResponse<TYPE_ANIMAL_GET_BY_ID_RESPONSE>> => {
-    return api.get<ApiResponse<TYPE_ANIMAL_GET_BY_ID_RESPONSE>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.GET_BY_ID(id)}`,
-    );
-  },
-
-  CREATE: async (
-    payload: TYPE_ANIMAL_PAYLOAD,
-  ): Promise<ApiResponse<TYPE_ANIMAL>> => {
-    return api.post<ApiResponse<TYPE_ANIMAL>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.CREATE}`,
-      { body: payload },
-    );
-  },
-
-  UPDATE: async (
-    id: number,
-    payload: TYPE_ANIMAL_PAYLOAD,
-  ): Promise<ApiResponse<TYPE_ANIMAL>> => {
-    return api.put<ApiResponse<TYPE_ANIMAL>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.UPDATE(id)}`,
-      { body: payload },
-    );
-  },
-
-  DELETE: async (id: number): Promise<ApiResponse<null>> => {
-    return api.delete<ApiResponse<null>>(
-      `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.ANIMALS.DELETE(id)}`,
-    );
-  },
-} as const;
-```
-
-📄 **`services/endpoint.ts` — semua path dikumpulkan di satu tempat:**
-
-```typescript
-export const WILDLIFE_BASE_PATH = "/api/wildlife";
-
-export const API_ENDPOINT = {
-  AUTH: {
-    LOGIN: "/auth/login",
-    LOGOUT: "/auth/logout",
-    ME: "/me",
-  },
-  WILDLIFE: {
-    USER: {
-      GET_ALL: (params?: Partial<QUERY_PARAMS_API_GET_ALL>) => listPath("users", params),
-      GET_BY_ID: (id: number) => `/users/${id}`,
-      CREATE: "/users",
-      UPDATE: (id: number) => `/users/${id}`,
-      DELETE: (id: number) => `/users/${id}`,
-    },
-    SPECIES: {
-      GET_ALL: (params?: Partial<QUERY_PARAMS_API_GET_ALL>) =>
-        listPath("species", params),
-      GET_BY_ID: (id: number) => `/species/${id}`,
-      CREATE: "/species",
-      UPDATE: (id: number) => `/species/${id}`,
-      DELETE: (id: number) => `/species/${id}`,
-    },
-    ANIMALS: {
-      GET_ALL: (params?: Partial<QUERY_PARAMS_API_GET_ALL>) =>
-        listPath("animals", params),
-      GET_BY_ID: (id: number) => `/animals/${id}`,
-      CREATE: "/animals",
-      UPDATE: (id: number) => `/animals/${id}`,
-      DELETE: (id: number) => `/animals/${id}`,
-    },
-  },
-} as const;
-```
-
-⚠️ `CREATE` / `UPDATE` / `DELETE` **sudah dikontrak di kode, tapi belum bisa dipakai** —
-backend belum mendaftarkan route write dan proxy baru mengekspor `GET`. Lihat §6.
-
-### 5.4 Konvensi hook
-
-Semua hook dibangun di atas `@tanstack/react-query`. `QueryProvider` sudah terpasang
-global di `app/layout.tsx` — **tidak perlu** setup lagi di halaman baru.
-
-📄 **`hooks/animal.hook.ts` — contoh lengkap (sudah ada, tiru persis):**
-
-```typescript
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { ANIMAL_SERVICE } from "@/services/animal.service";
-import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
-import type { TYPE_ANIMAL_PAYLOAD } from "@/types/animal.type";
-
-export const useAnimal = (params?: QUERY_PARAMS_API_GET_ALL) => {
-  return useQuery({
-    queryKey: ["animals", params],
-    queryFn: () => ANIMAL_SERVICE.GET_ALL(params),
-  });
-};
-
-export const useInfiniteAnimal = (
-  params: Omit<QUERY_PARAMS_API_GET_ALL, "page">,
-) => {
-  return useInfiniteQuery({
-    queryKey: ["animals-infinite", params],
-    queryFn: ({ pageParam = 1 }) =>
-      ANIMAL_SERVICE.GET_ALL({ ...params, page: pageParam as number }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const meta = lastPage?.data?.meta;
-
-      if (!meta) return undefined;
-
-      return meta.page < meta.total_pages ? meta.page + 1 : undefined;
-    },
-  });
-};
-
-export const useAnimalById = (id: number) => {
-  return useQuery({
-    queryKey: ["animals", id],
-    queryFn: () => ANIMAL_SERVICE.GET_BY_ID(id),
-    enabled: Number.isFinite(id) && id > 0,
-  });
-};
-
-export const useAnimalCreate = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: TYPE_ANIMAL_PAYLOAD) => ANIMAL_SERVICE.CREATE(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["animals"] });
-    },
-  });
-};
-
-export const useAnimalUpdate = (id: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (payload: TYPE_ANIMAL_PAYLOAD) =>
-      ANIMAL_SERVICE.UPDATE(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["animals"] });
-      queryClient.invalidateQueries({ queryKey: ["animals", id] });
-    },
-  });
-};
-
-export const useAnimalDelete = (id: number) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => ANIMAL_SERVICE.DELETE(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["animals"] });
-      queryClient.invalidateQueries({ queryKey: ["animals", id] });
-    },
-  });
-};
-```
-
-📋 **Aturan query key** (jangan diacak):
-
-| Hook                          | `queryKey`                     |
-| ----------------------------- | -------------------------------- |
-| `useAnimal(params)`         | `["animals", params]`          |
-| `useInfiniteAnimal(params)` | `["animals-infinite", params]` |
-| `useAnimalById(id)`         | `["animals", id]`              |
-
-Suffix **jamak** untuk list (`"animals"`), **tunggal** untuk detail (`id` sebagai elemen
-kedua). Setelah mutasi sukses, selalu `invalidateQueries` dengan prefix yang sama.
-
-### 5.5 Kontrak response API
-
-Semua respons backend dinormalisasi menjadi:
-
-```typescript
-export type ApiResponse<T> = {
-  success: boolean;
-  message: string;
-  data: T;
-  errors?: Record<string, string[]> | null;
-};
-```
-
-Sukses:
-
-```json
-{ "success": true, "message": "Data berhasil diambil.", "data": { "items": [], "meta": null } }
-```
-
-Gagal:
-
-```json
-{ "success": false, "message": "Validasi gagal.", "data": null, "errors": { "animal_code": ["Kode satwa wajib diisi."] } }
-```
-
-Pemetaan status HTTP → `ApiErrorKind` (dihandle `resolveErrorKind` di `types/api.type.ts`
-dan dipakai `services/api-client.ts`):
-
-| Status      | `kind`         | Perlakuan di UI                                 |
-| ----------- | ---------------- | ----------------------------------------------- |
-| 401         | `unauthorized` | Redirect `/login` / tampilkan "sesi berakhir" |
-| 403         | `forbidden`    | "Anda tidak memiliki akses ke modul ini"        |
-| 404         | `not_found`    | `EmptyState` dengan pesan ramah               |
-| 422         | `validation`   | Tampilkan `errors` per field di form          |
-| 5xx         | `server`       | `ErrorState` + tombol coba lagi               |
-| 0 / timeout | `network`      | "Pastikan backend berjalan di port 8000"        |
-
-`services/api-client.ts` melempar `ApiError` yang selalu punya `.status`, `.kind`,
-`.message`, dan `.errors`. Gunakan `toApiErrorState(error)` untuk mengubahnya jadi objek
-yang aman di-render.
-
-### 5.6 Pola struktur halaman modul
-
-Setiap modul CRUD mengikuti struktur ini. Yang **sudah ada** ditandai ✅, yang
-**menunggu route write backend** ditandai ⏳.
-
-```
-app/(protected)/master-data/[entity]/
-├── page.tsx                       ✅  Server component tipis, hanya render *-list-view
-├── [entity]-list-view.tsx         ✅  Client component: tabel + filter + state
-├── columns.tsx                    ✅  get<Entity>Columns(): ColumnDef<TYPE_X, unknown>[]
-├── filter.ts                      ✅  Tipe filter, DEFAULT_*_FILTERS, opsi dropdown
-├── create/
-│   └── page.tsx                   ⏳  Menunggu POST di backend + proxy
-└── [id]/
-    ├── detail/
-    │   ├── page.tsx               ✅
-    │   └── [entity]-detail-view.tsx ✅
-    └── edit/
-        └── page.tsx               ⏳  Menunggu PUT di backend + proxy
-```
-
-📄 **`page.tsx` harus tipis:**
-
-```typescript
-import { AnimalListView } from "@/app/(protected)/master-data/animals/animal-list-view";
-
-export default function AnimalListPage() {
-  return <AnimalListView />;
-}
-```
-
-📄 **`columns.tsx` mengembalikan array `ColumnDef`:**
-
-```typescript
-import type { ColumnDef } from "@tanstack/react-table";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/utils/format";
-import type { TYPE_ANIMAL, TYPE_ANIMAL_GENDER } from "@/types/animal.type";
-
-const GENDER_GLYPH: Record<TYPE_ANIMAL_GENDER, string> = {
-  Jantan: "♂",
-  Betina: "♀",
-  "Tidak Diketahui": "?",
-};
-
-export const getAnimalColumns = (): ColumnDef<TYPE_ANIMAL, unknown>[] => [
-  {
-    accessorKey: "animal_code",
-    header: "Kode Satwa",
-    cell: ({ row }) => (
-      <div>
-        <p className="font-medium text-zinc-900">{row.original.animal_code}</p>
-        <p className="text-xs text-zinc-500">#{row.original.animal_id}</p>
-      </div>
-    ),
-  },
-  {
-    id: "species",
-    accessorFn: (row) => row.species?.common_name ?? "",
-    header: "Spesies",
-    cell: ({ row }) =>
-      row.original.species?.common_name ? (
-        <div>
-          <p className="text-zinc-800">{row.original.species?.common_name}</p>
-          <p className="text-xs italic text-zinc-500">
-            {row.original.species?.scientific_name}
-          </p>
-        </div>
-      ) : (
-        <span className="text-xs text-zinc-400">Spesies #{row.original.species_id}</span>
-      ),
-  },
-  {
-    accessorKey: "birth_date",
-    header: "Tanggal Lahir",
-    cell: ({ row }) =>
-      row.original.birth_date ? (
-        formatDate(row.original.birth_date)
-      ) : (
-        <span className="text-zinc-400">-</span>
-      ),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }) => (
-      <StatusBadge
-        label={row.original.is_active ? "Aktif" : "Tidak Aktif"}
-        variant={row.original.is_active ? "success" : "danger"}
-      />
-    ),
-  },
-];
-```
-
-📄 **`filter.ts` memisahkan state filter dari komponen:**
-
-```typescript
-import type { FilterOption, FilterValues } from "@/components/ui/data-filters";
-
-export type AnimalStatusFilter = "all" | "active" | "inactive";
-
-export type AnimalFilterValues = FilterValues & {
-  search: string;
-  species_id: string;
-  status: AnimalStatusFilter;
-};
-
-export const DEFAULT_ANIMAL_FILTERS: AnimalFilterValues = {
-  search: "",
-  species_id: "all",
-  status: "all",
-};
-
-export const STATUS_OPTIONS: FilterOption[] = [
-  { label: "Semua status", value: "all" },
-  { label: "Aktif", value: "active" },
-  { label: "Tidak Aktif", value: "inactive" },
-];
-```
-
-### 5.7 Aturan tambahan yang tidak boleh dilanggar
-
-| #  | Aturan                                                                                                                                                                                                                          |
-| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1  | **Tidak boleh** memanggil `fetch` langsung di dalam component. Selalu lewat hook.                                                                                                                                       |
-| 2  | **Tidak boleh** ada `any`. Gunakan `unknown` + narrowing.                                                                                                                                                             |
-| 3  | **Tidak boleh** ada `interface`. Selalu `type`.                                                                                                                                                                       |
-| 4  | Client component yang memakai `react-hook-form`, state, event handler, atau komponen browser **wajib** diawali `"use client"`. Build akan gagal dengan *"Export useForm doesn't exist in target module"* bila lupa. |
-| 5  | Server component tidak boleh memakai `useState`/`useEffect`. Ambil data lewat hook client.                                                                                                                                  |
-| 6  | Validasi Zod hanya untuk **UX**. Backend tetap memvalidasi authoritative.                                                                                                                                                 |
-| 7  | Setiap halaman wajib menangani: loading, empty, error, 401, 403, 422.                                                                                                                                                           |
-| 8  | Jangan pernah menaruh secret di `NEXT_PUBLIC_*` — semuanya terlihat publik.                                                                                                                                                  |
-| 9  | Provider AI hanya dipanggil lewat endpoint backend, tidak pernah langsung dari browser.                                                                                                                                         |
-| 10 | `eslint-disable` hanya dengan alasan tertulis dan persetujuan PIC Frontend.                                                                                                                                                   |
-| 11 | **Nol komentar di kode.** Kode harus dijelaskan lewat arsitektur, alur, dan penamaan.                                                                                                                                     |
-| 12 | Data domain harus realistis untuk Gunung Leuser (kode collar `ORN-01`, `HRM-01`, `BDK-01`, `GJS-01`, `RSA-01`; lat `3.5`–`3.7`, long `97.9`–`98.2`).                                                        |
-
-### 5.8 Mutasi (create / update / delete)
-
-⚠️ **Saat ini belum bisa dipakai.** Backend belum memiliki route `POST`/`PUT`/`DELETE`
-untuk entity apa pun, dan `app/api/wildlife/[...path]/route.ts` hanya mengekspor `GET`.
-Method `CREATE`/`UPDATE`/`DELETE` di service dan hook sudah tersedia sebagai **kontrak**
-dan akan otomatis aktif setelah dua sisi siap:
-
-1. Backend mendaftarkan route write + validasi.
-2. `app/api/wildlife/[...path]/route.ts` menambahkan handler `POST`/`PUT`/`DELETE`
-   (perluasan proxy yang disengaja — bahas dengan PIC Backend dulu).
-
-Jangan membuat halaman form atau tombol "Tambah" sebelum kedua sisi siap; hasilnya
-pasti 405/404.
-
----
-
-## 6. Endpoint API yang Tersedia
-
-Base URL backend: `http://localhost:8000/api` (`NEXT_PUBLIC_API_URL`).
-Semua endpoint data memerlukan `Authorization: Bearer <token>` (disediakan otomatis oleh
-proxy).
-
-### Auth (publik)
-
-| Method   | Path           | Keterangan                                                       |
-| -------- | -------------- | ---------------------------------------------------------------- |
-| `POST` | `/api/login` | Login dengan `username` + `password`. **Bukan email.** |
-
-Response sukses:
-
-```json
-{
-  "success": true,
-  "message": "Login berhasil.",
-  "data": {
-    "token": "<sanctum-token>",
-    "user": {
-      "user_id": 1,
-      "username": "admin_btnl",
-      "full_name": "...",
-      "email": "...",
-      "role": "administrator_sistem"
-    }
-  },
-  "errors": null
-}
-```
-
-Kredensial salah → **401** dengan `errors.credentials`. Field kosong → **422**.
-
-### Terlindungi (butuh bearer token)
-
-| Method   | Path                              | Status                          | Dipakai oleh                               |
-| -------- | --------------------------------- | ------------------------------- | ------------------------------------------ |
-| `GET`  | `/api/me`                       | ✅ jalan                        | Pemeriksaan sesi                           |
-| `POST` | `/api/logout`                   | ✅ jalan                        | Tombol logout                              |
-| `GET`  | `/api/dashboard`                | ✅ jalan                        | Dashboard                                  |
-| `GET`  | `/api/animals`                  | ✅ jalan                        | Daftar satwa                               |
-| `GET`  | `/api/species`                  | ✅ jalan                        | Daftar spesies                             |
-| `GET`  | `/api/devices`                  | ✅ jalan                        | Daftar perangkat                           |
-| `GET`  | `/api/devices/{id}`             | ✅ jalan                        | Detail perangkat                           |
-| `GET`  | `/api/gps-readings`             | ✅ jalan                        | Peta & grafik (dibatasi 100 baris terbaru) |
-| `GET`  | `/api/gps-readings/{animal_id}` | ✅ jalan                        | Riwayat satwa                              |
-| `GET`  | `/api/incidents`                | ✅ jalan                        | Daftar insiden                             |
-| `GET`  | `/api/notifications`            | ✅ jalan                        | Daftar notifikasi                          |
-| `GET`  | `/api/export/gps/csv`           | ✅ jalan                        | Export CSV                                 |
-| `GET`  | `/api/export/gps/geojson`       | ✅ jalan                        | Export GeoJSON                             |
-| `GET`  | `/api/geo-zones`                | ⚠️ **rusak di backend** | Lihat catatan di bawah                     |
-
-### 🚫 Endpoint yang TIDAK boleh dipanggil
-
-| Endpoint                              | Alasan                                                                                                                                                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/animals/{id}`             | Belum terdaftar di `routes/api.php`. `GET_BY_ID` akan 404.                                                                                                                                                                  |
-| `GET /api/export/gps`               | Rutenya `/csv` dan `/geojson`, bukan polos.                                                                                                                                                                                 |
-| `GET /api/geo-zones`                | `routes/api.php` meng-impor `GeoZonesController`, sedangkan file & class-nya bernama `GeozonesController` (perbedaan huruf besar). Gagal autoload pada filesystem case-sensitive. **Diberitahukan ke PIC Backend.** |
-| `GET /api/users`                    | Backend tidak punya endpoint user sama sekali. `USER_SERVICE` murni kontrak.                                                                                                                                                  |
-| Semua `POST` / `PUT` / `DELETE` | Hanya `/login` dan `/logout` yang ada.                                                                                                                                                                                      |
-
-### Allow-list proxy frontend
-
-`lib/laravel-proxy.ts` hanya meneruskan resource berikut (maksimal 2 segmen path):
-
-`animals` · `species` · `devices` · `gps-readings` · `incidents` · `notifications` · `geo-zones`
-
-Resource lain otomatis **404** dari proxy, sebelum menyentuh backend. Kalau nanti butuh
-resource baru, tambahkan ke `ALLOWED_RESOURCES` **dan** pastikan backend mendukungnya.
-
----
-
-## 7. Cara Menjalankan
-
-### Prasyarat
-
-| Kebutuhan       | Keterangan                                                         |
-| --------------- | ------------------------------------------------------------------ |
-| Node.js         | **20.9+** (Next.js 16). Terpasang di mesin ini: `v24.18.0` |
-| npm             | 10+ (terpasang: `11.16.0`)                                       |
-| Backend Laravel | harus hidup di `http://localhost:8000`                           |
-| MySQL           | `127.0.0.1:3306` (diatur di backend, bukan di frontend)          |
-
-### Instalasi
+Aturan reuse:
+
+1. Gunakan komponen di `components/ui/` sebelum membuat elemen baru dengan kelas Tailwind berulang.
+2. Komponen generik harus dipakai minimal dua konteks; jika tidak, taruh dekat domainnya.
+3. Page dan shared view tidak boleh menentukan warna, radius, atau bayangan secara bebas. Gunakan token pada bagian 7.
+4. Form baru sebaiknya memakai `FormField` dan input bersama, serta React Hook Form + Zod untuk validasi UX.
+5. Gunakan satu form untuk create dan edit. Sediakan rute `<domain>/create` dan `<domain>/[id]/update` untuk alur CRUD utama; jangan menyamarkan create/edit di modal baru.
+6. Gunakan `cn()` dari `lib/utils.ts` saat menggabungkan kelas bersyarat.
+
+## 7. Panduan UI/UX dan desain responsif
+
+### 7.1 Token warna dan bentuk
+
+Variabel didefinisikan di `app/globals.css` lalu diekspos sebagai kelas Tailwind melalui `@theme inline`.
+
+| Variabel | Kelas Tailwind | Makna |
+| --- | --- | --- |
+| `--app-bg` | `bg-background` | Latar halaman |
+| `--surface` | `bg-surface` | Permukaan kartu dan panel |
+| `--surface-muted` | `bg-surface-muted` | Permukaan sekunder dan header tabel |
+| `--line` | `border-line` | Garis pemisah |
+| `--line-strong` | `border-line-strong` | Garis input dan garis tegas |
+| `--ink` | `text-ink` | Teks utama |
+| `--ink-soft` | `text-ink-soft` | Teks sekunder |
+| `--ink-muted` | `text-muted` | Metadata dan teks pendukung |
+| `--primary` | `text-primary`, `bg-primary` | Aksi utama dan identitas visual |
+| `--primary-dark` | `text-primary-dark`, `bg-primary-dark` | Hover dan teks pada latar lembut |
+| `--primary-soft` | `bg-primary-soft` | Latar aksi sekunder dan sorotan |
+| `--danger` | `text-danger`, `bg-danger` | Error dan aksi berbahaya |
+| `--radius-card` | `rounded-card` | Radius kartu |
+| `--shadow-card` | `shadow-card` | Bayangan kartu |
+
+Kelas bersama: `ui-panel`, `ui-input`, `ui-input-invalid`, `ui-label`, `ui-hint`, `ui-error`, dan `ui-alert`. Gunakan kelas tersebut daripada mendefinisikan ulang gaya input atau panel.
+
+### 7.2 Pola visual
+
+- Font menggunakan stack sistem dari Tailwind; tidak ada font eksternal yang diunduh saat build.
+- Kartu memakai `ui-panel`, dengan padding `p-5 sm:p-6` dan jarak antarblok `gap-4` sampai `gap-6`.
+- Judul halaman memakai `PageHeader`; judul bagian memakai `SectionHeader`.
+- Teks metadata dan label tabel memakai ukuran kecil dengan `tracking-[0.12em]`.
+- Status dan badge warna memakai `StatusBadge`, bukan kelas warna ad hoc.
+- Grafik dan ringkasan memakai `StatCard` agar polaifikasian tetap konsisten.
+
+### 7.3 Responsivitas
+
+| Lebar layar | Perilaku |
+| --- | --- |
+| `< lg` | Sidebar tersembunyi; tombol menu di header membuka `MobileNav`; konten memakai padding lebih sempit; tabel bergulir horizontal. |
+| `>= lg` | Sidebar permanen terlihat; area konten berada di sampingnya; grid kartu memakai beberapa kolom. |
+| Filter dan form | `flex-wrap`; kolom form satu baris di layar kecil dan dua kolom pada breakpoint yang sesuai. |
+| Statistik | Satu kolom di ponsel, dua kolom pada `sm`, empat kolom pada `xl`. |
+| Modal | Lebar dibatasi dengan `max-w-*`, tinggi konten dapat bergulir, tombol aksi tetap dapat dijangkau. |
+
+Gunakan pendekatan mobile-first. Uji interaksi dengan keyboard dan pointer sentuh, bukan hanya tampilan statis.
+
+### 7.4 Aksesibilitas yang sudah diterapkan
+
+- Skip link menuju konten utama.
+- Fokus terlihat melalui `focus-visible` global.
+- Ikon dekoratif memakai `aria-hidden="true"`.
+- Tombol navigasi aktif memakai `aria-current`.
+- `Modal` dan `ConfirmationDialog` memakai `role="dialog"` dan `aria-modal`.
+- `Loading` memakai `role="status"`.
+- `ErrorState` dan pesan error form memakai `role="alert"`.
+- `DataTable` memiliki caption tersembunyi, `aria-sort`, dan baris yang dapat dipilih dengan Enter atau Spasi bila `onRowClick` tersedia.
+- Input form memiliki label, `aria-invalid`, dan `aria-describedby` melalui `fieldDescribedBy()`.
+
+### 7.5 Yang belum lengkap
+
+- Fokus tidak dipindahkan otomatis ke dalam modal dan belum dikembalikan ke elemen pemicu saat modal ditutup.
+- Beberapa form domain masih memakai input langsung dan perlu dimigrasikan ke primitive `components/ui/form.tsx`.
+- `GeoZoneListView` masih memakai tabel lokal dan perlu diselaraskan dengan `DataTable`.
+- Prop `selectable` pada `DataTable` belum merender checkbox dengan handler seleksi yang berguna bagi konsumen saat ini.
+- Mode gelap belum tersedia.
+- Beberapa view masih memakai kelas warna Tailwind langsung sehingga terjadi penyimpangan kecil dari token.
+
+Bagian ini menjadi pedoman audit UI. Jika perubahan berikutnya memperbaiki salah satu item, perbarui tabel status di README dalam PR yang sama.
+
+## 8. Hook, layanan, dan integrasi API
+
+### 8.1 Tanggung jawab lapisan
+
+| Lapisan | Tanggung jawab | Contoh |
+| --- | --- | --- |
+| Komponen | Render, input pengguna, navigasi | `AnimalListView`, `LoginForm` |
+| Hook | State query/mutasi, query key, invalidasi cache | `hooks/use-animals.ts` |
+| Service modul | Menyusun path, memetakan payload/respons, memanggil `api` | `services/animal.service.ts` |
+| API client | Memanggil Server Action atau request server-side, menangani HTTP lintas lapisan | `services/api.ts` |
+| Server Action | Berjalan di server, membaca cookie, meneruskan request | `services/backend-actions.ts` |
+
+Konvensi hook:
+
+| Pola | Fungsi |
+| --- | --- |
+| `useX(params)` | Ambil daftar dengan TanStack Query |
+| `useXById(id)` | Ambil satu entitas; `enabled: false` bila `id` tidak ada |
+| `useXCreate()`, `useXUpdate()`, `useXDelete()` | Mutasi dan invalidasi query terkait |
+| `useLogin()`, `useLogout()` | Alur autentikasi |
+
+Konvensi service:
+
+- Nama file `<domain>.service.ts`, objek diekspor dengan huruf kapital, misalnya `ANIMAL_SERVICE`.
+- Method memakai `GET_ALL`, `GET_BY_ID`, `CREATE`, `UPDATE`, dan `DELETE`.
+- Semua path ditulis di service modul sebagai string relatif terhadap base URL Laravel `/api`, bukan di komponen.
+- Respons sukses mengikuti `TYPE_API_SUCCESS_RESPONSE<T>` dari `types/api.type.ts`.
+- Karena backend belum mengirim meta pagination, service membuat `meta` lokal agar konsumen menerima bentuk yang seragam.
+
+### 8.2 Konfigurasi HTTP
+
+`services/api.ts` menyediakan:
+
+- `api` untuk pemakaian sisi browser melalui Server Action.
+- `createApiClient()` dan `createServerApiClient(baseUrl)` untuk request server-side.
+- `ApiError` dengan `kind` seperti `validation`, `unauthorized`, `forbidden`, `not_found`, `server`, dan `network`.
+- Header `Content-Type: application/json`, `Accept: application/json`, dan `Authorization: Bearer <token>` bila token tersedia di server.
+- Query builder yang mengabaikan nilai `undefined`, `null`, string kosong, dan `"all"`.
+- Timeout 10 detik.
+- Penanganan `204 No Content`.
+
+Base URL ditentukan di `services/api.ts` dengan prioritas:
+
+1. `API_URL` (hanya server)
+2. `NEXT_PUBLIC_API_URL`
+3. `http://127.0.0.1:8000/api`
+
+Path resource ditulis langsung di service modul, relatif terhadap base URL Laravel `/api`, misalnya `/animals` dan `/notifications/{id}/read`.
+
+### 8.3 Endpoint yang dipanggil frontend
+
+| Method | Path relatif terhadap `/api` | Pemakai |
+| --- | --- | --- |
+| `POST` | `/login` | Login |
+| `GET` | `/animals`, `/animals/{id}` | Daftar dan detail satwa |
+| `POST` | `/animals` | Tambah satwa |
+| `PUT` | `/animals/{id}` | Ubah satwa |
+| `DELETE` | `/animals/{id}` | Hapus satwa |
+| `GET` | `/species`, `/species/{id}` | Daftar dan detail spesies |
+| `POST` | `/species` | Tambah spesies |
+| `PUT` | `/species/{id}` | Ubah spesies |
+| `DELETE` | `/species/{id}` | Hapus spesies |
+| `GET` | `/devices`, `/devices/{id}` | Daftar dan detail perangkat |
+| `POST` | `/devices` | Tambah perangkat |
+| `PUT` | `/devices/{id}` | Ubah perangkat |
+| `DELETE` | `/devices/{id}` | Hapus perangkat |
+| `GET` | `/gps-readings`, `/animals/{id}/track` | Pembacaan GPS dan lintasan satwa |
+| `GET` | `/geo-zones`, `/geo-zones/{id}` | Daftar dan detail zona |
+| `POST` | `/geo-zones` | Tambah zona |
+| `PUT` | `/geo-zones/{id}` | Ubah zona |
+| `DELETE` | `/geo-zones/{id}` | Hapus zona |
+| `GET` | `/incidents`, `/incidents/{id}` | Daftar dan detail insiden |
+| `POST` | `/incidents` | Tambah insiden |
+| `PUT` | `/incidents/{id}` | Ubah insiden |
+| `GET` | `/notifications` | Daftar notifikasi |
+| `PATCH` | `/notifications/{id}/read` | Tandai notifikasi dibaca |
+
+Endpoint yang terdaftar di registry tetapi belum dipanggil UI: `/logout`, `/me`, `/dashboard`, `/ai-predictions`, `/ai-predictions/{id}/verify`, `/users`, `/weather-data`, `/aggregate-reports`, `/activity-logs`, dan `/export/gps/*`.
+
+Rute write tambahan memang terdaftar di backend, tetapi tidak dihubungkan ke UI karena kontraknya rusak atau bersifat aksi khusus: users dan role/permission (opsi related data rusak), GPS readings (field/relasi tidak cocok), animal geo-zone visits (model tidak ada), weather data (kolom wajib tidak dikirim), aggregate reports (kolom dan relasi tidak ada), activity logs (audit seharusnya immutable), serta upload/verify AI (frontend belum mendukung multipart dan backend bergantung pada kunci AI). Jangan menambahkan form untuk resource ini sampai controller, FormRequest, model, dan migrasi backend konsisten.
+
+## 9. Autentikasi dan otorisasi
+
+### 9.1 Alur login
+
+1. `components/auth/login-form.tsx` memakai `hooks/use-login.ts` dan skema Zod untuk email serta kata sandi.
+2. `services/auth.service.ts` memanggil Server Action `loginAction`.
+3. `services/laravel-auth.service.ts` mengirim `POST /api/login` dengan `{ email, password }`.
+4. `services/cookie-token.ts` menulis dua cookie httpOnly:
+   - `wms_session`: data pengguna dalam JSON.
+   - `wms_token`: token Sanctum.
+5. Keduanya memakai `sameSite: "lax"`, `path: "/"`, `secure` saat produksi, dan `maxAge` delapan jam.
+6. `app/(protected)/layout.tsx` memanggil `lib/session.ts` di server. Jika cookie tidak ada atau tidak valid, pengguna dialihkan ke `/login`.
+7. Setiap request API melewati `forwardBackendAction`, yang membaca token dari cookie dan menambahkan header Bearer.
+
+Login memakai email, bukan username. Kata sandi tidak pernah disimpan di browser atau dikirim ke lapisan selain Laravel.
+
+### 9.2 Alur logout
+
+`hooks/use-logout.ts` memanggil `logoutAction`, yang menghapus `wms_session`, `wms_token`, `wms_expires_at`, dan `wms_type`. Cookie `wms_expires_at` dan `wms_type` memang dihapus, tetapi tidak ditulis saat login.
+
+### 9.3 Role
+
+| Nilai role | Label tampilan |
+| --- | --- |
+| `konservasionis_lapangan` | Konservasionis Lapangan |
+| `peneliti_ekologi` | Peneliti Ekologi |
+| `administrator_sistem` | Administrator Sistem |
+| `pengambil_kebijakan` | Pengambil Kebijakan |
+
+`lib/navigation.ts` memetakan role ke menu:
+
+- Konservasionis: dashboard, peta langsung, notifikasi, satwa, Wildlife Explorer, insiden.
+- Peneliti: dashboard, peta langsung, notifikasi, satwa, Wildlife Explorer, spesies, perangkat.
+- Administrator: menu peneliti ditambah zona geografis.
+- Pengambil kebijakan: dashboard, peta langsung, notifikasi, statistik.
+
+Penyaringan menu dan `canAccessRoute()` bersifat UX. Frontend tidak boleh dijadikan otorisasi final; backend harus tetap memeriksa role pada setiap endpoint yang sensitif.
+
+### 9.4 Keterbatasan autentikasi yang diketahui
+
+- Respons backend mengirim `name`, tetapi alur lama masih membaca `username` atau `full_name`, sehingga nama tampilan dapat kosong.
+- Respons `422` backend masih dipetakan menjadi `401`, sehingga error validasi per kolom belum tampil optimal.
+- Logout hanya menghapus cookie frontend dan belum mencabut token Sanctum di Laravel.
+- `rememberMe` belum diterapkan.
+- Cookie sesi hanya divalidasi sebagai JSON dengan role yang dikenal; tidak ditandatangani secara kriptografis oleh frontend.
+- Tidak ada pengalihan global ketika backend merespons `401`; pengalihan terjadi melalui layout berbasis cookie.
+
+## 10. Instalasi dan konfigurasi lingkungan
+
+Prasyarat: Node.js dan npm yang mendukung Next.js 16, serta backend Laravel yang berjalan di `http://127.0.0.1:8000/api` atau URL lain yang dikonfigurasi.
 
 ```bash
 cd wildlife-tracking-frontend
 npm install
-```
-
-### Environment
-
-Buat file `.env.local` (disarankan) atau `.env`. Keduanya sudah tercakup `.gitignore`
-(`.env*`) sehingga aman tidak ikut ter-commit. Isi dengan:
-
-```bash
-NEXT_PUBLIC_HOST_NAME=http://localhost
-NEXT_PUBLIC_PORT=3000
-NEXT_PUBLIC_DOMAIN=localhost
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_REQUEST_TIMEOUT_MS=10000
-
-NEXT_PUBLIC_COOKIE_TOKEN=wms_token
-NEXT_PUBLIC_COOKIE_EXPIRES_AT=wms_expires_at
-NEXT_PUBLIC_COOKIE_TYPE=wms_type
-```
-
-| Variabel                                                                            | Dipakai oleh                                              | Catatan                                                        |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`                                                             | `lib/laravel-proxy.ts`, `app/api/auth/login/route.ts` | Wajib. Base URL API Laravel.                                   |
-| `NEXT_PUBLIC_DOMAIN`                                                              | `services/cookieToken.ts`                               | `localhost` untuk dev.                                       |
-| `NEXT_PUBLIC_COOKIE_TOKEN`                                                        | `lib/cookie-names.ts`                                   | **Jangan dikosongkan.**                                  |
-| `NEXT_PUBLIC_COOKIE_EXPIRES_AT`                                                   | `lib/cookie-names.ts`                                   | Default `wms_expires_at`.                                    |
-| `NEXT_PUBLIC_COOKIE_TYPE`                                                         | `lib/cookie-names.ts`                                   | Default `wms_type`.                                          |
-| `NEXT_PUBLIC_PORT`, `NEXT_PUBLIC_HOST_NAME`, `NEXT_PUBLIC_REQUEST_TIMEOUT_MS` | —                                                        | ⚠️ Dideklarasikan tapi **belum** dibaca kode mana pun. |
-
-> ⚠️ **Gotcha penting.** `lib/cookie-names.ts` memperlakukan variabel env yang **kosong**
-> sebagai tidak ter-set, lalu jatuh ke fallback `wms_token`. Jika `NEXT_PUBLIC_COOKIE_TOKEN=`
-> pernah dikosongkan, nama cookie jadi kosong dan bearer token **tidak pernah terkirim** ke
-> Laravel — gejalanya semua request_data 401 tanpa pesan jelas. Jaga nilai `wms_*` tetap terisi.
->
-> Nama cookie sesi `wms_session` di-hardcode di `lib/session.ts:4` (tidak datang dari env).
-> Setelah mengubah `.env*`, **restart** `npm run dev`.
-
-### Development
-
-```bash
+cp .env.example .env.local
 npm run dev
-# buka http://localhost:3000
 ```
 
-### Build produksi
+Frontend dapat diakses di `http://localhost:3000`. Hentikan server dengan `Ctrl+C`.
+
+Variabel yang benar-benar dibaca kode:
+
+| Variabel | Status | Keterangan |
+| --- | --- | --- |
+| `API_URL` | Dipakai, tidak ada di `.env.example` | Prioritas tertinggi di `services/api.ts`; hanya untuk server. |
+| `NEXT_PUBLIC_API_URL` | Dipakai | Fallback base URL backend. Nilai kosong menyebabkan fallback ke `http://127.0.0.1:8000/api`. |
+| `NEXT_PUBLIC_COOKIE_TOKEN` | Dipakai | Nama cookie token; nilai kosong atau spasi memakai fallback `wms_token`. |
+| `NEXT_PUBLIC_COOKIE_EXPIRES_AT` | Dipakai | Nama cookie yang ikut dihapus saat logout; tidak ditulis saat login. |
+| `NEXT_PUBLIC_COOKIE_TYPE` | Dipakai | Nama cookie yang ikut dihapus saat logout; tidak ditulis saat login. |
+| `NODE_ENV` | Dipakai framework | Menentukan atribut `secure` cookie dalam produksi. |
+
+Entri lain di `.env.example` belum dibaca kode: `NEXT_PUBLIC_HOST_NAME`, `NEXT_PUBLIC_PORT`, `NEXT_PUBLIC_DOMAIN`, `NEXT_PUBLIC_REQUEST_TIMEOUT_MS`, dan `WILDLIFE_BACKEND_URL`. Jangan menaruh secret di variabel berawalan `NEXT_PUBLIC_*`. Gunakan akun uji dari seeder backend sesuai panduan repository backend; jangan menaruh kredensial di README.
+
+## 11. Alur kerja dan konvensi pengembangan
+
+### 11.1 Menambah fitur
+
+1. Pastikan fitur masih sesuai Sprint saat ini. Jika di luar sprint, catat sebagai backlog.
+2. Tambahkan tipe di `types/`, service di `services/` dengan path relatif `/api`, dan hook di `hooks/`.
+3. Buat atau perbarui shared view di `components/shared/<domain>/`.
+4. Pasang view tersebut pada halaman tipis di `app/(protected)/`.
+5. Perbarui `lib/navigation.ts` bila menu berubah.
+6. Perbarui README ini dalam PR yang sama bila arsitektur, endpoint, konfigurasi, atau keterbatasan berubah.
+7. Jalankan lint, pemeriksaan tipe, dan build sebelum mengajukan PR.
+
+### 11.2 Aturan kode
+
+- Gunakan `type`, bukan `interface`.
+- Dilarang `any`. Gunakan `unknown` lalu lakukan narrowing bila bentuk data belum diketahui.
+- `tsconfig.json` memakai `strict: true`; jangan melemahkannya.
+- Tidak ada komentar dalam kode sumber. Nama fungsi, variabel, dan struktur harus menjelaskan maksud.
+- Semua page dan komponen klien yang memakai hook React atau API browser harus memiliki `"use client"` bila bukan Server Component.
+- `eslint-disable` hanya boleh dipakai dengan justifikasi tertulis dan persetujuan tim.
+- Jangan menambah dependensi tanpa kebutuhan yang jelas dan tanpa pembaruan `package.json`, `package-lock.json`, serta README.
+- Jangan membuat file baru di `app/` selain `page.tsx`, `layout.tsx`, dan stylesheet/metadata yang sah.
+
+### 11.3 Penanganan error
+
+- Setiap halaman menangani kondisi pemuatan, kosong, error, dan penolakan akses.
+- `401`: sesi tidak valid; alur utama adalah pengalihan oleh layout.
+- `403`: tampilkan pesan akses ditolak; jangan mencoba request ulang.
+- `422`: tampilkan error per kolom melalui `FormField` atau `FormAlert`.
+- Gunakan `ErrorState` untuk error halaman dan toast untuk hasil mutasi yang tidak menggantikan seluruh tampilan.
+- Validasi Zod hanya untuk UX. Backend tetap melakukan validasi authoritatif.
+
+### 11.4 Git dan kolaborasi
+
+- Konvensi target: `main` stabil, `develop` integrasi, serta branch `feature/*` atau `fix/*`.
+- Konvensi PR: satu PR untuk satu topik, target `develop`, minimal satu reviewer, dan pembaruan dokumentasi dalam PR yang sama.
+- Conventional Commit: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, atau `chore:`.
+- Jangan push langsung ke `main` atau `develop`.
+- Jangan commit file `.env`.
+- Kondisi aktual perlu diverifikasi dengan tim: repository saat ini hanya memiliki branch `main` dan belum memiliki `develop`. Jangan membuat `develop` tanpa instruksi eksplisit.
+
+## 12. Pengujian dan validasi
+
+Script yang tersedia:
+
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` | Menjalankan server pengembangan di port 3000 |
+| `npm run build` | Build produksi Next.js |
+| `npm run start` | Menjalankan hasil build |
+| `npm run lint` | Menjalankan ESLint 9 |
+
+Tidak ada script `test` dan tidak ada script `typecheck`. Jalankan pemeriksaan tipe secara manual:
 
 ```bash
+npm run lint
+npx tsc --noEmit
 npm run build
-npm run start
 ```
 
-Build berjalan **offline** — tidak ada fetch ke jaringan saat build (font memakai
-system stack Tailwind).
-
-### Lint & type check
-
-```bash
-npm run lint        # ESLint 9
-npx tsc --noEmit   # tidak ada script "typecheck"
-```
-
-Baseline yang harus dijaga:
-
-* `npm run lint` → **0 error**. Ada **1 warning yang sudah diketahui**:
-  `react-hooks/incompatible-library` pada `useReactTable()` di `components/ui/data-table.tsx`.
-  Itu advisory React Compiler yang memang tidak bisa dipenuhi TanStack Table dan tidak
-  memengaruhi perilaku. **Warning lain berarti ada bug.**
-* `npx tsc --noEmit` → **0 error**.
-
-> 📌 `eslint.config.mjs` saat ini hanya memakai preset `eslint-config-next`
-> (core-web-vitals + typescript). `eslint-plugin-unused-imports` sudah ada di
-> `devDependencies` tetapi belum dipasang. Aturan tim `no-explicit-any`,
-> `consistent-type-definitions: ["error", "type"]`, dan `unused-imports/*` **belum
-> ditegakkan otomatis** — jalankan `npx tsc --noEmit` dan disiplin manual sebagai
-> gantinya. Bila tim sepakat mengaktifkan blok aturan itu, tambahkan ke
-> `eslint.config.mjs` dalam PR terpisah.
-
----
-
-## 8. Kredensial Uji
-
-Dari `UserSeeder` backend. **Hanya untuk pengembangan lokal.**
-
-| Username                    | Password     | Role                        |
-| --------------------------- | ------------ | --------------------------- |
-| `admin_btnl`              | `admin123` | `administrator_sistem`    |
-| `konservasis_bukitlawang` | `password` | `konservasionis_lapangan` |
-| `konservasis_kualabatang` | `password` | `konservasionis_lapangan` |
-| `peneliti_leuser`         | `password` | `peneliti_ekologi`        |
-| `kepala_balai`            | `password` | `pengambil_kebijakan`     |
-
-⚠️ Login memakai **`username`**, bukan email. `password` di-hash dengan `bcrypt`
-lewat cast `hashed` pada `User::$casts`. Second login akan **membatalkan** token pertama
-karena `AuthController::login()` memanggil `$user->tokens()->delete()`.
-
----
-
-## 9. Matriks Akses Berbasis Role
-
-Target desain per SKPL. Sidebar sudah memakai matriks ini lewat `lib/navigation.ts`
-(`NAV_SECTIONS`). Kolom ✅/❌ di bawah menggambarkan **gating UI**; endpoint yang belum
-ada di backend ditandai terpisah di §6.
-
-| Modul            | Konservasionis | Peneliti | Admin | Pengambil Kebijakan |
-| ---------------- | :------------: | :------: | :---: | :-----------------: |
-| Dashboard        |       ✅       |    ✅    |  ✅  |         ✅         |
-| Live Map         |       ✅       |    ✅    |  ✅  |         ✅         |
-| Satwa (lihat)    |       ✅       |    ✅    |  ✅  |         ✅         |
-| Satwa (CRUD)     |       ❌       |    ❌    |  ✅  |         ❌         |
-| Spesies (CRUD)   |       ❌       |    ❌    |  ✅  |         ❌         |
-| Perangkat (CRUD) |       ❌       |    ❌    |  ✅  |         ❌         |
-| Insiden          |       ✅       |    ✅    |  ✅  |         ❌         |
-| Notifikasi       |       ✅       |    ✅    |  ✅  |         ✅         |
-| Zona Geografis   |       ❌       |    ❌    |  ✅  |         ❌         |
-| Activity Log     |       ❌       |    ❌    |  ✅  |         ❌         |
-| Reports          |       ❌       |    ✅    |  ✅  |         ✅         |
-| Backup / Restore |       ❌       |    ❌    |  ✅  |         ❌         |
-
-> 🔐 Menyembunyikan menu **hanya untuk UX**. Backend tetap wajib menolak request
-> yang tidak sesuai role. Jangan pernah menganggap gating client cukup.
-
-Menambah role atau menu cukup di `lib/navigation.ts` — tidak ada tempat lain yang
-menyimpan daftar menu.
-
----
-
-## 10. Status Sprint
-
-### ✅ Sprint 1 — Login Use Case (selesai)
-
-- Halaman & flow login (`app/login/page.tsx`)
-- Route handler login/logout + cookie httpOnly
-- Proteksi route lewat `app/(protected)/layout.tsx`
-- Sidebar & header berbasis role
-- Skeleton dashboard, master data animals/species/devices, insiden, notifikasi
-- Proxy server-side + normalisasi envelope
-
-### 🚧 Sprint 2 — Master Data (sedang berjalan)
-
-- Migrasi `useGPSReadings`, `useIncidentReports`, `useNotifications`, `useGeoZones`,
-  `useTrackingDevices`, `useDashboardSummary` ke pola react-query
-- Animals, Species, Devices: list + detail sudah tampil
-- **Menunggu backend:** route write (`POST`/`PUT`/`DELETE`) → form create/edit
-- **Menunggu backend:** `GET /api/animals/{id}` → `GET_BY_ID`
-- Dashboard dengan data nyata
-- Halaman notifikasi yang lengkap
-
-### 📋 Sprint 3 — Monitoring & AI (rencana)
-
-- Live map dengan titik GPS (pilih map provider)
-- Laporan insiden lengkap
-- Manajemen zona geografis
-- Riwayat pergerakan + export (CSV / GeoJSON / PDF)
-- Integrasi AI (deteksi spesies)
-
----
-
-## 11. Panduan Cepat untuk Frontend PIC (Yohana) 🚀
-
-### Langkah 1 — Pahami polanya dulu
-
-Baca §5 sampai habis, lalu **baca file-file ini secara utuh**. Semuanya adalah templat
-untuk setiap modul yang akan kamu buat:
-
-| File                                                 | Pelajari apa                                          |
-| ---------------------------------------------------- | ----------------------------------------------------- |
-| `types/user.type.ts` atau `types/animal.type.ts` | Bentuk 4 type wajib + enum string union               |
-| `services/animal.service.ts`                       | Bentuk `ANIMAL_SERVICE` + `API_ENDPOINT`          |
-| `hooks/animal.hook.ts`                             | Bentuk query key, mutation, dan `invalidateQueries` |
-| `app/(protected)/master-data/animals/`             | Struktur folder modul CRUD                            |
-
-Baru setelah itu sentuh file lain. 30 menit membaca 4 file ini menghemat berjam-jam.
-
-### Langkah 2 — Buat modul baru (contoh: Animal)
-
-**1️⃣ Type** — `types/animal.type.ts`
-
-```
-TYPE_ANIMAL, TYPE_ANIMAL_PAYLOAD,
-TYPE_ANIMAL_GET_ALL_RESPONSE, TYPE_ANIMAL_GET_BY_ID_RESPONSE
-```
-
-Isi persis mengikuti §5.2. Tambahkan export ke `types/index.ts`.
-
-**2️⃣ Endpoint** — `services/endpoint.ts`
-
-Tambahkan blok `API_ENDPOINT.WILDLIFE.ANIMALS` dengan `GET_ALL` / `GET_BY_ID` / `CREATE`
-/ `UPDATE` / `DELETE`.
-
-**3️⃣ Service** — `services/animal.service.ts`
-
-Buat `ANIMAL_SERVICE`. Semua method mengembalikan `Promise<ApiResponse<T>>`, body write
-dalam bentuk `{ body: payload }`. Tambahkan export ke `services/index.ts`.
-
-**4️⃣ Hook** — `hooks/animal.hook.ts`
-
-Buat `useAnimal`, `useInfiniteAnimal`, `useAnimalById`, `useAnimalCreate`,
-`useAnimalUpdate`, `useAnimalDelete`. Tambahkan export ke `hooks/index.ts`.
-
-**5️⃣ Halaman** — `app/(protected)/master-data/animals/`
-
-| File                                                  | Isi                                                                                                                                   |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `page.tsx`                                          | Tipis, hanya `<AnimalListView />`                                                                                                   |
-| `animal-list-view.tsx`                              | `"use client"`; `useAnimal(params)`; render `<DataFilters>`, `<DataTable>`, `<Loading>`, `<EmptyState>`, `<ErrorState>` |
-| `columns.tsx`                                       | `getAnimalColumns(): ColumnDef<TYPE_ANIMAL, unknown>[]`                                                                             |
-| `filter.ts`                                         | `AnimalFilterValues`, `DEFAULT_ANIMAL_FILTERS`, opsi dropdown                                                                     |
-| `[id]/detail/page.tsx` + `animal-detail-view.tsx` | Detail read-only via `useAnimalById(id)`                                                                                            |
-
-**6️⃣ Form create/edit** — ⏳ **tunda dulu**
-
-```
-create/page.tsx     dan     [id]/edit/page.tsx
-```
-
-Halaman-halaman ini hanya masuk akal setelah backend punya `POST`/`PUT` **dan** proxy
-punya handler write. Membangunnya sebelum itu hanya menghasilkan form yang pasti 405.
-
-**7️⃣ Daftarkan menu** — `lib/navigation.ts`
-
-Tambahkan `href` modul ke `NAV_SECTIONS` untuk role yang berhak. Tanpa ini, halaman jalan
-tetapi tidak muncul di sidebar.
-
-**8️⃣ Validasi** — wajib lolos semua
-
-```bash
-npm run lint        # 0 error
-npx tsc --noEmit   # 0 error
-npm run build      # sukses
-```
-
-### Langkah 3 — Ikuti alur data, jangan berimprovisasi
-
-```
-Component → Hook → Service → api-client → proxy → Laravel
-```
-
-* ❌ `fetch("/api/wildlife/animals")` di dalam component — **dilarang**.
-* ✅ `const { data, isPending, error } = useAnimal();`
-* ✅ `const { data, error, isLoading, isEmpty } = useAsyncResource(load, []);` — hanya untuk
-  kasus yang belum termigrasi, dan **jangan tiru gaya ini di kode baru**.
-
-### Langkah 4 — Tangani semua state
-
-Setiap halaman **wajib** menangani empat kondisi berikut:
-
-```typescript
-if (isPending) return <Loading />;
-if (error) return <ErrorState message={toApiErrorState(error).message} />;
-if (items.length === 0) return <EmptyState text="Belum ada data satwa" />;
-return <DataTable data={items} columns={getAnimalColumns()} />;
-```
-
-Dan pastikan 401 / 403 / 422 punya perilakunya masing-masing (lihat tabel §5.5).
-
-### Langkah 5 — Definition of Done
-
-- [ ] Mengikuti `TYPE_*` / `*_SERVICE` / `use*` tanpa pengecualian
-- [ ] Kontrak bertipe lengkap di service & hook, nol `any`, nol `interface`
-- [ ] `npm run lint` 0 error, `npx tsc --noEmit` 0 error, `npm run build` sukses
-- [ ] Loading / empty / error / 401 / 403 / 422 semuanya ada
-- [ ] Sudah diuji manual dengan keempat role
-- [ ] Tidak ada kredensial yang ter-commit
-- [ ] Tidak membuat halaman form sebelum backend siap
-- [ ] PR sudah direview, dokumentasi diperbarui dalam PR yang sama
-
-### 📌 Kalau Bingung
-
-Tegas: **jangan menebak-nebak-integrasi ke backend.** Buka issue ke PIC Backend
-(`routes/api.php` adalah sumber kebenaran), catat endpoint mana yang belum ada, lalu
-kerjakan bagian UI yang bisa diselesaikan tanpa itu. Integrasi yang tidak bisa diuji
-adalah Technical Debt dengan nama baik.
-
----
-
-## 12. Masalah Umum & Solusi
-
-| Gejala                                                                          | Penyebab                                                            | Solusi                                                                                                                                                                                                                                            |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **CORS error** di console                                                 | Backend tidak mengizinkan origin frontend                           | Backend PIC menambahkan `http://localhost:3000` di `config/cors.php`. Ingat: arsitektur kita memang **tidak** memanggil backend langsung dari browser, jadi CORS hanya relevan bila ada kode yang menyebut `localhost:8000` langsung. |
-| **401 Unauthorized** di semua halaman data                                | Cookie `wms_token` kosong / tidak terkirim                        | DevTools → Application → Cookies, cek `wms_session` dan `wms_token` ada. Jangan kosongkan `NEXT_PUBLIC_COOKIE_TOKEN`.                                                                                                                     |
-| **401 terus-menerus setelah login**                                       | Login kedua membatalkan token pertama                               | `AuthController::login()` menghapus token lama. Logout dulu dari akun lain, atau jalankan ulang seeder.                                                                                                                                         |
-| **Error "Route [login] not defined"** (500)                               | `redirectGuestsTo` belum disetel di backend                       | Backend PIC menambahkan `$middleware->redirectGuestsTo(fn () => null)` di `bootstrap/app.php`.                                                                                                                                                |
-| **`TypeError: Cannot read properties of undefined`** saat baca `meta` | Backend belum mengirim pagination                                   | `meta` disintesis di service/hook. Selalu gunakan optional chaining (`lastPage?.data?.meta`).                                                                                                                                                 |
-| **`GET_BY_ID` 404**                                                     | Backend belum punya `GET /api/animals/{id}`                       | Gunakan data dari list, atau tunggu route backend. Jangan bypass proxy.                                                                                                                                                                           |
-| **`405 Method Not Allowed`** saat create/update/delete                  | Proxy hanya mengekspor `GET`                                      | Tunggu backend route write + penambahan handler `POST`/`PUT`/`DELETE` di proxy.                                                                                                                                                             |
-| **Resource 404 dari proxy**                                               | Nama resource tidak ada di `ALLOWED_RESOURCES`                    | Tambahkan ke allow-list **dan** pastikan backend mendukungnya.                                                                                                                                                                              |
-| **Error TypeScript**                                                      | Typing tidak sinkron                                                | `npx tsc --noEmit` untuk melihat semua error sekaligus.                                                                                                                                                                                         |
-| **`Export useForm doesn't exist in target module`**                     | Client component tidak diawali `"use client"`                     | Tambahkan `"use client"` di baris pertama file.                                                                                                                                                                                                 |
-| **`Port 3000 already in use`**                                          | Proses lain memakai port                                            | `npm run dev -- -p 3001`, atau hentikan prosesnya.                                                                                                                                                                                              |
-| **`Port 8000 already in use`**                                          | `php artisan serve` lama masih jalan                              | Hentikan, lalu jalankan ulang backend.                                                                                                                                                                                                            |
-| **Data tidak berubah padahal create sukses**                              | Query key tidak di-invalidate                                       | `queryClient.invalidateQueries({ queryKey: ["animals"] })` di `onSuccess`.                                                                                                                                                                    |
-| **Perubahan `.env` tidak terbaca**                                      | Dev server perlu restart                                            | Hentikan dan jalankan ulang `npm run dev`.                                                                                                                                                                                                      |
-| **`npm run lint` warning baru muncul**                                  | Warning selain `react-hooks/incompatible-library` berarti ada bug | Perbaiki. Warning yang diizinkan hanya satu itu.                                                                                                                                                                                                  |
-| **Halaman muncul tapi tidak ada di sidebar**                              | `href` belum didaftarkan di `NAV_SECTIONS`                      | Tambahkan ke `lib/navigation.ts` pada role yang berhak.                                                                                                                                                                                         |
-
----
-
-## 13. Referensi
-
-| Dokumen                                                                    | Isi                                                             |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `00-PM-OVERVIEW.md`                                                      | Ringkasan proyek dari Product Manager                           |
-| `Project Development Guideline - Wildlife Tracking Monitoring System.md` | Panduan pengembangan proyek                                     |
-| **SKPL**                                                             | Spesifikasi Kebutuhan Perangkat Lunak                           |
-| **DPPL**                                                             | Desain Perancangan Perangkat Lunak                              |
-| **Laporan Week 5**                                                   | Implementasi Basis Data — 14 tabel + ERD                       |
-| `../wildlife-tracking-backend/routes/api.php`                            | **Sumber kebenaran** daftar endpoint yang benar-benar ada |
-| `../wildlife-tracking-backend/AGENTS.md`                                 | Catatan kondisi repo backend                                    |
-| `AGENTS.md` (root)                                                       | Konvensi lintas repo tim                                        |
-| Figma                                                                      | Desain UI/UX — tautan dapat diminta ke PIC Frontend            |
-
----
-
-## 14. Kontak
-
-| Kewenangan                            | PIC                                                   |
-| ------------------------------------- | ----------------------------------------------------- |
-| Frontend (Next.js, UI, integrasi API) | **Yohana Sinaga**                               |
-| Backend (Laravel, API, autentikasi)   | Yohanna Purnomo                                       |
-| Database (skema, migration, seeder)   | Nuevalen Refitra Alswando · Laura Chyndearni Saragih |
-| AI & Integration                      | Farrellino Ulung Satya Amando                         |
-| Dokumentasi (SKPL, DPPL, laporan)     | Yohanna Purnomo                                       |
-
----
-
-<div align="center">
+Baseline terverifikasi saat README ini disusun:
+
+- `npm run lint`: 0 error, dengan sejumlah warning yang sudah ada terkait dependency hook dan ref].
+- `npx tsc --noEmit`: 0 error.
+- `npm run build`: berhasil; route yang dihasilkan tidak termasuk `app/api/*`.
+
+Pengujian manual yang disarankan:
+
+1. Login dengan email valid dan kata sandi salah; pastikan pesan error tampil.
+2. Coba akses rute protected tanpa cookie; pastikan dialihkan ke `/login`.
+3. Uji form pada lebar 375 px, 768 px, dan 1280 px.
+4. Buka menu mobile, modal create/edit, dan konfirmasi hapus dengan keyboard serta pointer.
+5. Uji tabel: sorting, pagination, filter, state kosong, dan klik baris.
+6. Uji peta langsung dengan data nyata dari backend.
+7. Uji error API dengan backend dimatikan: pastikan `ErrorState` atau toast tampil dan aplikasi tidak crash.
+8. Uji logout; pastikan cookie hilang, lalu verifikasi perilaku token server-side sesuai batasan pada bagian 9.
+
+## 13. Keterbatasan dan peningkatan lanjutan
+
+### 13.1 Keterbatasan terverifikasi
+
+- Belum ada runner test otomatis di repository frontend.
+- Backend belum menyediakan pagination server; filter dan pagination terjadi di klien.
+- `meta` respons disintesis oleh service, bukan berasal dari header `X-Total-Count` backend.
+- Beberapa hook infinite belum memiliki halaman berikutnya yang nyata karena backend tidak mengembalikan cursor atau halaman lanjutan.
+- Dashboard tidak memakai endpoint `/dashboard` backend; ringkasan dihitung dari data yang diambil hook lain.
+- `logoutAction` hanya menghapus cookie lokal; token Sanctum belum dicabut melalui `POST /api/logout`.
+- Tidak ada penanganan global untuk `401` dari backend.
+- Wildlife Explorer masih placeholder.
+- Banyak endpoint write di luar Species, Animals, Devices, Geo Zones, dan Incidents belum aman dihubungkan karena ketidaksesuaian kontrak backend.
+- Modal belum memiliki focus trap dan focus restore.
+- Prop `selectable` pada `DataTable` belum menghasilkan perilaku seleksi yang berguna.
+- Timeout HTTP 10 detik masih konstan meskipun `.env.example` memiliki `NEXT_PUBLIC_REQUEST_TIMEOUT_MS`.
+- `API_URL` dibaca kode tetapi tidak dideklarasikan di `.env.example`.
+- Mode gelap belum didukung.
+- Beberapa nilai warna langsung masih bersaing dengan token di `app/globals.css`.
+
+### 13.2 Ketidaksesuaian kontrak backend yang perlu diperbaiki di repository backend
+
+| Modul | Temuan | Dampak |
+| --- | --- | --- |
+| Animals | `AnimalController@show` memanggil relasi `device`, `gpsReadings`, dan `incidents` yang tidak dideklarasikan di model; model memakai `SoftDeletes` tanpa kolom `deleted_at` | Detail dan query dapat gagal |
+| Devices | Controller menulis `serial_number` dan `status` serta eager load `assignedBy`; skema/model tidak memiliki kolom dan relasi tersebut | Create/update dapat gagal meskipun UI sudah menampilkan error backend apa adanya |
+| Geo Zones | Controller membaca/menulis `name`, `polygon`, dan `visits`; skema/model memakai `zone_name`, `polygon_geojson`, dan `animalVisits` | List/create/update dapat gagal |
+| Auth | Backend mengembalikan `username`/`full_name`, bukan `name` | Sudah ditangani frontend oleh `services/laravel-auth.service.ts` |
+
+Frontend tidak boleh menambahkan data palsu atau menyamarkan kegagalan ini. Form dan list
+menampilkan pesan backend melalui `formatApiError()`, `FormAlert`, dan `ErrorState`.
+
+### 13.3 Prioritas peningkatan
+
+1. Perbaiki kontrak backend pada modul Animals, Devices, dan Geo Zones sesuai tabel di atas.
+2. Panggil endpoint logout Laravel saat logout frontend agar token dicabut.
+3. Migrasikan sisa form ke `FormField` dan input bersama, dengan React Hook Form + Zod.
+4. Tambahkan focus trap dan focus restore pada modal.
+5. Sentralisasi konfigurasi timeout dan deklarasikan `API_URL` di `.env.example`.
+6. Tambahkan runner test dan pengujian untuk login, error API, dan alur mutasi utama.
+7. Terapkan pagination server setelah backend menyediakannya.
+8. Lanjutkan audit warna langsung agar seluruh UI memakai token.
+
+## 14. Panduan tim dan referensi
+
+README ini adalah sumber dokumentasi frontend. Jangan membuat README, panduan komponen, atau catatan UI/UX terpisah di repository frontend. Jika informasi harus dicatat, tambahkan ke bagian yang sesuai di sini.
+
+Dokumen lain yang tetap berfungsi sebagai referensi terpisah:
+
+| Dokumen | Alasan dipertahankan |
+| --- | --- |
+| [`AGENTS.md`](../AGENTS.md) | Instruksi operasional untuk agen AI dan ringkasan aturan lintasrepository. Bukan dokumentasi frontend dan tidak digabungkan ke README. |
+| [`audit.md`](../audit.md) | Catatan audit detail dan temuan kepatuhan lintasproyek. |
+| [`00-PM-OVERVIEW.md`](<../00-PM-OVERVIEW.md>) | Ringkasan manajemen proyek lintasrepository. |
+| [`Project Development Guideline – Wildlife Tracking Monitoring System.md`](<../Project Development Guideline – Wildlife Tracking Monitoring System.md>) | Pedoman proyek dan backend yang masih menjadi referensi tim. |
+| [`README backend`](../wildlife-tracking-backend/README.md) | Instalasi backend, migrasi, seeder, dan endpoint Laravel. |
+| `Kelompok1_SKPL.pdf`, `Kelompok1_DPPL.pdf`, dan PDF lainnya di folder parent | Lampiran penugasan dan perancangan yang menjadi sumber persyaratan. |
+
+Perbedaan antara dokumen lama dan kode saat ini yang sudah ditetapkan sebagai acuan:
+
+| Topik | Dokumen lama | Acuan saat ini |
+| --- | --- | --- |
+| Lokasi kode | Beberapa bagian menyebut `src/`, `features/`, `schemas/`, atau `constants/` | Semua folder berada di root frontend; tidak ada direktori tersebut |
+| API frontend | Route handler `app/api/*` dan proxy `/api/backend` | Tidak ada `app/api/*`; memakai Server Action di `services/backend-actions.ts` |
+| Base path | `/api/backend` | Path langsung relatif terhadap base URL Laravel `/api` di service modul |
+| Sumber data | Mock by default | Tidak ada lapisan mock aktif; semua service memanggil API |
+| Statistik | Angka statis | `StatisticsView` mengambil data melalui hook dan menghitung ringkasan |
+| Role | Admin, Researcher, Observer, User | Empat nilai role yang tercantum di bagian 9 |
+| Format respons | Selalu `{ items, meta }` | Backend mengirim bentuk bervariasi; service menyintesis `meta` |
+| Aturan ESLint | Aturan kustom `no-explicit-any`, `consistent-type-definitions`, `unused-imports` | Konfigurasi aktual hanya `core-web-vitals` dan `typescript` dari `eslint-config-next`; aturan kode tetap dijalankan lewat konvensi dan TypeScript strict |
+| Lingkungan | Berbagai nama URL lama | `API_URL`, `NEXT_PUBLIC_API_URL`, dan nama cookie seperti tercantum di bagian 10 |
+
+Jika dokumen eksternal berubah, perbarui tabel ini dan bagian yang relevan. Jangan mengubah `AGENTS.md` hanya untuk menghilangkan perbedaan; laporkan perbedaan tersebut melalui PR dan koordinasikan dengan pemilik dokumentasi.

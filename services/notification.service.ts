@@ -1,12 +1,10 @@
-
-import { api, unwrapData } from "@/services/api-client";
-import { API_ENDPOINT, WILDLIFE_BASE_PATH } from "@/services/endpoint";
+import { api, unwrapData } from "@/services/api";
 import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
 import type {
   Notification,
   NotificationListParams,
-} from "@/types/notification";
+} from "@/types/notification.type";
 
 const isUnread = (
   value: boolean | number | null | undefined,
@@ -31,7 +29,8 @@ export const getNotifications = async (
   params?: Partial<QUERY_PARAMS_API_GET_ALL> & NotificationListParams,
 ): Promise<ApiResponse<Notification[]>> => {
   const response = await api.get<ApiResponse<Notification[]>>(
-    `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.NOTIFICATIONS.GET_ALL(params)}`,
+    "/notifications",
+    { params },
   );
 
   const notifications = unwrapData(response);
@@ -57,6 +56,6 @@ export const markNotificationAsRead = async (
   id: number,
 ): Promise<ApiResponse<unknown>> => {
   return api.patch<ApiResponse<unknown>>(
-    `${WILDLIFE_BASE_PATH}${API_ENDPOINT.WILDLIFE.NOTIFICATIONS.MARK_AS_READ(id)}`,
+    `/notifications/${id}/read`,
   );
 };

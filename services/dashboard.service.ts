@@ -3,32 +3,19 @@ import { SPECIES_SERVICE } from "@/services/species.service";
 import {
   getDeviceAlerts,
   getTrackingDevices,
-} from "@/services/tracking-device.service";
-import { getGpsReadings } from "@/services/gps-reading.service";
+} from "@/services/device.service";
+import { getGpsReadings } from "@/services/tracking.service";
 import { getUnreadNotifications } from "@/services/notification.service";
-import { getIncidentReports } from "@/services/incident-report.service";
-import type { DashboardSummary } from "@/types/dashboard";
+import { getIncidentReports } from "@/services/incident.service";
+import type { DashboardSummary } from "@/types/dashboard.type";
 import type { TYPE_ANIMAL } from "@/types/animal.type";
 import type { TYPE_SPECIES } from "@/types/species.type";
 import type { ApiResponse } from "@/types/api.type";
-import type { TrackingDevice } from "@/types/tracking-device.type";
+import { unwrapData } from "@/services/api";
+import type { TrackingDevice } from "@/types/device.type";
 
 const MAX_RECENT_ITEMS = 5;
 const LOW_BATTERY_PERCENT = 25;
-
-export const EMPTY_DASHBOARD_SUMMARY: DashboardSummary = {
-  totalAnimals: 0,
-  activeAnimals: 0,
-  totalSpecies: 0,
-  totalDevices: 0,
-  lowBatteryDevices: 0,
-  deviceAlerts: [],
-  totalReadings: 0,
-  latestReadings: [],
-  latestNotifications: [],
-  latestIncidentReports: [],
-  degradedSources: [],
-};
 
 const isActiveFlag = (
   value: boolean | number | null | undefined,
@@ -52,8 +39,6 @@ const fetchSpecies = async (): Promise<TYPE_SPECIES[]> => {
   return response.data.items;
 };
 
-const unwrap = <T>(response: ApiResponse<T>): T => response.data;
-
 export const getDashboardSummary = async (): Promise<
   ApiResponse<DashboardSummary>
 > => {
@@ -73,11 +58,11 @@ export const getDashboardSummary = async (): Promise<
     getIncidentReports(),
   ]);
 
-  const devices = unwrap(devicesResponse);
-  const readings = unwrap(readingsResponse);
-  const notifications = unwrap(notificationsResponse);
-  const incidentReports = unwrap(incidentReportsResponse);
-  const alerts = unwrap(await getDeviceAlerts());
+  const devices = unwrapData(devicesResponse);
+  const readings = unwrapData(readingsResponse);
+  const notifications = unwrapData(notificationsResponse);
+  const incidentReports = unwrapData(incidentReportsResponse);
+  const alerts = unwrapData(await getDeviceAlerts());
 
   return {
     success: true,

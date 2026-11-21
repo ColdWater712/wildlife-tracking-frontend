@@ -1,4 +1,4 @@
-import { LiveMapView } from "@/app/(protected)/tracking/live-map/live-map-view";
+import { LiveMapView } from "@/components/shared/tracking/live-map-view";
 
 export default function LiveMapPage() {
   return <LiveMapView />;

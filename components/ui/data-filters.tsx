@@ -1,6 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { RotateCcw, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { SelectInput, TextInput, fieldDescribedBy } from "@/components/ui/form";
 
 export type FilterOption = {
   label: string;
@@ -38,92 +41,99 @@ export function DataFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="ui-panel mb-5 flex w-full min-w-0 flex-wrap items-end gap-3 p-4">
       {fields.map((field) => {
         const value = values[field.key] ?? "";
+        const inputId = `filter-${field.key}`;
 
         if (field.kind === "search") {
           return (
-            <div key={field.key} className="flex min-w-[14rem] flex-1 flex-col gap-1">
-              <label
-                htmlFor={`filter-${field.key}`}
-                className="text-xs font-medium text-zinc-600"
-              >
+            <div
+              key={field.key}
+              className="flex w-full min-w-0 flex-col sm:w-auto sm:min-w-[14rem] sm:flex-1"
+            >
+              <label htmlFor={inputId} className="ui-label">
                 {field.label}
               </label>
-              <input
-                id={`filter-${field.key}`}
-                type="search"
-                value={value}
-                placeholder={field.placeholder}
-                onChange={(event) => handleChange(field.key, event.target.value)}
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
-              />
+              <div className="relative">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+                />
+                <TextInput
+                  id={inputId}
+                  type="search"
+                  value={value}
+                  placeholder={field.placeholder}
+                  aria-describedby={fieldDescribedBy(inputId)}
+                  onChange={(event) => handleChange(field.key, event.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
           );
         }
 
         if (field.kind === "select") {
           return (
-            <div key={field.key} className="flex min-w-[10rem] flex-col gap-1">
-              <label
-                htmlFor={`filter-${field.key}`}
-                className="text-xs font-medium text-zinc-600"
-              >
+            <div
+              key={field.key}
+              className="flex w-full min-w-0 flex-col sm:w-auto sm:min-w-[10rem]"
+            >
+              <label htmlFor={inputId} className="ui-label">
                 {field.label}
               </label>
-              <select
-                id={`filter-${field.key}`}
+              <SelectInput
+                id={inputId}
                 value={value}
                 onChange={(event) => handleChange(field.key, event.target.value)}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
               >
                 {field.options.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+              </SelectInput>
             </div>
           );
         }
 
         if (field.kind === "date") {
           return (
-            <div key={field.key} className="flex min-w-[9.5rem] flex-col gap-1">
-              <label
-                htmlFor={`filter-${field.key}`}
-                className="text-xs font-medium text-zinc-600"
-              >
+            <div
+              key={field.key}
+              className="flex w-full min-w-0 flex-col sm:w-auto sm:min-w-[9.5rem]"
+            >
+              <label htmlFor={inputId} className="ui-label">
                 {field.label}
               </label>
-              <input
-                id={`filter-${field.key}`}
+              <TextInput
+                id={inputId}
                 type="date"
                 value={value}
                 onChange={(event) => handleChange(field.key, event.target.value)}
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
               />
             </div>
           );
         }
 
         return (
-          <div key={field.key} className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-600">{field.label}</span>
+          <div key={field.key} className="flex w-full min-w-0 flex-col">
+            <span className="ui-label">{field.label}</span>
             {field.render()}
           </div>
         );
       })}
 
-      <button
-        type="button"
+      <Button
+        variant="outline"
         onClick={onReset}
         disabled={!hasActiveFilter}
-        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40"
+        icon={<RotateCcw className="size-3.5" />}
+        className="w-full sm:w-auto"
       >
         Reset
-      </button>
+      </Button>
     </div>
   );
 }

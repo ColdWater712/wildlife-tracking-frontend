@@ -1,79 +1,184 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, LogOut, X } from "lucide-react";
+import { NavIconGlyph } from "@/components/layout/nav-icon";
 import { NAV_SECTIONS, isRouteActive } from "@/lib/navigation";
-import type { NavIcon } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session";
-import { TYPE_ROLE_LABELS } from "@/types/user.type";
-
-const ICON_PATHS: Record<NavIcon, string> = {
-  grid: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
-  map: "M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14",
-  bell: "M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0",
-  paw: "M6 14c-1.5 0-3 1.5-3 3s1 3 3 3 3-1.5 3-3-1.5-3-3-3zM18 14c-1.5 0-3 1.5-3 3s1 3 3 3 3-1.5 3-3-1.5-3-3-3zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
-  alert: "M12 3 2 20h20L12 3zM12 9v5M12 17.5v.5",
-  species: "M12 21c5-3 8-6 8-10a8 8 0 1 0-16 0c0 4 3 7 8 10z",
-  device: "M7 3h10v18H7zM10 18h4",
-  zone: "M12 2 3 7v10l9 5 9-5V7l-9-5zM12 22V12l9-5M12 12 3 7",
-  chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
-};
-
-function NavIconGlyph({ icon }: { icon: NavIcon }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="size-4 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={ICON_PATHS[icon]} />
-    </svg>
-  );
-}
+import { TYPE_ROLE_LABELS } from "@/types/auth.type";
 
 type SidebarProps = {
   user: SessionUser;
   onLogout: () => void;
+  variant?: "desktop" | "mobile";
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onNavigate?: () => void;
+  onClose?: () => void;
+  isHidden?: boolean;
 };
 
-export function Sidebar({ user, onLogout }: SidebarProps) {
+export function Sidebar({
+  user,
+  onLogout,
+  variant = "desktop",
+  collapsed = false,
+  onToggleCollapse,
+  onNavigate,
+  onClose,
+  isHidden = false,
+}: SidebarProps) {
   const pathname = usePathname();
   const sections = NAV_SECTIONS[user.role];
+  const isMobile = variant === "mobile";
+  const showLabels = !isMobile && !collapsed;
+  const tabIndex = isHidden ? -1 : undefined;
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (isMobile && !isHidden) {
+      closeButtonRef.current?.focus();
+    }
+  }, [isMobile, isHidden]);
+
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || user.name.slice(0, 1).toUpperCase();
 
   return (
     <aside
       aria-label="Navigasi utama"
-      className="flex h-full w-64 shrink-0 flex-col border-r border-zinc-200 bg-white"
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-surface",
+        isMobile
+          ? "w-full"
+          : cn(
+              "sticky top-0 z-30 h-dvh shrink-0 transition-[width] duration-300 ease-out",
+              collapsed ? "w-[4.75rem]" : "w-72",
+            ),
+      )}
     >
-      <div className="flex h-20 items-center gap-3 border-b border-zinc-200 px-5">
-  <img
-    src="/images/logo-tngl.png"
-    alt="Logo Taman Nasional Gunung Leuser"
-    className="h-12 w-12 shrink-0 object-contain"
-  />
+      {/* Header / Brand */}
+      <div
+        className={cn(
+          "relative flex h-20 shrink-0 items-center overflow-hidden border-b border-line",
+          showLabels ? "gap-3 px-5" : "justify-center px-2",
+        )}
+      >
+        {/* Subtle decorative gradient */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-soft/40 via-transparent to-transparent"
+        />
 
-  <div className="min-w-0">
-    <p className="text-xs font-bold uppercase leading-tight text-zinc-900">
-      Taman Nasional
-    </p>
-    <p className="text-xs font-bold uppercase leading-tight text-zinc-900">
-      Gunung Leuser
-    </p>
-  </div>
-</div>
+        <div
+          className={cn(
+            "relative shrink-0 overflow-hidden rounded-xl ring-1 ring-line",
+            showLabels ? "size-11" : "size-10",
+          )}
+        >
+          <Image
+            src="/images/logo-tngl.png"
+            alt="Logo Taman Nasional Gunung Leuser"
+            fill
+            sizes={showLabels ? "44px" : "40px"}
+            className="object-contain"
+            priority
+          />
+        </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {showLabels ? (
+          <div className="relative min-w-0 flex-1">
+            <p className="text-[0.65rem] font-semibold uppercase leading-tight tracking-[0.14em] text-primary">
+              Taman Nasional
+            </p>
+            <p className="text-sm font-bold uppercase leading-tight tracking-wide text-ink">
+              Gunung Leuser
+            </p>
+          </div>
+        ) : null}
+
+        {isMobile && onClose ? (
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            tabIndex={tabIndex}
+            aria-label="Tutup navigasi"
+            className="relative ml-auto inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-surface-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+        ) : null}
+      </div>
+
+      {/* Collapse toggle (desktop only) */}
+      {!isMobile && onToggleCollapse ? (
+        <div className="relative flex shrink-0 items-center px-3 py-2">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Perluas navigasi" : "Ciutkan navigasi"}
+            title={collapsed ? "Perluas navigasi" : "Ciutkan navigasi"}
+            className={cn(
+              "group inline-flex items-center rounded-full border border-line bg-surface text-ink-soft shadow-sm transition",
+              "hover:border-primary/50 hover:bg-primary-soft hover:text-primary",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+              collapsed
+                ? "mx-auto size-9 justify-center p-0"
+                : "ml-auto gap-1.5 px-3 py-1.5 text-xs font-semibold",
+            )}
+          >
+            {collapsed ? (
+              <ChevronRight
+                aria-hidden="true"
+                className="size-4 transition-transform group-hover:translate-x-0.5"
+              />
+            ) : (
+              <>
+                <ChevronLeft
+                  aria-hidden="true"
+                  className="size-4 transition-transform group-hover:-translate-x-0.5"
+                />
+                <span>Ciutkan</span>
+              </>
+            )}
+          </button>
+        </div>
+      ) : null}
+
+      {/* Navigation */}
+      <nav
+        aria-label="Daftar halaman"
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain py-4",
+          showLabels ? "px-3" : "px-2",
+        )}
+      >
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
-            <p className="px-2 pb-2 text-[0.65rem] font-semibold uppercase tracking-wider text-zinc-400">
-              {section.title}
-            </p>
-            <ul className="flex flex-col gap-0.5">
+            {showLabels ? (
+              <div className="flex items-center gap-2 px-3 pb-2">
+                <span className="h-px flex-1 bg-line" aria-hidden="true" />
+                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-muted">
+                  {section.title}
+                </p>
+                <span className="h-px flex-1 bg-line" aria-hidden="true" />
+              </div>
+            ) : (
+              <div aria-hidden="true" className="mx-auto mb-3 h-px w-8 rounded-full bg-line" />
+            )}
+
+            <ul className="flex flex-col gap-1">
               {section.items.map((item) => {
                 const active = isRouteActive(pathname, item.href);
 
@@ -81,15 +186,48 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onNavigate}
+                      tabIndex={tabIndex}
                       aria-current={active ? "page" : undefined}
-                      className={
+                      aria-label={showLabels ? undefined : item.label}
+                      title={showLabels ? undefined : item.label}
+                      className={cn(
+                        "group relative flex items-center rounded-xl text-sm font-medium transition-all duration-200",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-surface",
+                        showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-3",
                         active
-                        ? "flex items-center gap-2.5 rounded-lg bg-[#365F49] px-3 py-2 text-sm font-medium text-white"
-                        : "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-700 transition hover:bg-green-50 hover:text-[#365F49]"
-                      }
+                          ? "bg-primary text-white shadow-[0_4px_12px_-4px] shadow-primary/40"
+                          : "text-ink-soft hover:bg-primary-soft/60 hover:text-primary-dark",
+                      )}
                     >
-                      <NavIconGlyph icon={item.icon} />
-                      {item.label}
+                      {active ? (
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white/90",
+                            !showLabels && "h-5 w-0.5",
+                          )}
+                        />
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "absolute left-0 top-1/2 h-0 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-all duration-200 group-hover:h-5",
+                            !showLabels && "group-hover:h-4",
+                          )}
+                        />
+                      )}
+                      <NavIconGlyph
+                        icon={item.icon}
+                        className={cn(
+                          "size-5 shrink-0 transition-transform duration-200",
+                          "group-hover:scale-110",
+                          active && "drop-shadow-sm",
+                        )}
+                      />
+                      {showLabels ? (
+                        <span className="min-w-0 truncate">{item.label}</span>
+                      ) : null}
                     </Link>
                   </li>
                 );
@@ -99,15 +237,54 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="border-t border-zinc-200 px-4 py-3">
-        <p className="truncate text-sm font-medium text-zinc-900">{user.name}</p>
-        <p className="truncate text-xs text-zinc-500">{TYPE_ROLE_LABELS[user.role]}</p>
+      {/* Profile & Logout */}
+      <div
+        className={cn(
+          "shrink-0 border-t border-line bg-gradient-to-b from-transparent to-surface-muted/40",
+          showLabels ? "px-4 py-4" : "px-2 py-4",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center rounded-xl border border-line bg-surface p-2 transition-colors hover:border-line-strong",
+            showLabels ? "gap-3" : "justify-center",
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-dark text-xs font-bold text-white shadow-sm"
+          >
+            {initials}
+          </span>
+          {showLabels ? (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
+              <p className="truncate text-xs text-muted">
+                {TYPE_ROLE_LABELS[user.role]}
+              </p>
+            </div>
+          ) : null}
+        </div>
+
         <button
           type="button"
           onClick={onLogout}
-          className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-50"
+          tabIndex={tabIndex}
+          aria-label={showLabels ? undefined : "Keluar"}
+          title={showLabels ? undefined : "Keluar"}
+          className={cn(
+            "mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-line-strong font-semibold text-ink-soft transition-all duration-200",
+            "hover:-translate-y-px hover:border-danger/50 hover:bg-danger-soft hover:text-danger hover:shadow-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+            "active:translate-y-0",
+            showLabels ? "px-3 py-2 text-sm" : "px-2 py-2.5",
+          )}
         >
-          Keluar
+          <LogOut
+            aria-hidden="true"
+            className={cn("shrink-0 transition-transform", showLabels ? "size-4" : "size-5")}
+          />
+          {showLabels ? "Keluar" : null}
         </button>
       </div>
     </aside>

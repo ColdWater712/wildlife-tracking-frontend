@@ -1,10 +1,14 @@
+import { CircleAlert, RotateCcw } from "lucide-react";
 import type { ApiErrorKind } from "@/types/api.type";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const TITLES: Record<ApiErrorKind, string> = {
   unauthorized: "Sesi tidak terautentikasi (401)",
   forbidden: "Akses ditolak (403)",
   validation: "Data tidak valid (422)",
   not_found: "Data tidak ditemukan (404)",
+  client: "Permintaan tidak dapat diproses (400/409)",
   server: "Server bermasalah (5xx)",
   network: "Backend tidak dapat dihubungi",
   unknown: "Terjadi kesalahan",
@@ -18,6 +22,10 @@ const HINTS: Record<ApiErrorKind, string[]> = {
   forbidden: ["Peran pengguna tidak memiliki izin untuk aksi ini."],
   validation: ["Periksa kembali isian yang ditandai."],
   not_found: ["Data yang diminta tidak tersedia di backend."],
+  client: [
+    "Periksa konflik data atau nilai yang ditolak backend.",
+    "Muat ulang halaman sebelum mencoba lagi.",
+  ],
   server: ["Periksa storage/logs/laravel.log pada repo backend."],
   network: [
     "Jalankan: cd wildlife-tracking-backend && php artisan serve",
@@ -31,6 +39,7 @@ const VALID_KINDS: ApiErrorKind[] = [
   "forbidden",
   "validation",
   "not_found",
+  "client",
   "server",
   "network",
   "unknown",
@@ -54,23 +63,25 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   const validationEntries = errors ? Object.entries(errors) : [];
-
-  // Ensure kind is valid, fallback to "unknown"
   const safeKind = VALID_KINDS.includes(kind) ? kind : "unknown";
 
   return (
     <div
       role="alert"
-      className={
-        className === undefined
-          ? "flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-6 text-red-900"
-          : `flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-6 text-red-900 ${className}`
-      }
+      className={cn(
+        "flex flex-col gap-3 rounded-card border border-danger/25 bg-danger-soft px-5 py-6 text-danger",
+        className,
+      )}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-semibold">{TITLES[safeKind]}</p>
+        <p className="flex items-center gap-2 text-sm font-bold">
+          <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
+          {TITLES[safeKind]}
+        </p>
         {status !== undefined && status > 0 ? (
-          <span className="text-xs font-medium opacity-70">HTTP {status}</span>
+          <span className="rounded-full bg-surface/70 px-2 py-0.5 text-xs font-semibold tabular-nums">
+            HTTP {status}
+          </span>
         ) : null}
       </div>
 
@@ -92,15 +103,16 @@ export function ErrorState({
         </ul>
       )}
 
-      {onRetry ? (
+      {onRetry !== undefined ? (
         <div>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onRetry}
-            className="rounded-lg bg-red-900/10 px-3 py-1.5 text-xs font-semibold transition hover:bg-red-900/20"
+            icon={<RotateCcw className="size-3.5" />}
           >
             Coba lagi
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

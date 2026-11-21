@@ -28,16 +28,18 @@ export type TYPE_ANIMAL = {
   gender: TYPE_ANIMAL_GENDER;
   is_active: boolean;
   species?: TYPE_SPECIES | null;
-  tracking_device?: TYPE_TRACKING_DEVICE | null;
+  trackingDevice?: TYPE_TRACKING_DEVICE | null;
   created_at: string;
   updated_at: string;
 };
+
+export type TYPE_ANIMAL_PAYLOAD_GENDER = TYPE_ANIMAL_GENDER;
 
 export type TYPE_ANIMAL_PAYLOAD = {
   species_id: number;
   animal_code: string;
   birth_date: string | null;
-  gender: TYPE_ANIMAL_GENDER;
+  gender: TYPE_ANIMAL_PAYLOAD_GENDER;
   is_active: boolean;
 };
 

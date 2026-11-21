@@ -1,0 +1,223 @@
+import {
+  ApiError,
+  createServerApiClient,
+  getLaravelApiBaseUrl,
+} from "@/services/api";
+import { normalizeUserRole } from "@/types/auth.type";
+import type {
+  TYPE_LOGIN_REQUEST,
+  TYPE_LOGIN_SESSION_USER,
+} from "@/types/auth.type";
+
+export type LaravelAuthResult =
+  | { ok: true; user: TYPE_LOGIN_SESSION_USER; token: string }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+      errors: Record<string, string[]> | null;
+    };
+
+export type LaravelCurrentUserResult =
+  | { ok: true; user: TYPE_LOGIN_SESSION_USER }
+  | {
+      ok: false;
+      status: number;
+      message: string;
+    };
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+
+const readString = (record: Record<string, unknown>, key: string): string => {
+  const value = record[key];
+
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const readNumber = (record: Record<string, unknown>, key: string): number => {
+  const value = record[key];
+
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+};
+
+const failure = (
+  status: number,
+  message: string,
+  errors: Record<string, string[]> | null = null,
+): Extract<LaravelAuthResult, { ok: false }> => ({
+  ok: false,
+  status,
+  message,
+  errors,
+});
+
+const readRoleName = (value: unknown): string | null => {
+  const role = asRecord(value);
+
+  if (role === null) return null;
+
+  const roleName = readString(role, "role_name");
+
+  return roleName === "" ? null : roleName;
+};
+
+const toSessionUser = (
+  record: Record<string, unknown>,
+): TYPE_LOGIN_SESSION_USER | null => {
+  const roleName = readRoleName(record.role);
+
+  if (roleName === null) return null;
+
+  const role = normalizeUserRole(roleName);
+
+  if (role === null) return null;
+
+  const user_id = readNumber(record, "user_id");
+  const username = readString(record, "username");
+  const name = readString(record, "full_name");
+  const email = readString(record, "email");
+
+  if (user_id <= 0 || username === "" || name === "" || email === "") {
+    return null;
+  }
+
+  return { user_id, username, name, email, role };
+};
+
+export const getCurrentUserFromLaravel = async (
+  token: string,
+): Promise<LaravelCurrentUserResult> => {
+  const serverApi = createServerApiClient(getLaravelApiBaseUrl());
+
+  try {
+    const response: unknown = await serverApi.get("/me", { token });
+    const envelope = asRecord(response);
+
+    if (envelope === null || envelope.success !== true) {
+      return {
+        ok: false,
+        status: 502,
+        message: "Format data pengguna tidak dikenali.",
+      };
+    }
+
+    const user = toSessionUser(asRecord(envelope.data) ?? {});
+
+    if (user === null) {
+      return {
+        ok: false,
+        status: 502,
+        message: "Data pengguna tidak memuat identitas dan role yang valid.",
+      };
+    }
+
+    return { ok: true, user };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const status = error.status === 0 ? 503 : error.status;
+
+      return {
+        ok: false,
+        status,
+        message:
+          error.status === 0
+            ? "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan."
+            : error.message,
+      };
+    }
+
+    return {
+      ok: false,
+      status: 503,
+      message:
+        "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan.",
+    };
+  }
+};
+
+export const authenticateWithLaravel = async (
+  payload: TYPE_LOGIN_REQUEST,
+): Promise<LaravelAuthResult> => {
+  const serverApi = createServerApiClient(getLaravelApiBaseUrl());
+
+  try {
+    const response: unknown = await serverApi.post("/login", {
+      body: { email: payload.email, password: payload.password },
+    });
+
+    const envelope = asRecord(response);
+
+    if (envelope === null) {
+      return failure(502, "Format respons login tidak dikenali.");
+    }
+
+    if (envelope.success !== true) {
+      return failure(502, "Backend tidak mengonfirmasi keberhasilan login.");
+    }
+
+    const data = asRecord(envelope.data);
+
+    if (data === null) {
+      return failure(502, "Respons login tidak memuat data autentikasi.");
+    }
+
+    const token = readString(data, "token");
+
+    if (token === "") {
+      return failure(502, "Respons login tidak memuat token autentikasi.");
+    }
+
+    const userRecord = asRecord(data.user);
+
+    if (userRecord === null) {
+      return failure(502, "Respons login tidak memuat data pengguna.");
+    }
+
+    const roleName = readRoleName(userRecord.role);
+
+    if (roleName === null) {
+      return failure(403, "Pengguna tidak memiliki role yang ditetapkan.");
+    }
+
+    const role = normalizeUserRole(roleName);
+
+    if (role === null) {
+      return failure(403, `Role "${roleName}" tidak didukung oleh aplikasi.`);
+    }
+
+    const user_id = readNumber(userRecord, "user_id");
+    const username = readString(userRecord, "username");
+    const name = readString(userRecord, "full_name");
+    const email = readString(userRecord, "email");
+
+    if (user_id <= 0 || username === "" || name === "" || email === "") {
+      return failure(502, "Respons login tidak memuat identitas pengguna yang valid.");
+    }
+
+    return {
+      ok: true,
+      token,
+      user: { user_id, username, name, email, role },
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const status = error.status === 0 ? 503 : error.status;
+
+      return failure(
+        status,
+        error.status === 0
+          ? "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan."
+          : error.message,
+        error.errors,
+      );
+    }
+
+    return failure(
+      503,
+      "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan.",
+    );
+  }
+};

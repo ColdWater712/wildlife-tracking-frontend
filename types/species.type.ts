@@ -1,9 +1,12 @@
 import { TYPE_META_PAGGINATION } from "@/types/meta.type";
 
 export type TYPE_CONSERVATION_STATUS =
-  | "Critically Endangered"
+  | "Least Concern"
+  | "Near Threatened"
+  | "Vulnerable"
   | "Endangered"
-  | "Vulnerable";
+  | "Critically Endangered"
+  | "Extinct";
 
 export type TYPE_SPECIES = {
   species_id: number;
@@ -35,13 +38,19 @@ export const TYPE_CONSERVATION_STATUS_LABELS: Record<
   TYPE_CONSERVATION_STATUS,
   string
 > = {
-  "Critically Endangered": "Kritis (Critically Endangered)",
-  Endangered: "Terancam (Endangered)",
+  "Least Concern": "Risiko Rendah (Least Concern)",
+  "Near Threatened": "Hampir Terancam (Near Threatened)",
   Vulnerable: "Rentan (Vulnerable)",
+  Endangered: "Terancam (Endangered)",
+  "Critically Endangered": "Kritis (Critically Endangered)",
+  Extinct: "Punah (Extinct)",
 };
 
 export const TYPE_CONSERVATION_STATUSES: TYPE_CONSERVATION_STATUS[] = [
-  "Critically Endangered",
-  "Endangered",
+  "Least Concern",
+  "Near Threatened",
   "Vulnerable",
+  "Endangered",
+  "Critically Endangered",
+  "Extinct",
 ];

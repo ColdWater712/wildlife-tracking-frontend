@@ -1,4 +1,4 @@
-import { DashboardView } from "@/components/dashboard/dashboard-view";
+import { DashboardView } from "@/components/shared/dashboard/dashboard-view";
 import { getSessionUser } from "@/lib/session";
 
 export default async function DashboardPage() {
