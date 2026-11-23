@@ -14,14 +14,14 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "bg-primary text-white shadow-sm hover:bg-primary-dark disabled:hover:bg-primary",
+  primary: "bg-primary text-white hover:bg-primary-dark disabled:hover:bg-primary",
   secondary:
-    "bg-primary-soft text-primary-dark hover:bg-primary-soft/70 disabled:hover:bg-primary-soft",
+    "border border-forest-primary bg-white text-forest-deep hover:bg-natural-muted/40 disabled:hover:bg-white",
   outline:
-    "border border-line-strong bg-surface text-ink-soft hover:border-primary hover:text-primary disabled:hover:border-line-strong",
-  ghost: "text-ink-soft hover:bg-surface-muted hover:text-ink",
-  danger: "bg-danger text-white hover:brightness-90 disabled:hover:bg-danger",
+    "border border-natural-muted bg-white text-forest-deep hover:border-forest-primary hover:bg-natural-muted/25 disabled:hover:border-natural-muted",
+  ghost: "text-olive-dark hover:bg-natural-muted/40 hover:text-forest-deep",
+  danger:
+    "border border-danger bg-white text-danger hover:bg-danger/10 disabled:hover:bg-white",
 };
 
 const SIZES: Record<ButtonSize, string> = {
@@ -62,7 +62,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center font-semibold transition focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex shrink-0 items-center justify-center font-semibold transition active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50",
         VARIANTS[variant],
         SIZES[size],
         className,

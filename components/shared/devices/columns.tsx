@@ -44,7 +44,7 @@ export const getDeviceColumns = ({
     accessorKey: "device_id",
     header: "ID Perangkat",
     cell: ({ row }) => (
-      <span className="font-medium tabular-nums text-zinc-900">
+      <span className="font-medium tabular-nums text-forest-black">
         #{row.original.device_id}
       </span>
     ),
@@ -55,11 +55,11 @@ export const getDeviceColumns = ({
     header: "Satwa",
     cell: ({ row }) =>
       row.original.animal ? (
-        <span className="text-zinc-800">
+        <span className="text-olive-dark">
           {row.original.animal.animal_code}
         </span>
       ) : (
-        <span className="text-xs text-zinc-400">
+        <span className="text-xs text-sage">
           Belum dipasangkan
         </span>
       ),
@@ -68,7 +68,7 @@ export const getDeviceColumns = ({
     accessorKey: "model",
     header: "Model",
     cell: ({ row }) => (
-      <span className="text-zinc-800">
+      <span className="text-olive-dark">
         {row.original.model}
       </span>
     ),
@@ -80,7 +80,7 @@ export const getDeviceColumns = ({
       row.original.installation_date ? (
         formatDate(row.original.installation_date)
       ) : (
-        <span className="text-zinc-400">-</span>
+        <span className="text-sage">-</span>
       ),
   },
   {
@@ -119,7 +119,7 @@ export const getDeviceColumns = ({
             event.stopPropagation();
             onEdit(row.original);
           }}
-          className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+          className="inline-flex items-center gap-1 rounded-lg border border-natural-muted px-3 py-1.5 text-xs font-medium text-olive-dark transition hover:bg-natural-muted/50"
         >
           <Pencil size={14} />
           Edit
@@ -131,7 +131,7 @@ export const getDeviceColumns = ({
             event.stopPropagation();
             onDelete(row.original);
           }}
-          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+          className="inline-flex items-center gap-1 rounded-lg border border-danger/30 px-3 py-1.5 text-xs font-medium text-danger transition hover:bg-danger-soft"
         >
           <Trash2 size={14} />
           Hapus

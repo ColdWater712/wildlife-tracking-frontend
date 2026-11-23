@@ -20,8 +20,8 @@ export const getGeoZoneColumns = ({
     header: "Nama Zona",
     cell: ({ row }) => (
       <div>
-        <p className="font-medium text-zinc-900">{row.original.zone_name}</p>
-        <p className="text-xs text-zinc-500">#{row.original.zone_id}</p>
+        <p className="font-medium text-forest-black">{row.original.zone_name}</p>
+        <p className="text-xs text-sage">#{row.original.zone_id}</p>
       </div>
     ),
   },
@@ -29,14 +29,14 @@ export const getGeoZoneColumns = ({
     accessorKey: "zone_type",
     header: "Jenis Zona",
     cell: ({ row }) => (
-      <span className="text-sm text-zinc-700">{row.original.zone_type}</span>
+      <span className="text-sm text-olive-dark">{row.original.zone_type}</span>
     ),
   },
   {
     accessorKey: "center_lat",
     header: "Latitude",
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-zinc-700">
+      <span className="tabular-nums text-sm text-olive-dark">
         {formatDisplayValue(row.original.center_lat)}
       </span>
     ),
@@ -45,7 +45,7 @@ export const getGeoZoneColumns = ({
     accessorKey: "center_lon",
     header: "Longitude",
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-zinc-700">
+      <span className="tabular-nums text-sm text-olive-dark">
         {formatDisplayValue(row.original.center_lon)}
       </span>
     ),
@@ -54,7 +54,7 @@ export const getGeoZoneColumns = ({
     accessorKey: "radius_km",
     header: "Radius (km)",
     cell: ({ row }) => (
-      <span className="tabular-nums text-sm text-zinc-700">
+      <span className="tabular-nums text-sm text-olive-dark">
         {formatDisplayValue(row.original.radius_km)}
       </span>
     ),
@@ -82,7 +82,7 @@ export const getGeoZoneColumns = ({
             event.stopPropagation();
             onEdit(row.original);
           }}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#D8E8DA] px-3 py-2 text-sm font-medium text-[#286747] transition hover:bg-[#F0F7F0]"
+          className="inline-flex items-center gap-2 rounded-lg border border-natural-muted px-3 py-2 text-sm font-medium text-forest-deep transition hover:bg-natural-muted/30"
         >
           <Pencil size={15} />
           Edit
@@ -93,7 +93,7 @@ export const getGeoZoneColumns = ({
             event.stopPropagation();
             onDelete(row.original);
           }}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger-soft"
         >
           <Trash2 size={15} />
           Hapus

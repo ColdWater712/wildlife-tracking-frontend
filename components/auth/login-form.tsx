@@ -57,7 +57,7 @@ export function LoginForm({ notice }: { notice?: string }) {
             className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
-                "linear-gradient(180deg, rgba(16,48,32,0.35), rgba(13,39,26,0.94)), url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&q=85')",
+                "linear-gradient(180deg, rgba(15,31,23,0.35), rgba(30,58,46,0.94)), url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&q=85')",
             }}
           />
           <div className="absolute -right-20 -top-20 size-72 rounded-full border border-white/10" />

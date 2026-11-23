@@ -1,29 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --app-bg: #f3f6f1;
+  --forest-black: #0f1f17;
+  --forest-deep: #1e3a2e;
+  --forest-primary: #3e5a3f;
+  --sage: #6b7f67;
+  --natural-muted: #c7cbb8;
+  --olive-dark: #3d4337;
+
+  --background: #ffffff;
   --surface: #ffffff;
-  --surface-muted: #eef3ed;
-  --line: #d9e3d9;
-  --line-strong: #bdcdbe;
-  --ink: #17271f;
-  --ink-soft: #46594e;
-  --ink-muted: #6f8175;
-  --primary: #2f6b4f;
-  --primary-dark: #20513c;
-  --primary-soft: #e5f1e9;
-  --accent: #b47b22;
-  --accent-soft: #fbf1dc;
-  --danger: #b42318;
-  --danger-soft: #fef0ed;
-  --radius-card: 1rem;
-  --shadow-card: 0 16px 40px -24px rgb(23 49 35 / 0.45);
+  --surface-muted: color-mix(in srgb, var(--natural-muted) 45%, white);
+  --foreground: var(--olive-dark);
+  --border: var(--natural-muted);
+  --line: var(--natural-muted);
+  --line-strong: var(--sage);
+  --ink: var(--forest-black);
+  --ink-soft: var(--olive-dark);
+  --ink-muted: var(--sage);
+  --primary: var(--forest-deep);
+  --primary-dark: var(--forest-black);
+  --primary-soft: color-mix(in srgb, var(--forest-primary) 10%, white);
+  --accent: var(--forest-primary);
+  --accent-soft: color-mix(in srgb, var(--natural-muted) 55%, white);
+  --success: var(--forest-primary);
+  --success-soft: color-mix(in srgb, var(--forest-primary) 12%, white);
+  --warning: var(--olive-dark);
+  --warning-soft: color-mix(in srgb, var(--natural-muted) 45%, white);
+  --info: var(--forest-deep);
+  --info-soft: color-mix(in srgb, var(--sage) 16%, white);
+  --danger: var(--forest-black);
+  --danger-soft: color-mix(in srgb, var(--forest-black) 8%, white);
+  --radius-card: 0.75rem;
+  --shadow-card: 0 8px 20px -16px color-mix(in srgb, var(--forest-black) 38%, transparent);
 }
 
 @theme inline {
-  --color-background: var(--app-bg);
+  --color-forest-black: var(--forest-black);
+  --color-forest-dark: var(--forest-deep);
+  --color-forest-deep: var(--forest-deep);
+  --color-forest-muted: var(--forest-primary);
+  --color-forest-primary: var(--forest-primary);
+  --color-sage-olive: var(--sage);
+  --color-sage: var(--sage);
+  --color-sage-cream: var(--natural-muted);
+  --color-natural-muted: var(--natural-muted);
+  --color-charcoal-green: var(--olive-dark);
+  --color-olive-dark: var(--olive-dark);
+  --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-secondary: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--ink-muted);
+  --color-border: var(--border);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
@@ -34,6 +64,12 @@
   --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --radius-card: var(--radius-card);
@@ -45,6 +81,10 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
   html,
   body {
     max-width: 100%;
@@ -52,25 +92,51 @@
   }
 
   body {
-    background: var(--app-bg);
-    color: var(--ink);
+    background: var(--background);
+    color: var(--foreground);
     font-family: var(--font-sans);
   }
 
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
   ::selection {
-    background: var(--primary-soft);
-    color: var(--primary-dark);
+    background: color-mix(in srgb, var(--forest-primary) 20%, white);
+    color: var(--forest-black);
   }
 
   :focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent);
+    outline: 2px solid var(--forest-primary);
     outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-color: var(--natural-muted) white;
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: white;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--natural-muted);
+    border-radius: 999px;
   }
 }
 
 @layer components {
   .ui-panel {
-    border: 1px solid var(--line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--surface);
     box-shadow: var(--shadow-card);
@@ -78,11 +144,11 @@
 
   .ui-input {
     width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: 0.75rem;
-    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: white;
     padding: 0.625rem 0.875rem;
-    color: var(--ink);
+    color: var(--olive-dark);
     font-size: 0.875rem;
     line-height: 1.5rem;
     outline: none;
@@ -93,40 +159,41 @@
   }
 
   .ui-input::placeholder {
-    color: var(--ink-muted);
+    color: var(--sage);
+    opacity: 0.8;
   }
 
   .ui-input:hover:not(:disabled) {
-    border-color: var(--primary);
+    border-color: var(--sage);
   }
 
   .ui-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+    border-color: var(--forest-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-primary) 18%, transparent);
   }
 
   .ui-input:disabled {
     cursor: not-allowed;
-    background: var(--surface-muted);
-    color: var(--ink-muted);
+    background: var(--natural-muted);
+    color: var(--olive-dark);
   }
 
   .ui-input-invalid {
     border-color: var(--danger);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 12%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 14%, transparent);
   }
 
   .ui-label {
     display: block;
     margin-bottom: 0.375rem;
-    color: var(--ink-soft);
+    color: var(--olive-dark);
     font-size: 0.8125rem;
     font-weight: 600;
   }
 
   .ui-hint {
     margin-top: 0.375rem;
-    color: var(--ink-muted);
+    color: var(--sage);
     font-size: 0.75rem;
     line-height: 1.25rem;
   }
@@ -135,16 +202,54 @@
     margin-top: 0.375rem;
     color: var(--danger);
     font-size: 0.75rem;
+    font-weight: 600;
     line-height: 1.25rem;
   }
 
   .ui-alert {
-    border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--surface));
-    border-radius: 0.875rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, white);
+    border-left-width: 3px;
+    border-radius: 0.5rem;
     background: var(--danger-soft);
     padding: 0.75rem 0.875rem;
     color: var(--danger);
     font-size: 0.8125rem;
     line-height: 1.35rem;
+  }
+
+  .leaflet-container {
+    background: var(--natural-muted);
+    color: var(--olive-dark);
+    font-family: var(--font-sans);
+  }
+
+  .leaflet-control-zoom a,
+  .leaflet-control-attribution {
+    border-color: var(--natural-muted) !important;
+    background: white !important;
+    color: var(--forest-black) !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: var(--natural-muted) !important;
+    color: var(--forest-black) !important;
+  }
+
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip {
+    border: 1px solid var(--natural-muted);
+    background: white;
+    color: var(--olive-dark);
+  }
+
+  .leaflet-popup-content {
+    color: var(--olive-dark);
+  }
+
+  .leaflet-popup-close-button {
+    color: var(--olive-dark) !important;
   }
 }

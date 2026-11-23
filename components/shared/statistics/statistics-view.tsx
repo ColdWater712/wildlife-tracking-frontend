@@ -19,9 +19,9 @@ import { useIncidentReports } from "@/hooks/use-incidents";
 import type { IncidentReport } from "@/types/incident.type";
 
 const SPECIES_COLORS = [
-  "bg-emerald-600",
-  "bg-amber-500",
-  "bg-blue-600",
+  "bg-forest-primary",
+  "bg-warning",
+  "bg-info",
   "bg-violet-600",
   "bg-rose-500",
 ];
@@ -44,19 +44,19 @@ const getSyncStatus = (status: IncidentReport["sync_status"]) => {
     case "synced":
       return {
         label: "Tersinkronisasi",
-        color: "bg-emerald-100 text-emerald-700",
+        color: "bg-success-soft text-success",
       };
 
     case "pending_sync":
       return {
         label: "Menunggu sinkronisasi",
-        color: "bg-amber-100 text-amber-700",
+        color: "bg-warning-soft text-warning",
       };
 
     case "failed":
       return {
         label: "Sinkronisasi gagal",
-        color: "bg-red-100 text-red-700",
+        color: "bg-danger-soft text-danger",
       };
   }
 };
@@ -92,7 +92,7 @@ export function StatisticsView() {
     return (
       <div className="flex min-h-60 items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto mb-3 size-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-700" />
+          <div className="mx-auto mb-3 size-8 animate-spin rounded-full border-4 border-natural-muted border-t-forest-primary" />
           <p className="text-sm text-muted">
             Memuat data statistik...
           </p>
@@ -103,14 +103,14 @@ export function StatisticsView() {
 
   if (isError) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+      <div className="rounded-2xl border border-danger/30 bg-danger-soft p-6">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="size-6 text-red-600" />
+          <AlertTriangle className="size-6 text-danger" />
           <div>
-            <h3 className="font-semibold text-red-900">
+            <h3 className="font-semibold text-danger">
               Gagal memuat data statistik
             </h3>
-            <p className="mt-1 text-sm text-red-700">
+            <p className="mt-1 text-sm text-danger">
               Periksa koneksi ke backend dan coba muat ulang data.
             </p>
           </div>
@@ -126,7 +126,7 @@ export function StatisticsView() {
               incidentsQuery.refetch(),
             ]);
           }}
-          className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+          className="mt-4 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-forest-black"
         >
           Coba Lagi
         </button>
@@ -176,7 +176,7 @@ export function StatisticsView() {
       value: totalAnimals,
       description: "Satwa dalam pemantauan",
       icon: PawPrint,
-      color: "bg-emerald-100 text-emerald-700",
+      color: "bg-success-soft text-success",
     },
     {
       title: "Jumlah Spesies",
@@ -190,14 +190,14 @@ export function StatisticsView() {
       value: activeDevices,
       description: "Perangkat GPS aktif",
       icon: RadioTower,
-      color: "bg-blue-100 text-blue-700",
+      color: "bg-info-soft text-info",
     },
     {
       title: "Laporan Insiden",
       value: totalIncidents,
       description: "Laporan tercatat",
       icon: AlertTriangle,
-      color: "bg-amber-100 text-amber-700",
+      color: "bg-warning-soft text-warning",
     },
   ];
 
@@ -237,18 +237,18 @@ export function StatisticsView() {
             </p>
           </div>
 
-          <div className="mb-6 flex items-end justify-between rounded-xl bg-emerald-50 p-4">
+          <div className="mb-6 flex items-end justify-between rounded-xl bg-success-soft p-4">
             <div>
-              <p className="text-sm text-emerald-800">
+              <p className="text-sm text-success">
                 Total satwa terdaftar
               </p>
 
-              <p className="mt-1 text-3xl font-bold text-emerald-950">
+              <p className="mt-1 text-3xl font-bold text-forest-black">
                 {totalAnimals.toLocaleString("id-ID")}
               </p>
             </div>
 
-            <PawPrint className="size-10 text-emerald-700" />
+            <PawPrint className="size-10 text-success" />
           </div>
 
           {speciesData.length === 0 ? (
@@ -275,7 +275,7 @@ export function StatisticsView() {
                       </span>
                     </div>
 
-                    <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-natural-muted/50">
                       <div
                         className={`h-full rounded-full ${item.color}`}
                         style={{
@@ -306,7 +306,7 @@ export function StatisticsView() {
               Belum ada laporan insiden.
             </p>
           ) : (
-            <div className="flex flex-col divide-y divide-zinc-100">
+            <div className="flex flex-col divide-y divide-natural-muted">
               {recentIncidents.map((incident) => {
                 const syncStatus = getSyncStatus(
                   incident.sync_status,
@@ -352,11 +352,11 @@ export function StatisticsView() {
         <Leaf className="mt-0.5 size-5 shrink-0 text-primary" />
 
         <div>
-          <p className="text-sm font-semibold text-emerald-950">
+          <p className="text-sm font-semibold text-forest-black">
             Informasi pemantauan
           </p>
 
-          <p className="mt-1 text-sm text-emerald-800">
+          <p className="mt-1 text-sm text-success">
             Statistik dan laporan ditampilkan berdasarkan data yang
             diterima dari backend sistem pemantauan satwa liar.
           </p>

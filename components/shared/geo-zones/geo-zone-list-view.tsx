@@ -251,50 +251,50 @@ export function GeoZoneListView() {
         ) : (
           <div className="mt-6 space-y-4">
             <div>
-              <p className="text-sm text-gray-500">ID Zona</p>
-              <p className="mt-1 font-medium text-gray-900">{selectedZone.zone_id}</p>
+              <p className="text-sm text-sage">ID Zona</p>
+              <p className="mt-1 font-medium text-forest-black">{selectedZone.zone_id}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Nama Zona</p>
-              <p className="mt-1 font-medium text-gray-900">{selectedZone.zone_name}</p>
+              <p className="text-sm text-sage">Nama Zona</p>
+              <p className="mt-1 font-medium text-forest-black">{selectedZone.zone_name}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Jenis Zona</p>
-              <p className="mt-1 text-gray-900">{selectedZone.zone_type}</p>
+              <p className="text-sm text-sage">Jenis Zona</p>
+              <p className="mt-1 text-forest-black">{selectedZone.zone_type}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Latitude</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm text-sage">Latitude</p>
+              <p className="mt-1 text-forest-black">
                 {formatDisplayValue(selectedZone.center_lat)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Longitude</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm text-sage">Longitude</p>
+              <p className="mt-1 text-forest-black">
                 {formatDisplayValue(selectedZone.center_lon)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Radius (km)</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm text-sage">Radius (km)</p>
+              <p className="mt-1 text-forest-black">
                 {formatDisplayValue(selectedZone.radius_km)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Dibuat oleh (ID)</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm text-sage">Dibuat oleh (ID)</p>
+              <p className="mt-1 text-forest-black">
                 {formatDisplayValue(selectedZone.created_by)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Tanggal Dibuat</p>
-              <p className="mt-1 text-gray-900">
+              <p className="text-sm text-sage">Tanggal Dibuat</p>
+              <p className="mt-1 text-forest-black">
                 {formatDisplayValue(selectedZone.created_at)}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">GeoJSON</p>
-              <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+              <p className="text-sm text-sage">GeoJSON</p>
+              <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-natural-muted/30 p-3 text-xs text-olive-dark">
                 {formatGeoJson(selectedZone.polygon_geojson)}
               </pre>
             </div>
@@ -313,7 +313,7 @@ export function GeoZoneListView() {
         description={
           <p>
             Apakah kamu yakin ingin menghapus zona{" "}
-            <span className="font-semibold text-zinc-900">
+            <span className="font-semibold text-forest-black">
               {deletingZone?.zone_name}
             </span>
             ? Data yang sudah dihapus tidak dapat dikembalikan.

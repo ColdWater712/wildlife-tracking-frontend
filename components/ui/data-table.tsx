@@ -206,7 +206,10 @@ export function DataTable<TData>({
           >
             <span className="hidden sm:inline">Sebelumnya</span>
           </Button>
-          <span className="tabular-nums">
+          <span
+            aria-current="page"
+            className="inline-flex min-w-8 items-center justify-center rounded-md bg-primary px-2 py-1 text-xs font-bold tabular-nums text-white"
+          >
             {pageCount === 0 ? 0 : pageIndex + 1} / {pageCount}
           </span>
           <Button

@@ -81,8 +81,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           key={toast.id}
           role={toast.type === "error" ? "alert" : "status"}
           aria-live={toast.type === "error" ? "assertive" : "polite"}
-          className={`pointer-events-auto flex items-start gap-3 rounded-xl border bg-surface p-4 shadow-xl ${
-            toast.type === "success" ? "border-primary/25" : "border-danger/25"
+          className={`pointer-events-auto flex items-start gap-3 rounded-lg border bg-white p-4 shadow-card ${
+            toast.type === "success" ? "border-forest-primary/30" : "border-danger/30"
           }`}
         >
           {toast.type === "success" ? (

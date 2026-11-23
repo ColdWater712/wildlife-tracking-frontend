@@ -215,10 +215,10 @@ export default function AnimalListView() {
             href={`/animals/${row.original.animal_id}/detail`}
             className="group inline-flex flex-col"
           >
-            <span className="font-medium text-emerald-700 underline-offset-2 group-hover:underline">
+            <span className="font-medium text-forest-primary underline-offset-2 group-hover:underline">
               {row.original.animal_code}
             </span>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-sage">
               #{row.original.animal_id}
             </span>
           </Link>
@@ -232,15 +232,15 @@ export default function AnimalListView() {
         cell: ({ row }) =>
           row.original.species ? (
             <div>
-              <p className="font-medium text-zinc-800">
+              <p className="font-medium text-olive-dark">
                 {row.original.species.common_name}
               </p>
-              <p className="text-xs italic text-zinc-500">
+              <p className="text-xs italic text-sage">
                 {row.original.species.scientific_name}
               </p>
             </div>
           ) : (
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-sage">
               Spesies #{row.original.species_id}
             </span>
           ),
@@ -249,7 +249,7 @@ export default function AnimalListView() {
         id: "device",
         header: "Perangkat GPS",
         cell: ({ row }) => (
-          <span className="text-sm text-zinc-700">
+          <span className="text-sm text-olive-dark">
             {row.original.trackingDevice?.model ?? "-"}
           </span>
         ),
@@ -261,7 +261,7 @@ export default function AnimalListView() {
           const gender = row.original.gender;
 
           return (
-            <span className="text-sm font-semibold text-zinc-700">
+            <span className="text-sm font-semibold text-olive-dark">
               {gender === "Jantan"
                 ? "♂"
                 : gender === "Betina"
@@ -278,7 +278,7 @@ export default function AnimalListView() {
           const birthDate = row.original.birth_date;
 
           return birthDate ? (
-            <span className="text-sm text-zinc-700">
+            <span className="text-sm text-olive-dark">
               {new Date(birthDate).toLocaleDateString(
                 "id-ID",
                 {
@@ -289,7 +289,7 @@ export default function AnimalListView() {
               )}
             </span>
           ) : (
-            <span className="text-zinc-400">-</span>
+            <span className="text-sage">-</span>
           );
         },
       },
@@ -303,8 +303,8 @@ export default function AnimalListView() {
             <span
               className={
                 isActive
-                  ? "inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700"
-                  : "inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600"
+                  ? "inline-flex rounded-full bg-success-soft px-2.5 py-1 text-xs font-medium text-success"
+                  : "inline-flex rounded-full bg-natural-muted/50 px-2.5 py-1 text-xs font-medium text-sage"
               }
             >
               {isActive ? "Terpantau" : "Tidak Terpantau"}
@@ -324,7 +324,7 @@ export default function AnimalListView() {
             : undefined;
 
           return reading ? (
-            <div className="text-sm text-zinc-700">
+            <div className="text-sm text-olive-dark">
               <p>
                 Lat:{" "}
                 {Number(reading.latitude).toFixed(6)}
@@ -335,7 +335,7 @@ export default function AnimalListView() {
               </p>
             </div>
           ) : (
-            <span className="text-zinc-400">-</span>
+            <span className="text-sage">-</span>
           );
         },
       },
@@ -353,7 +353,7 @@ export default function AnimalListView() {
           const recordedAt = reading?.recorded_at;
 
           return recordedAt ? (
-            <span className="text-sm text-zinc-700">
+            <span className="text-sm text-olive-dark">
               {new Date(recordedAt).toLocaleString(
                 "id-ID",
                 {
@@ -363,7 +363,7 @@ export default function AnimalListView() {
               )}
             </span>
           ) : (
-            <span className="text-zinc-400">-</span>
+            <span className="text-sage">-</span>
           );
         },
       },
@@ -377,7 +377,7 @@ export default function AnimalListView() {
               onClick={() =>
                 router.push(`/animals/${row.original.animal_id}/update`)
               }
-              className="inline-flex items-center gap-2 rounded-lg border border-[#D8E8DA] px-3 py-2 text-sm font-medium text-[#286747] transition hover:bg-[#F0F7F0]"
+              className="inline-flex items-center gap-2 rounded-lg border border-natural-muted px-3 py-2 text-sm font-medium text-forest-deep transition hover:bg-natural-muted/30"
             >
               <Pencil size={15} />
               Edit
@@ -388,7 +388,7 @@ export default function AnimalListView() {
               onClick={() => {
                 setSelectedDeleteAnimal(row.original);
               }}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger-soft"
             >
               <Trash2 size={15} />
               Hapus
@@ -528,10 +528,10 @@ export default function AnimalListView() {
         description={
           <>
             <p>Apakah kamu yakin ingin menghapus satwa berikut?</p>
-            <p className="mt-2 rounded-lg bg-zinc-50 p-3 text-sm font-semibold text-zinc-800">
+            <p className="mt-2 rounded-lg bg-natural-muted/30 p-3 text-sm font-semibold text-olive-dark">
               {selectedDeleteAnimal?.animal_code}
             </p>
-            <p className="mt-3 text-xs text-red-600">
+            <p className="mt-3 text-xs text-danger">
               Tindakan ini tidak dapat dibatalkan.
             </p>
           </>

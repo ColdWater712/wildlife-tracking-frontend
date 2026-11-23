@@ -41,10 +41,10 @@ type RealMapProps = {
 };
 
 const ZONE_COLORS: Record<string, string> = {
-  jalan_raya: "#eab308",
-  koridor_ekologis: "#16a34a",
-  perkebunan: "#ca8a04",
-  permukiman: "#2563eb",
+  jalan_raya: "#3d4337",
+  koridor_ekologis: "#3e5a3f",
+  perkebunan: "#6b7f67",
+  permukiman: "#1e3a2e",
 };
 
 function RealMap({
@@ -141,7 +141,7 @@ function RealMap({
 
       zones.forEach((zone) => {
         const color =
-          ZONE_COLORS[zone.zone_type] ?? "#64748b";
+          ZONE_COLORS[zone.zone_type] ?? "#c7cbb8";
 
         const popupContent = document.createElement("div");
 
@@ -276,10 +276,10 @@ function RealMap({
               justify-content: center;
               border: 3px solid white;
               border-radius: 50%;
-              background: #166534;
+              background: #3e5a3f;
               color: white;
               font-size: 17px;
-              box-shadow: 0 2px 8px #0004;
+              box-shadow: 0 2px 8px rgba(15, 31, 23, 0.25);
             ">${icon}</div>
           `,
           iconSize: [34, 34],
@@ -384,7 +384,7 @@ function RealMap({
       <button
         type="button"
         onClick={() => void handleZoomAllZones()}
-        className="absolute left-3 top-3 z-[1000] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-md transition hover:bg-gray-100"
+        className="absolute left-3 top-3 z-[1000] rounded-lg border border-natural-muted bg-white px-3 py-2 text-sm font-medium text-forest-black shadow-card transition hover:bg-natural-muted/30"
       >
         Zoom ke Semua Zona
       </button>
@@ -620,7 +620,7 @@ export function LiveMapView() {
                     aria-pressed={active}
                     className={`flex w-full flex-col gap-1 border-l-2 px-3 py-3 text-left transition ${
                       active
-                        ? "border-emerald-700 bg-primary-soft"
+                        ? "border-forest-primary bg-primary-soft"
                         : "border-transparent hover:bg-primary-soft"
                     }`}
                   >
@@ -654,27 +654,27 @@ export function LiveMapView() {
 
             <div className="space-y-2 text-xs text-ink-soft">
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-yellow-500" />
+                <span className="size-3 rounded-full bg-warning" />
                 Jalan Raya
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-green-600" />
+                <span className="size-3 rounded-full bg-forest-primary" />
                 Koridor Ekologis
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-yellow-700" />
+                <span className="size-3 rounded-full bg-sage" />
                 Perkebunan
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-blue-600" />
+                <span className="size-3 rounded-full bg-info" />
                 Permukiman
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-emerald-800" />
+                <span className="size-3 rounded-full bg-forest-black" />
                 Lokasi Satwa
               </div>
             </div>

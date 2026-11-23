@@ -37,10 +37,10 @@ export const getSpeciesColumns = ({
     header: "Nama Umum",
     cell: ({ row }) => (
       <div>
-        <p className="font-medium text-zinc-900">
+        <p className="font-medium text-forest-black">
           {row.original.common_name}
         </p>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-sage">
           #{row.original.species_id}
         </p>
       </div>
@@ -50,7 +50,7 @@ export const getSpeciesColumns = ({
     accessorKey: "scientific_name",
     header: "Nama Ilmiah",
     cell: ({ row }) => (
-      <span className="italic text-zinc-700">
+      <span className="italic text-olive-dark">
         {row.original.scientific_name}
       </span>
     ),
@@ -73,7 +73,7 @@ export const getSpeciesColumns = ({
     accessorKey: "animal_count",
     header: "Jumlah Satwa",
     cell: ({ row }) => (
-      <span className="tabular-nums text-zinc-700">
+      <span className="tabular-nums text-olive-dark">
         {row.original.animal_count ?? 0}
       </span>
     ),
@@ -90,7 +90,7 @@ export const getSpeciesColumns = ({
             event.stopPropagation();
             onEdit(row.original);
           }}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#D8E8DA] px-3 py-2 text-sm font-medium text-[#286747] transition hover:bg-[#F0F7F0]"
+          className="inline-flex items-center gap-2 rounded-lg border border-natural-muted px-3 py-2 text-sm font-medium text-forest-deep transition hover:bg-natural-muted/30"
         >
           <Pencil size={15} />
           Edit
@@ -102,7 +102,7 @@ export const getSpeciesColumns = ({
             event.stopPropagation();
             onDelete(row.original);
           }}
-          className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-danger/30 px-3 py-2 text-sm font-medium text-danger transition hover:bg-danger-soft"
         >
           <Trash2 size={15} />
           Hapus

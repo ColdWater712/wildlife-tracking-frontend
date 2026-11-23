@@ -237,7 +237,7 @@ export function DeviceListView() {
         description={
           <p>
             Apakah kamu yakin ingin menghapus perangkat{" "}
-            <span className="font-semibold text-zinc-900">
+            <span className="font-semibold text-forest-black">
               {selectedDeleteDevice?.model}
             </span>{" "}
             (ID: {selectedDeleteDevice?.device_id})? Tindakan ini tidak dapat

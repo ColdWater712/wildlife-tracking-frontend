@@ -232,15 +232,15 @@ export function SpeciesListView() {
         description={
           <>
             <p>Apakah kamu yakin ingin menghapus spesies berikut?</p>
-            <div className="mt-2 rounded-lg bg-zinc-50 p-3">
-              <p className="text-sm font-semibold text-zinc-800">
+            <div className="mt-2 rounded-lg bg-natural-muted/30 p-3">
+              <p className="text-sm font-semibold text-olive-dark">
                 {selectedDeleteSpecies?.common_name}
               </p>
-              <p className="text-xs italic text-zinc-500">
+              <p className="text-xs italic text-sage">
                 {selectedDeleteSpecies?.scientific_name}
               </p>
             </div>
-            <p className="mt-3 text-xs text-red-600">
+            <p className="mt-3 text-xs text-danger">
               Tindakan ini tidak dapat dibatalkan. Penghapusan juga dapat
               ditolak backend jika spesies masih memiliki data satwa terkait.
             </p>

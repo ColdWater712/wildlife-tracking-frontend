@@ -658,7 +658,7 @@ Dokumen dan konfigurasi yang menjadi acuan langsung:
 - `.env.example`
 - `app/`, `components/`, `hooks/`, `services/`, `types/`, `lib/`, `utils/`
 - `../AGENTS.md` untuk aturan operasional lintasrepository
-- `../audit.md` untuk catatan audit lintasproyek
+- `../PROJECT-DEVELOPMENT-GUIDELINE.md` untuk panduan pengembangan dan catatan audit lintasproyek
 - `../wildlife-tracking-backend/routes/api.php` dan controller terkait untuk verifikasi endpoint
 - `../wildlife-tracking-backend/README.md` untuk instalasi dan migrasi backend
 

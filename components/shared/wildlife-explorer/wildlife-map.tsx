@@ -29,7 +29,7 @@ const appendPopupRow = (
   value: string,
 ) => {
   const row = document.createElement("p");
-  row.className = "mt-1 text-xs text-[#46594e]";
+  row.className = "mt-1 text-xs text-sage";
 
   const labelNode = document.createElement("span");
   labelNode.className = "font-semibold";
@@ -127,14 +127,14 @@ export function WildlifeMap({
             radius: 7,
             color: "#ffffff",
             weight: 2,
-            fillColor: "#2f6b4f",
+            fillColor: "#3e5a3f",
             fillOpacity: 0.95,
           },
         ).addTo(mapInstance);
 
         const popupContent = document.createElement("div");
         const title = document.createElement("strong");
-        title.className = "text-sm text-[#17271f]";
+        title.className = "text-sm text-forest-black";
         title.textContent = marker.animalCode;
         popupContent.append(title);
 

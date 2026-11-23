@@ -48,7 +48,7 @@ const COLUMNS: ColumnDef<IncidentReport, unknown>[] = [
     accessorKey: "timestamp",
     header: "Tanggal",
     cell: ({ row }) => (
-      <span className="tabular-nums text-zinc-700">
+      <span className="tabular-nums text-olive-dark">
         {formatDate(row.original.timestamp)}
       </span>
     ),
@@ -57,7 +57,7 @@ const COLUMNS: ColumnDef<IncidentReport, unknown>[] = [
     accessorKey: "incident_type",
     header: "Jenis",
     cell: ({ row }) => (
-      <span className="text-zinc-800">
+      <span className="text-olive-dark">
         {row.original.incident_type.replaceAll("_", " ")}
       </span>
     ),
@@ -66,7 +66,7 @@ const COLUMNS: ColumnDef<IncidentReport, unknown>[] = [
     accessorKey: "location",
     header: "Lokasi",
     cell: ({ row }) => (
-      <span className="text-zinc-700">
+      <span className="text-olive-dark">
         {row.original.location}
       </span>
     ),
@@ -76,11 +76,11 @@ const COLUMNS: ColumnDef<IncidentReport, unknown>[] = [
     header: "Kode Satwa",
     cell: ({ row }) =>
       row.original.animal_code ? (
-        <span className="font-medium text-zinc-900">
+        <span className="font-medium text-forest-black">
           {row.original.animal_code}
         </span>
       ) : (
-        <span className="text-zinc-400">-</span>
+        <span className="text-sage">-</span>
       ),
   },
   {

@@ -12,19 +12,19 @@ type StatCardProps = {
 };
 
 const TONE_STYLES = {
-  neutral: "border-line bg-surface text-ink",
-  positive: "border-primary/25 bg-primary-soft/60 text-primary-dark",
-  warning: "border-accent/30 bg-accent-soft/70 text-accent",
-  info: "border-sky-200 bg-sky-50/70 text-sky-900",
-  danger: "border-danger/25 bg-danger-soft text-danger",
+  neutral: "border-natural-muted bg-white text-forest-black",
+  positive: "border-forest-primary/30 bg-white text-forest-deep",
+  warning: "border-warning/25 bg-white text-warning",
+  info: "border-info/25 bg-white text-info",
+  danger: "border-danger/25 bg-white text-danger",
 } as const;
 
 const ICON_STYLES = {
-  neutral: "bg-surface-muted text-primary",
-  positive: "bg-primary/10 text-primary",
-  warning: "bg-accent/15 text-accent",
-  info: "bg-sky-100 text-sky-700",
-  danger: "bg-danger/10 text-danger",
+  neutral: "bg-natural-muted/50 text-forest-primary",
+  positive: "bg-forest-primary text-white",
+  warning: "bg-warning-soft text-warning",
+  info: "bg-info-soft text-info",
+  danger: "bg-danger-soft text-danger",
 } as const;
 
 export function StatCard({

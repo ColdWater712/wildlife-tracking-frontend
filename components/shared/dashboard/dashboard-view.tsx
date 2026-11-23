@@ -124,26 +124,26 @@ export function DashboardView({ role }: { role: TYPE_USER_ROLE }) {
 
   return (
     <div className="flex flex-col gap-6 pb-6">
-      <section className="relative overflow-hidden rounded-[1.5rem] bg-primary-dark p-6 text-white shadow-card sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full border border-white/10" />
-        <div className="pointer-events-none absolute -bottom-24 right-16 size-72 rounded-full border border-white/10" />
+      <section className="relative overflow-hidden rounded-card border border-natural-muted bg-white p-6 shadow-card sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full border border-natural-muted/70" />
+        <div className="pointer-events-none absolute -bottom-24 right-16 size-72 rounded-full border border-natural-muted/70" />
         <div className="relative z-10 max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-white/65">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">
             Wildlife Monitoring System · BTNGL
           </p>
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-forest-black sm:text-3xl">
             Dashboard Pemantauan Satwa
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-white/75">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-sage">
             Pantau aktivitas satwa liar, kondisi perangkat GPS, dan laporan
             lapangan dalam satu tempat.
           </p>
-          <p className="mt-4 text-sm font-medium text-white/85">
+          <p className="mt-4 text-sm font-semibold text-olive-dark">
             Masuk sebagai {ROLE_LABELS[role]}
           </p>
           <Link
             href="/tracking/live-map"
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary-dark transition hover:bg-primary-soft"
+            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-dark"
           >
             Lihat Peta Pelacakan
             <ArrowRight aria-hidden="true" className="size-4" />

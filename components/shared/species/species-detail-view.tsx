@@ -135,7 +135,7 @@ export function SpeciesDetailView({ speciesId }: SpeciesDetailViewProps) {
               <li key={animal.animal_id}>
                 <Link
                   href={`/animals/${animal.animal_id}/detail`}
-                  className="flex items-center justify-between gap-2 px-4 py-3 text-sm transition hover:bg-zinc-50"
+                  className="flex items-center justify-between gap-2 px-4 py-3 text-sm transition hover:bg-natural-muted/30"
                 >
                   <span className="font-medium text-ink">
                     {animal.animal_code}
