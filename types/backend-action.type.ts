@@ -1,5 +1,6 @@
 import type { ApiErrorKind } from "@/types/api.type";
 import type { TYPE_LOGIN_SESSION_USER } from "@/types/auth.type";
+import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
 
 export type BackendActionMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -21,6 +22,7 @@ export type BackendActionResult =
       body: unknown;
       base64?: string;
       contentType?: string;
+      meta?: TYPE_META_PAGGINATION | null;
     }
   | {
       ok: false;

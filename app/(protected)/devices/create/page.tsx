@@ -88,12 +88,16 @@ const deviceSchema = z.object({
       (value) =>
         value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
       "Format tanggal pemasangan tidak valid.",
+    )
+    .refine(
+      (value) => value === "" || value <= new Date().toISOString().slice(0, 10),
+      "Tanggal pemasangan tidak boleh di masa depan.",
     ),
   battery_life_months: z
     .number()
     .int("Masa pakai baterai harus bilangan bulat.")
-    .min(1, "Masa pakai baterai minimal 1 bulan.")
-    .max(120, "Masa pakai baterai maksimal 120 bulan."),
+    .min(0, "Masa pakai baterai minimal 0 bulan.")
+    .max(240, "Masa pakai baterai maksimal 240 bulan."),
   battery_level: z
     .number()
     .int("Level baterai harus bilangan bulat.")

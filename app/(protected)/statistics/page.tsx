@@ -10,9 +10,7 @@ import {
 
 import { PageHeader } from "@/components/ui/panel";
 import { StatCard } from "@/components/ui/stat-card";
-import { useAnimals } from "@/hooks/use-animals";
-import { useSpecies } from "@/hooks/use-species";
-import { useTrackingDevices } from "@/hooks/use-devices";
+import { useDashboardStats } from "@/hooks/use-dashboard";
 import { useIncidentReports } from "@/hooks/use-incidents";
 
 import type { IncidentReport } from "@/types/incident.type";
@@ -61,31 +59,11 @@ const getSyncStatus = (status: IncidentReport["sync_status"]) => {
 };
 
 export default function StatisticsPage() {
-  const animalsQuery = useAnimals({
-    page: 1,
-    per_page: 100,
-  });
-
-  const speciesQuery = useSpecies({
-    page: 1,
-    per_page: 100,
-  });
-
-  const devicesQuery = useTrackingDevices();
-
+  const statsQuery = useDashboardStats();
   const incidentsQuery = useIncidentReports();
 
-  const isLoading =
-    animalsQuery.isLoading ||
-    speciesQuery.isLoading ||
-    devicesQuery.isLoading ||
-    incidentsQuery.isLoading;
-
-  const isError =
-    animalsQuery.isError ||
-    speciesQuery.isError ||
-    devicesQuery.isError ||
-    incidentsQuery.isError;
+  const isLoading = statsQuery.isLoading || incidentsQuery.isLoading;
+  const isError = statsQuery.isError || incidentsQuery.isError;
 
   if (isLoading) {
     return (
@@ -118,12 +96,11 @@ export default function StatisticsPage() {
         <button
           type="button"
           onClick={() => {
-            void Promise.all([
-              animalsQuery.refetch(),
-              speciesQuery.refetch(),
-              devicesQuery.refetch(),
-              incidentsQuery.refetch(),
-            ]);
+          void Promise.all([
+            statsQuery.refetch(),
+            incidentsQuery.refetch(),
+          ]);
+
           }}
           className="mt-4 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white hover:bg-forest-black"
         >
@@ -133,33 +110,22 @@ export default function StatisticsPage() {
     );
   }
 
-  const animals = animalsQuery.data?.data?.items ?? [];
-  const species = speciesQuery.data?.data?.items ?? [];
-  const devices = devicesQuery.data?.data ?? [];
   const incidents = incidentsQuery.data?.data ?? [];
+  const stats = statsQuery.data?.data.statistics;
 
-  const totalAnimals = animals.length;
-  const totalSpecies = species.length;
+  const totalAnimals = stats?.total_animals ?? 0;
+  const totalSpecies = stats?.total_species ?? 0;
+  const activeDevices = stats?.active_devices ?? 0;
+  const totalIncidents = stats?.total_incidents ?? 0;
 
-  const activeDevices = devices.filter(
-    (device) =>
-      device.is_active === true || device.is_active === 1,
-  ).length;
-
-  const totalIncidents = incidents.length;
-
-  const speciesData = species.map((item, index) => {
-    const animalCount = animals.filter(
-      (animal) => animal.species_id === item.species_id,
-    ).length;
-
-    return {
-      id: item.species_id,
-      name: item.common_name,
-      count: animalCount,
+  const speciesData = (statsQuery.data?.data.species_breakdown ?? []).map(
+    (item, index) => ({
+      id: item.species_id ?? index,
+      name: item.common_name ?? item.name ?? `Spesies #${item.species_id ?? index}`,
+      count: item.count ?? 0,
       color: SPECIES_COLORS[index % SPECIES_COLORS.length],
-    };
-  });
+    }),
+  );
 
   const recentIncidents = [...incidents]
     .sort(

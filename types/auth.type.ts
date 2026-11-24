@@ -23,6 +23,63 @@ export const normalizeUserRole = (value: unknown): TYPE_USER_ROLE | null => {
     : null;
 };
 
+export type AppPermission =
+  | "view_data"
+  | "create_data"
+  | "update_data"
+  | "delete_data"
+  | "manage_users"
+  | "manage_roles"
+  | "view_reports"
+  | "manage_master_data"
+  | "upload_media"
+  | "verify_ai"
+  | "export_data";
+
+export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
+  konservasionis_lapangan: [
+    "view_data",
+    "create_data",
+    "update_data",
+    "upload_media",
+    "verify_ai",
+  ],
+  peneliti_ekologi: [
+    "view_data",
+    "create_data",
+    "update_data",
+    "view_reports",
+    "manage_master_data",
+    "upload_media",
+    "verify_ai",
+    "export_data",
+  ],
+  administrator_sistem: [
+    "view_data",
+    "create_data",
+    "update_data",
+    "delete_data",
+    "manage_users",
+    "manage_roles",
+    "view_reports",
+    "manage_master_data",
+    "upload_media",
+    "verify_ai",
+    "export_data",
+  ],
+  pengambil_kebijakan: [
+    "view_data",
+    "view_reports",
+    "upload_media",
+    "export_data",
+  ],
+};
+
+export const roleHasPermission = (
+  role: TYPE_USER_ROLE,
+  permission: AppPermission,
+): boolean => ROLE_PERMISSIONS[role].includes(permission);
+
 export type TYPE_USER = {
   user_id: number;
   username: string;
@@ -73,6 +130,7 @@ export type TYPE_LOGIN_SESSION_USER = {
   name: string;
   email: string;
   role: TYPE_USER_ROLE;
+  permissions: AppPermission[];
 };
 
 export type LoginAttempt =

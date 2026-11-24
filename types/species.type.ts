@@ -6,7 +6,9 @@ export type TYPE_CONSERVATION_STATUS =
   | "Vulnerable"
   | "Endangered"
   | "Critically Endangered"
-  | "Extinct";
+  | "Extinct in the Wild"
+  | "Extinct"
+  | "Data Deficient";
 
 export type TYPE_SPECIES = {
   species_id: number;
@@ -14,6 +16,7 @@ export type TYPE_SPECIES = {
   scientific_name: string;
   conservation_status: TYPE_CONSERVATION_STATUS;
   animal_count?: number;
+  animals?: unknown[];
   created_at: string | null;
   updated_at: string | null;
 };
@@ -43,7 +46,9 @@ export const TYPE_CONSERVATION_STATUS_LABELS: Record<
   Vulnerable: "Rentan (Vulnerable)",
   Endangered: "Terancam (Endangered)",
   "Critically Endangered": "Kritis (Critically Endangered)",
+  "Extinct in the Wild": "Punah di Alam Liar (Extinct in the Wild)",
   Extinct: "Punah (Extinct)",
+  "Data Deficient": "Data Tidak Memadai (Data Deficient)",
 };
 
 export const TYPE_CONSERVATION_STATUSES: TYPE_CONSERVATION_STATUS[] = [
@@ -52,5 +57,7 @@ export const TYPE_CONSERVATION_STATUSES: TYPE_CONSERVATION_STATUS[] = [
   "Vulnerable",
   "Endangered",
   "Critically Endangered",
+  "Extinct in the Wild",
   "Extinct",
+  "Data Deficient",
 ];

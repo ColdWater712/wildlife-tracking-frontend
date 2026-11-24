@@ -22,7 +22,9 @@ const CONSERVATION_VARIANT: Record<TYPE_CONSERVATION_STATUS, BadgeVariant> = {
   Vulnerable: "info",
   Endangered: "warning",
   "Critically Endangered": "danger",
+  "Extinct in the Wild": "danger",
   Extinct: "neutral",
+  "Data Deficient": "neutral",
 };
 
 const DetailField = ({ label, value }: { label: string; value: string }) => (
@@ -42,7 +44,7 @@ export default function SpeciesDetailPage() {
   const speciesQuery = useSpeciesById(speciesId);
 
   const animalsParams = useMemo(
-    () => ({ page: 1, per_page: 100, species_id: speciesId }),
+    () => ({ species_id: speciesId }),
     [speciesId],
   );
 
@@ -117,7 +119,10 @@ export default function SpeciesDetailPage() {
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
             Satwa dari Spesies Ini
           </h3>
-          <StatCard label="Jumlah" value={String(relatedAnimals.length)} />
+          <StatCard
+            label="Jumlah"
+            value={String(record.animal_count ?? relatedAnimals.length)}
+          />
         </div>
 
         {animals.isError ? (

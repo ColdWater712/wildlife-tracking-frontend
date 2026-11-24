@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getSessionUser } from "@/lib/session";
+import { roleHasPermission } from "@/types/auth.type";
 
 import AiPredictionDetailContent from "./index";
 
@@ -20,7 +21,7 @@ export default async function AiPredictionDetailPage({ params }: PageProps) {
 
   return (
     <AiPredictionDetailContent
-      canVerify={user?.role === "peneliti_ekologi"}
+      canVerify={user ? roleHasPermission(user.role, "verify_ai") : false}
     />
   );
 }

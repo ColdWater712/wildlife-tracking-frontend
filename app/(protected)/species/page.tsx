@@ -45,8 +45,6 @@ export default function SpeciesListPage() {
 
   const params = useMemo(
     () => ({
-      page: 1,
-      per_page: 25,
       search: debouncedSearch,
       conservation_status:
         filters.conservation_status === "all"

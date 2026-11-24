@@ -19,7 +19,9 @@ const CONSERVATION_VARIANT: Record<
   Vulnerable: "info",
   Endangered: "warning",
   "Critically Endangered": "danger",
+  "Extinct in the Wild": "danger",
   Extinct: "neutral",
+  "Data Deficient": "neutral",
 };
 
 type SpeciesColumnActions = {

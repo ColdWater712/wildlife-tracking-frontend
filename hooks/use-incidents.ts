@@ -45,7 +45,13 @@ export const useInfiniteIncidentReports = (params: IncidentReportListParams) => 
     queryFn: ({ pageParam = 1 }) =>
       getIncidentReports({ ...params, page: pageParam as number }),
     initialPageParam: 1,
-    getNextPageParam: () => undefined,
+    getNextPageParam: (lastPage) => {
+      const meta = lastPage.meta;
+
+      if (!meta) return undefined;
+
+      return meta.page < meta.total_pages ? meta.page + 1 : undefined;
+    },
   });
 };
 

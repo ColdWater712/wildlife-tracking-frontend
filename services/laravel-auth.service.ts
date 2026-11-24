@@ -3,8 +3,12 @@ import {
   createServerApiClient,
   getLaravelApiBaseUrl,
 } from "@/services/api";
-import { normalizeUserRole } from "@/types/auth.type";
+import {
+  normalizeUserRole,
+  ROLE_PERMISSIONS,
+} from "@/types/auth.type";
 import type {
+  AppPermission,
   LaravelAuthResult,
   LaravelCurrentUserResult,
   TYPE_LOGIN_REQUEST,
@@ -44,9 +48,27 @@ const readRoleName = (value: unknown): string | null => {
 
   if (role === null) return null;
 
-  const roleName = readString(role, "role_name");
+  return readString(role, "role_name") || readString(role, "name_role") || null;
+};
 
-  return roleName === "" ? null : roleName;
+const readPermissions = (
+  value: unknown,
+  role: TYPE_LOGIN_SESSION_USER["role"],
+): AppPermission[] => {
+  const allowed = new Set(ROLE_PERMISSIONS[role]);
+  const values = Array.isArray(value) ? value : [];
+
+  const permissions = values
+    .map((item) => {
+      if (typeof item === "string") return item;
+      const record = asRecord(item);
+      return record
+        ? readString(record, "permission_name") || readString(record, "name_permission")
+        : "";
+    })
+    .filter((item): item is AppPermission => allowed.has(item as AppPermission));
+
+  return [...new Set(permissions)];
 };
 
 const toSessionUser = (
@@ -64,12 +86,17 @@ const toSessionUser = (
   const username = readString(record, "username");
   const name = readString(record, "full_name");
   const email = readString(record, "email");
+  const roleRecord = asRecord(record.role);
+  const permissions = readPermissions(
+    record.permissions ?? roleRecord?.permissions,
+    role,
+  );
 
   if (user_id <= 0 || username === "" || name === "" || email === "") {
     return null;
   }
 
-  return { user_id, username, name, email, role };
+  return { user_id, username, name, email, role, permissions };
 };
 
 export const getCurrentUserFromLaravel = async (
@@ -167,25 +194,20 @@ export const authenticateWithLaravel = async (
       return failure(403, "Pengguna tidak memiliki role yang ditetapkan.");
     }
 
-    const role = normalizeUserRole(roleName);
-
-    if (role === null) {
+    if (normalizeUserRole(roleName) === null) {
       return failure(403, `Role "${roleName}" tidak didukung oleh aplikasi.`);
     }
 
-    const user_id = readNumber(userRecord, "user_id");
-    const username = readString(userRecord, "username");
-    const name = readString(userRecord, "full_name");
-    const email = readString(userRecord, "email");
+    const user = toSessionUser(userRecord);
 
-    if (user_id <= 0 || username === "" || name === "" || email === "") {
+    if (user === null) {
       return failure(502, "Respons login tidak memuat identitas pengguna yang valid.");
     }
 
     return {
       ok: true,
       token,
-      user: { user_id, username, name, email, role },
+      user,
     };
   } catch (error) {
     if (error instanceof ApiError) {

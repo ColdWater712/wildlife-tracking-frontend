@@ -1,8 +1,11 @@
 import { cookies } from "next/headers";
 
 import { SESSION_COOKIE, TOKEN_COOKIE } from "@/lib/cookie-names";
-import { normalizeUserRole } from "@/types/auth.type";
-import type { TYPE_USER_ROLE } from "@/types/auth.type";
+import {
+  normalizeUserRole,
+  ROLE_PERMISSIONS,
+} from "@/types/auth.type";
+import type { AppPermission, TYPE_USER_ROLE } from "@/types/auth.type";
 
 export { SESSION_COOKIE };
 
@@ -11,6 +14,7 @@ export type SessionUser = {
   name: string;
   email: string;
   role: TYPE_USER_ROLE;
+  permissions: AppPermission[];
 };
 
 const readString = (record: Record<string, unknown>, key: string): string => {
@@ -57,7 +61,21 @@ export const getSessionUser = async (): Promise<SessionUser | null> => {
       return null;
     }
 
-    return { user_id, name, email, role };
+    const allowed = new Set<AppPermission>(ROLE_PERMISSIONS[role]);
+    const storedPermissions = Array.isArray(record.permissions)
+      ? record.permissions.filter(
+          (item): item is AppPermission =>
+            typeof item === "string" && allowed.has(item as AppPermission),
+        )
+      : [];
+
+    return {
+      user_id,
+      name,
+      email,
+      role,
+      permissions: [...new Set(storedPermissions)],
+    };
   } catch {
     return null;
   }

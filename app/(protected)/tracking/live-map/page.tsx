@@ -453,18 +453,17 @@ export default function LiveMapPage() {
       }
 
       const isActive =
-        (device.is_active === true ||
-          device.is_active === 1) &&
-        animal.is_active === true;
+        device.is_active === true && animal.is_active === true;
 
       return [
         {
-          id: animal.animal_code,
+          id: animal.animal_code ?? String(animal.animal_id),
           deviceId: device.device_id,
           animalId: animal.animal_id,
           name:
             animal.species?.common_name ??
-            animal.animal_code,
+            animal.animal_code ??
+            String(animal.animal_id),
           speciesId: animal.species_id,
           speciesName:
             animal.species?.common_name ??

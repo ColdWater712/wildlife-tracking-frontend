@@ -87,7 +87,10 @@ export default function AiPredictionHistoryPage() {
     setPage(1);
   };
 
-  const hasNextPage = predictions.length === PER_PAGE;
+  const pagination = predictionsQuery.data?.meta;
+  const hasNextPage = pagination
+    ? page < pagination.total_pages
+    : predictions.length === PER_PAGE;
 
   return (
     <div className="flex flex-col gap-6">

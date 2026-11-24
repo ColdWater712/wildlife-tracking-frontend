@@ -3,13 +3,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AI_SERVICE } from "@/services/ai.service";
+import type { ApiResponse } from "@/types/api.type";
 import type {
+  AiMediaUploadListParams,
   AiPredictionListParams,
   AiPredictionVerifyPayload,
+  AiSummaryReport,
   AiSummaryReportParams,
+  AiThreatListParams,
+  AiUploadPayload,
 } from "@/types/ai.type";
 
 const AI_PREDICTIONS_KEY = ["ai-predictions"] as const;
+const AI_MEDIA_KEY = ["ai-media-uploads"] as const;
 
 export const useAiPredictions = (params?: AiPredictionListParams) =>
   useQuery({
@@ -30,6 +36,25 @@ export const useAiPrediction = (id: number) =>
     enabled: Number.isFinite(id) && id > 0,
   });
 
+export const useAiThreats = (params?: AiThreatListParams) =>
+  useQuery({
+    queryKey: [...AI_PREDICTIONS_KEY, "threats", params],
+    queryFn: () => AI_SERVICE.getThreats(params),
+  });
+
+export const useAiMediaUploads = (params?: AiMediaUploadListParams) =>
+  useQuery({
+    queryKey: [...AI_MEDIA_KEY, params],
+    queryFn: () => AI_SERVICE.getMediaUploads(params),
+  });
+
+export const useAiMediaUpload = (id: number) =>
+  useQuery({
+    queryKey: [...AI_MEDIA_KEY, id],
+    queryFn: () => AI_SERVICE.getMediaUploadById(id),
+    enabled: Number.isFinite(id) && id > 0,
+  });
+
 export const useAiMediaFile = (mediaId: number) =>
   useQuery({
     queryKey: ["ai-media-files", mediaId],
@@ -37,15 +62,40 @@ export const useAiMediaFile = (mediaId: number) =>
     enabled: Number.isFinite(mediaId) && mediaId > 0,
   });
 
+export const useAiMediaPredictions = (mediaId: number) =>
+  useQuery({
+    queryKey: [...AI_MEDIA_KEY, mediaId, "predictions"],
+    queryFn: () => AI_SERVICE.getMediaPredictions(mediaId),
+    enabled: Number.isFinite(mediaId) && mediaId > 0,
+  });
+
+export const useAiHealth = () =>
+  useQuery({
+    queryKey: ["ai-health"],
+    queryFn: () => AI_SERVICE.getHealth(),
+  });
+
+export const useAiVocabulary = () =>
+  useQuery({
+    queryKey: ["ai-vocabulary"],
+    queryFn: () => AI_SERVICE.getVocabulary(),
+  });
+
+export const useAiRecap = (params: AiSummaryReportParams) =>
+  useQuery({
+    queryKey: ["ai-recap", params],
+    queryFn: () => AI_SERVICE.getRecap(params),
+  });
+
 export const useAiPredictionUpload = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, reportId }: { file: File; reportId?: number | null }) =>
-      AI_SERVICE.upload(file, reportId),
+    mutationFn: (payload: AiUploadPayload) => AI_SERVICE.upload(payload),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY }),
+        queryClient.invalidateQueries({ queryKey: AI_MEDIA_KEY }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] }),
       ]);
     },
@@ -58,14 +108,73 @@ export const useAiPredictionVerification = () => {
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: AiPredictionVerifyPayload }) =>
       AI_SERVICE.verifyPrediction(id, payload),
+    onSuccess: async (_result, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY }),
+        queryClient.invalidateQueries({
+          queryKey: [...AI_PREDICTIONS_KEY, variables.id],
+        }),
+      ]);
+    },
+  });
+};
+
+export const useAiPredictionRetry = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => AI_SERVICE.retryPrediction(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY });
     },
   });
 };
 
-export const useAiSummaryReport = () =>
+export const useAiTriggerMediaPrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (mediaId: number) => AI_SERVICE.triggerMediaPrediction(mediaId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY }),
+        queryClient.invalidateQueries({ queryKey: AI_MEDIA_KEY }),
+      ]);
+    },
+  });
+};
+
+export const useAiDeletePrediction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => AI_SERVICE.deletePrediction(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY });
+    },
+  });
+};
+
+export const useAiDeleteMediaUpload = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => AI_SERVICE.deleteMediaUpload(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: AI_MEDIA_KEY }),
+        queryClient.invalidateQueries({ queryKey: AI_PREDICTIONS_KEY }),
+      ]);
+    },
+  });
+};
+
+export const useAiDetectObjects = () =>
   useMutation({
-    mutationFn: (params: AiSummaryReportParams) =>
-      AI_SERVICE.getSummaryReport(params),
+    mutationFn: (file: File) => AI_SERVICE.detectObjects(file),
+  });
+
+export const useAiSummaryReport = () =>
+  useMutation<ApiResponse<AiSummaryReport>, unknown, AiSummaryReportParams>({
+    mutationFn: (params) => AI_SERVICE.getSummaryReport(params),
   });

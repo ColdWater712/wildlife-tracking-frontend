@@ -21,7 +21,11 @@ import type { BadgeVariant } from "@/components/status";
 import { useDashboardSummary } from "@/hooks/use-dashboard";
 import type { ApiErrorState } from "@/types/api.type";
 import type { TYPE_USER_ROLE } from "@/types/auth.type";
-import type { DeviceAlert } from "@/types/device.type";
+import {
+  DEVICE_CONDITION_LABELS,
+  type DeviceAlert,
+  type DeviceCondition,
+} from "@/types/device.type";
 import type { IncidentReport } from "@/types/incident.type";
 import type { GpsReading } from "@/types/tracking.type";
 import { formatDate } from "@/utils/format";
@@ -80,8 +84,11 @@ const LINK_CLASS =
 const deviceVariant = (condition: string): BadgeVariant => {
   if (condition === "damaged") return "danger";
   if (condition === "lost") return "neutral";
-  return "warning";
+  return "success";
 };
+
+const deviceConditionLabel = (condition: string): string =>
+  DEVICE_CONDITION_LABELS[condition as DeviceCondition] ?? condition;
 
 const syncVariant = (status: string): BadgeVariant => {
   if (status === "synced") return "success";
@@ -268,7 +275,7 @@ export default function DashboardPage({ role }: { role: TYPE_USER_ROLE }) {
                     </div>
                   </div>
                   <StatusBadge
-                    label={alert.device_condition}
+                    label={deviceConditionLabel(alert.device_condition)}
                     variant={deviceVariant(alert.device_condition)}
                   />
                 </li>
@@ -312,7 +319,8 @@ export default function DashboardPage({ role }: { role: TYPE_USER_ROLE }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="truncate text-sm font-semibold text-ink">
-                        {reading.trackingDevice?.animal?.name ??
+                        {reading.device?.animal?.name_animal ??
+                          reading.device?.animal?.name ??
                           `Device ${reading.device_id}`}
                       </p>
                       <span className="text-xs text-muted">
@@ -327,7 +335,7 @@ export default function DashboardPage({ role }: { role: TYPE_USER_ROLE }) {
                       Lat: {reading.latitude}, Lon: {reading.longitude}
                     </p>
                     <p className="mt-1 text-xs text-ink-soft">
-                      {reading.trackingDevice?.model ?? "Perangkat tidak diketahui"}
+                      {reading.device?.model ?? "Perangkat tidak diketahui"}
                     </p>
                     <StatusBadge
                       label="Terpantau"

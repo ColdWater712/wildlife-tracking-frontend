@@ -3,9 +3,10 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil } from "lucide-react";
 import { StatusBadge } from "@/components/status";
 import { formatDate } from "@/utils/format";
-import type {
-  IncidentReport,
-  IncidentSyncStatus,
+import {
+  INCIDENT_TYPE_LABELS,
+  type IncidentReport,
+  type IncidentSyncStatus,
 } from "@/types/incident.type";
 
 const SYNC_LABEL: Record<IncidentSyncStatus, string> = {
@@ -29,7 +30,9 @@ export const COLUMNS: ColumnDef<IncidentReport, unknown>[] = [
     header: "Jenis",
     cell: ({ row }) => (
       <span className="text-olive-dark">
-        {row.original.incident_type.replaceAll("_", " ")}
+        {INCIDENT_TYPE_LABELS[
+          row.original.incident_type as keyof typeof INCIDENT_TYPE_LABELS
+        ] ?? row.original.incident_type.replaceAll("_", " ")}
       </span>
     ),
   },

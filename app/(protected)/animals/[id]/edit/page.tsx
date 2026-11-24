@@ -102,6 +102,7 @@ const mapFieldErrors = (
     if (errors[field]) mapped[field] = errors[field];
   }
 
+  if (errors.name_animal) mapped.animal_code = errors.name_animal;
   if (errors.name) mapped.animal_code = errors.name;
 
   return mapped;

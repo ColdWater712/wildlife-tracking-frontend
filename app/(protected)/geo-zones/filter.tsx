@@ -14,4 +14,6 @@ export const ZONE_TYPE_OPTIONS = [
   { label: "Koridor Ekologis", value: "koridor_ekologis" },
   { label: "Perkebunan", value: "perkebunan" },
   { label: "Permukiman", value: "permukiman" },
+  { label: "Hutan Lindung", value: "hutan_lindung" },
+  { label: "Zona Inti", value: "zona_inti" },
 ];

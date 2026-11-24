@@ -1,63 +1,89 @@
-import { api, unwrapData } from "@/services/api";
+import {
+  api,
+  buildFallbackMeta,
+  unwrapData,
+} from "@/services/api";
 
 import type { ApiResponse } from "@/types/api.type";
 import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
-
+import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
+import {
+  fromApiAnimalGender,
+  toApiAnimalGender,
+} from "@/types/animal.type";
 import type {
   API_ANIMAL,
+  ApiTrackingDeviceSummary,
   TYPE_ANIMAL,
   TYPE_ANIMAL_GET_ALL_RESPONSE,
   TYPE_ANIMAL_GET_BY_ID_RESPONSE,
   TYPE_ANIMAL_PAYLOAD,
+  TYPE_TRACKING_DEVICE,
 } from "@/types/animal.type";
+
+const mapTrackingDevice = (
+  device: ApiTrackingDeviceSummary | null | undefined,
+): TYPE_TRACKING_DEVICE | null => {
+  if (!device) return null;
+
+  return {
+    device_id: device.device_id,
+    animal_id: device.animal_id ?? null,
+    device_type: device.device_type ?? "gps",
+    model: device.model ?? "",
+    serial_number: device.serial_number ?? null,
+    zone_id: device.zone_id ?? 0,
+    latitude: device.latitude ?? null,
+    longitude: device.longitude ?? null,
+    installation_date: device.installation_date ?? null,
+    battery_life_months: device.battery_life_months ?? 0,
+    is_active: device.is_active === true || device.is_active === 1,
+    device_condition: device.device_condition ?? "normal",
+    battery_level:
+      typeof device.battery_level === "string"
+        ? Number(device.battery_level)
+        : (device.battery_level ?? null),
+    signal_strength:
+      typeof device.signal_strength === "string"
+        ? Number(device.signal_strength)
+        : (device.signal_strength ?? null),
+    last_recorded_at: device.last_recorded_at ?? null,
+  };
+};
 
 const mapAnimalFromApi = (animal: API_ANIMAL): TYPE_ANIMAL => ({
   animal_id: animal.animal_id,
   species_id: animal.species_id,
-  animal_code: animal.name,
+  animal_code: animal.name_animal ?? animal.name ?? "",
   birth_date: animal.birth_date,
-  gender:
-    animal.gender === "male"
-      ? "Jantan"
-      : animal.gender === "female"
-        ? "Betina"
-        : "Tidak Diketahui",
-  is_active: animal.is_active,
+  gender: fromApiAnimalGender(animal.gender),
+  distinctive_marks: animal.distinctive_marks ?? null,
+  is_active: animal.is_active === true || animal.is_active === 1,
   species: animal.species ?? null,
-  trackingDevice: animal.trackingDevice ?? null,
+  trackingDevice: mapTrackingDevice(animal.trackingDevice),
+  latest_ai_observation: animal.latest_ai_observation ?? null,
   created_at: animal.created_at ?? "",
   updated_at: animal.updated_at ?? "",
 });
 
-const mapAnimalPayloadToApi = (
-  payload: TYPE_ANIMAL_PAYLOAD,
-) => ({
+const mapAnimalPayloadToApi = (payload: TYPE_ANIMAL_PAYLOAD) => ({
+  name_animal: payload.animal_code.trim(),
   species_id: payload.species_id,
-  name: payload.animal_code,
-  birth_date: payload.birth_date,
-  gender:
-    payload.gender === "Jantan"
-      ? "male"
-      : payload.gender === "Betina"
-        ? "female"
-        : "unknown",
+  gender: toApiAnimalGender(payload.gender),
+  birth_date: payload.birth_date || null,
+  distinctive_marks: payload.distinctive_marks?.trim() || null,
   is_active: payload.is_active,
 });
 
 const buildGetAllResponse = (
   items: TYPE_ANIMAL[],
+  meta: TYPE_META_PAGGINATION | null,
 ): ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE> => ({
   success: true,
   message: "OK",
   data: {
     items,
-    meta: {
-      total: items.length,
-      page: 1,
-      per_page: items.length,
-      total_pages: 1,
-      total_items: items.length,
-    },
+    meta: meta ?? buildFallbackMeta(items.length),
   },
 });
 
@@ -76,14 +102,16 @@ export const ANIMAL_SERVICE = {
   GET_ALL: async (
     params?: Partial<QUERY_PARAMS_API_GET_ALL>,
   ): Promise<ApiResponse<TYPE_ANIMAL_GET_ALL_RESPONSE>> => {
-    const response = await api.get<ApiResponse<API_ANIMAL[]>>("/animals", {
-      params,
-    });
+    const result = await api.requestList<ApiResponse<API_ANIMAL[]>>(
+      "GET",
+      "/animals",
+      { params },
+    );
 
-    const animals = unwrapData(response);
-    const items = animals.map(mapAnimalFromApi);
-
-    return buildGetAllResponse(items);
+    return buildGetAllResponse(
+      unwrapData(result.body).map(mapAnimalFromApi),
+      result.meta,
+    );
   },
 
   GET_BY_ID: async (
@@ -136,7 +164,22 @@ export const ANIMAL_SERVICE = {
     };
   },
 
-  DELETE: async (id: number): Promise<ApiResponse<null>> => {
-    return api.delete<ApiResponse<null>>(`/animals/${id}`);
+  UPDATE_STATUS: async (
+    id: number,
+    isActive: boolean,
+  ): Promise<ApiResponse<TYPE_ANIMAL>> => {
+    const response = await api.patch<ApiResponse<API_ANIMAL>>(
+      `/animals/${id}/status`,
+      { body: { is_active: isActive } },
+    );
+
+    return {
+      success: true,
+      message: response.message,
+      data: mapAnimalFromApi(unwrapData(response)),
+    };
   },
+
+  DELETE: async (id: number): Promise<ApiResponse<null>> =>
+    api.delete<ApiResponse<null>>(`/animals/${id}`),
 } as const;

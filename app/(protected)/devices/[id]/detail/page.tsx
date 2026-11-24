@@ -61,6 +61,8 @@ export default function DeviceDetailPage() {
   const {
     data: readingsData,
     isLoading: readingsLoading,
+    error: readingsError,
+    refetch: refetchReadings,
   } = useGpsReadingsByDevice(deviceId);
 
   if (!Number.isInteger(deviceId) || deviceId <= 0) notFound();
@@ -95,7 +97,7 @@ export default function DeviceDetailPage() {
   }
 
   const isActive =
-    record.is_active === true || record.is_active === 1;
+    record.is_active === true;
 
   const condition = record.device_condition;
 
@@ -216,6 +218,13 @@ export default function DeviceDetailPage() {
           }
         />
       </section>
+
+      {readingsError ? (
+        <ErrorState
+          {...toApiErrorState(readingsError)}
+          onRetry={() => void refetchReadings()}
+        />
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">

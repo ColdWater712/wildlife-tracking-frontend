@@ -6,6 +6,7 @@ import {
   extractApiErrors,
   extractApiMessage,
   getLaravelApiBaseUrl,
+  getPaginationMeta,
   readJsonResponse,
   resolveErrorKind,
 } from "@/services/api";
@@ -166,7 +167,12 @@ export const forwardBackendAction = async (
     );
 
     if (response.status === 204) {
-      return { ok: true, status: response.status, body: undefined };
+      return {
+        ok: true,
+        status: response.status,
+        body: undefined,
+        meta: getPaginationMeta(response.headers),
+      };
     }
 
     const responseContentType = response.headers.get("content-type") ?? "";
@@ -184,6 +190,7 @@ export const forwardBackendAction = async (
         body: undefined,
         base64: encodeBytesToBase64(bytes),
         contentType: responseContentType,
+        meta: getPaginationMeta(response.headers),
       };
     }
 
@@ -202,7 +209,12 @@ export const forwardBackendAction = async (
       };
     }
 
-    return { ok: true, status: response.status, body };
+    return {
+      ok: true,
+      status: response.status,
+      body,
+      meta: getPaginationMeta(response.headers),
+    };
   } catch {
     return {
       ok: false,

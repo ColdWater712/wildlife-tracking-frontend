@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import { DataFilters } from "@/components/filter";
+import { INCIDENT_TYPES, INCIDENT_TYPE_LABELS } from "@/types/incident.type";
 
 export const DEFAULT_FILTERS = {
   date_from: "",
@@ -27,13 +28,10 @@ export const FILTER_FIELDS: ComponentProps<typeof DataFilters>["fields"] = [
     label: "Jenis Insiden",
     options: [
       { label: "Semua jenis", value: "all" },
-      { label: "Observasi", value: "observasi" },
-      { label: "Konflik", value: "konflik" },
-      { label: "Perambahan", value: "perambahan" },
-      {
-        label: "Peringatan Perangkat",
-        value: "device_alert",
-      },
+      ...INCIDENT_TYPES.map((value) => ({
+        label: INCIDENT_TYPE_LABELS[value],
+        value,
+      })),
     ],
   },
   {

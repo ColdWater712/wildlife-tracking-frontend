@@ -8,22 +8,23 @@ import type {
   GeoZoneUpdatePayload,
 } from "@/types/geo-zone.type";
 
+const toApiParams = (params?: GeoZoneListParams) => ({
+  search: params?.search,
+  zone_type: params?.zone_type ?? params?.zoneType,
+  sort_by: params?.sort_by,
+  sort_dir: params?.sort_dir,
+  page: params?.page,
+  per_page: params?.per_page,
+});
+
 export const getGeoZones = async (
   params?: GeoZoneListParams,
 ): Promise<GeoZone[]> => {
-  const query = {
-    ...(params?.search ? { search: params.search } : {}),
-    ...(params?.zoneType && params.zoneType !== "all"
-      ? { zone_type: params.zoneType }
-      : {}),
-  };
-
   const response = await api.get<ApiResponse<GeoZone[]>>("/geo-zones", {
-    params: query,
+    params: toApiParams(params),
   });
 
   const payload = unwrapData(response);
-
   return Array.isArray(payload) ? payload : [];
 };
 
@@ -34,9 +35,51 @@ export const getGeoZoneById = async (
     `/geo-zones/${id}`,
   );
 
-  const payload = unwrapData(response);
+  return unwrapData(response) ?? null;
+};
 
-  return payload ?? null;
+export const getGeoZoneAnimals = async (
+  id: number,
+  history = false,
+): Promise<unknown[]> => {
+  const response = await api.get<ApiResponse<unknown[]>>(
+    `/geo-zones/${id}/animals`,
+    { params: history ? { history: 1 } : undefined },
+  );
+
+  return unwrapData(response) ?? [];
+};
+
+export const getGeoZoneVisits = async (
+  id: number,
+): Promise<unknown[]> => {
+  const response = await api.get<ApiResponse<unknown[]>>(
+    `/geo-zones/${id}/visits`,
+  );
+
+  return unwrapData(response) ?? [];
+};
+
+export const getGeoZoneDevices = async (
+  id: number,
+): Promise<unknown[]> => {
+  const response = await api.get<ApiResponse<unknown[]>>(
+    `/geo-zones/${id}/devices`,
+  );
+
+  return unwrapData(response) ?? [];
+};
+
+export const locateGeoZones = async (
+  lat: number,
+  lon: number,
+): Promise<GeoZone[]> => {
+  const response = await api.get<ApiResponse<GeoZone[]>>(
+    "/geo-zones/locate",
+    { params: { lat, lon } },
+  );
+
+  return unwrapData(response) ?? [];
 };
 
 export const createGeoZone = async (
@@ -55,16 +98,12 @@ export const updateGeoZone = async (
 ): Promise<GeoZone> => {
   const response = await api.put<ApiResponse<GeoZone>>(
     `/geo-zones/${id}`,
-    {
-      body: payload,
-    },
+    { body: payload },
   );
 
   return unwrapData(response);
 };
 
-export const deleteGeoZone = async (
-  id: number,
-): Promise<void> => {
+export const deleteGeoZone = async (id: number): Promise<void> => {
   await api.delete<ApiResponse<null>>(`/geo-zones/${id}`);
 };

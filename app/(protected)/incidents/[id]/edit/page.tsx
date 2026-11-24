@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound, useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
@@ -40,7 +40,12 @@ import {
   getApiFieldErrors,
   toApiErrorState,
 } from "@/services/api";
-import type { UpdateIncidentReportPayload } from "@/types/incident.type";
+import {
+  INCIDENT_STATUSES,
+  INCIDENT_TYPES,
+  INCIDENT_TYPE_LABELS,
+  type UpdateIncidentReportPayload,
+} from "@/types/incident.type";
 
 type IncidentFormState = {
   incident_type: string;
@@ -68,18 +73,12 @@ const INCIDENT_FIELDS: FieldName[] = [
   "status",
 ];
 
-const INCIDENT_TYPE_OPTIONS = [
-  { label: "Observasi", value: "observasi" },
-  { label: "Konflik", value: "konflik" },
-  { label: "Perambahan", value: "perambahan" },
-  { label: "Peringatan Perangkat", value: "device_alert" },
-] as const;
+const INCIDENT_TYPE_OPTIONS = INCIDENT_TYPES.map((value) => ({
+  label: INCIDENT_TYPE_LABELS[value],
+  value,
+}));
 
-const STATUS_OPTIONS = [
-  "pending",
-  "in_progress",
-  "resolved",
-] as const;
+const STATUS_OPTIONS = INCIDENT_STATUSES;
 
 const defaultTimestamp = (): string =>
   new Date().toISOString().slice(0, 16);
@@ -94,11 +93,15 @@ const incidentSchema = z.object({
     .string()
     .trim()
     .min(1, "Deskripsi insiden wajib diisi.")
-    .max(2000, "Deskripsi maksimal 2000 karakter."),
+    .max(5000, "Deskripsi maksimal 5000 karakter."),
   timestamp: z
     .string()
     .min(1, "Waktu kejadian wajib diisi.")
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), "Format waktu kejadian tidak valid."),
+    .refine((value) => !Number.isNaN(new Date(value).getTime()), "Format waktu kejadian tidak valid.")
+    .refine(
+      (value) => new Date(value).getTime() <= Date.now() + 5 * 60 * 1000,
+      "Waktu kejadian tidak boleh lebih dari 5 menit ke depan.",
+    ),
   latitude: z
     .string()
     .trim()
@@ -118,7 +121,6 @@ const incidentSchema = z.object({
   location: z
     .string()
     .trim()
-    .min(1, "Lokasi kejadian wajib diisi.")
     .max(200, "Lokasi maksimal 200 karakter."),
   animal_id: z.string(),
   species_id: z.string(),
@@ -149,19 +151,27 @@ export default function IncidentUpdatePage() {
   const animals = animalsQuery.data?.data?.items ?? [];
   const species = speciesQuery.data?.data?.items ?? [];
 
-  const [form, setForm] = useState<IncidentFormState>(() => ({
-    incident_type: record?.incident_type ?? "observasi",
-    description: record?.description ?? "",
-    timestamp: record
-      ? stringOrEmpty(record.timestamp).slice(0, 16)
-      : defaultTimestamp(),
-    latitude: stringOrEmpty(record?.latitude),
-    longitude: stringOrEmpty(record?.longitude),
-    location: stringOrEmpty(record?.location),
-    animal_id: stringOrEmpty(record?.animal_id),
-    species_id: stringOrEmpty(record?.species_id),
-    status: stringOrEmpty(record?.status) || "pending",
-  }));
+  const initialForm = useMemo<IncidentFormState>(
+    () => ({
+      incident_type: record?.incident_type ?? "observasi",
+      description: record?.description ?? "",
+      timestamp: record
+        ? stringOrEmpty(record.timestamp).slice(0, 16)
+        : defaultTimestamp(),
+      latitude: stringOrEmpty(record?.latitude),
+      longitude: stringOrEmpty(record?.longitude),
+      location: stringOrEmpty(record?.location),
+      animal_id: stringOrEmpty(record?.animal_id),
+      species_id: stringOrEmpty(record?.species_id),
+      status: stringOrEmpty(record?.status) || "pending",
+    }),
+    [record],
+  );
+  const [overrides, setOverrides] = useState<Partial<IncidentFormState>>({});
+  const form = useMemo(
+    () => ({ ...initialForm, ...overrides }),
+    [initialForm, overrides],
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors<FieldName>>({});
 
@@ -184,7 +194,7 @@ export default function IncidentUpdatePage() {
     key: K,
     value: IncidentFormState[K],
   ) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setOverrides((previous) => ({ ...previous, [key]: value }));
     setValidationError(null);
     setFieldErrors((previous) => ({ ...previous, [key]: undefined }));
   };
@@ -236,7 +246,7 @@ export default function IncidentUpdatePage() {
       timestamp: parsed.data.timestamp,
       latitude: Number(parsed.data.latitude),
       longitude: Number(parsed.data.longitude),
-      location: parsed.data.location,
+      location: parsed.data.location || null,
       status: parsed.data.status,
       ...(animalId !== undefined ? { animal_id: animalId } : {}),
       ...(speciesId !== undefined ? { species_id: speciesId } : {}),
@@ -451,7 +461,7 @@ export default function IncidentUpdatePage() {
               id="incident-description"
               required
               rows={5}
-              maxLength={2000}
+              maxLength={5000}
               value={form.description}
               onChange={(event) =>
                 setField("description", event.target.value)

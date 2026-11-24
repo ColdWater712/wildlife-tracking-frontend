@@ -58,9 +58,13 @@ export default function DeviceListPage() {
     [router],
   );
 
-  const handleDelete = useCallback((device: TrackingDevice) => {
-    setSelectedDeleteDevice(device);
-  }, []);
+  const handleDelete = useCallback(
+    (device: TrackingDevice) => {
+      deleteMutation.reset();
+      setSelectedDeleteDevice(device);
+    },
+    [deleteMutation],
+  );
 
   const handleConfirmDelete = async () => {
     if (!selectedDeleteDevice) return;
@@ -253,7 +257,10 @@ export default function DeviceListPage() {
             : null
         }
         onConfirm={handleConfirmDelete}
-        onCancel={() => setSelectedDeleteDevice(null)}
+        onCancel={() => {
+          deleteMutation.reset();
+          setSelectedDeleteDevice(null);
+        }}
       />
 
     </div>

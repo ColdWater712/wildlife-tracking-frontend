@@ -31,7 +31,9 @@ const CONSERVATION_VARIANTS: Record<TYPE_CONSERVATION_STATUS, BadgeVariant> = {
   Vulnerable: "warning",
   Endangered: "warning",
   "Critically Endangered": "danger",
+  "Extinct in the Wild": "danger",
   Extinct: "danger",
+  "Data Deficient": "neutral",
 };
 
 type WildlifeCatalogProps = {

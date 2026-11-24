@@ -1,8 +1,16 @@
+import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;
   data: T;
   errors?: Record<string, string[]> | null;
+  meta?: TYPE_META_PAGGINATION | null;
+};
+
+export type ApiListResult<T> = {
+  body: T;
+  meta: TYPE_META_PAGGINATION | null;
 };
 
 export type ApiErrorKind =
@@ -55,6 +63,11 @@ export type ApiClient = {
     path: string,
     options?: RequestOptions,
   ): Promise<Response>;
+  requestList<T>(
+    method: HttpMethod,
+    path: string,
+    options?: RequestOptions,
+  ): Promise<ApiListResult<T>>;
   getBlob(path: string, options?: RequestOptions): Promise<BlobResponse>;
   get<T>(path: string, options?: RequestOptions): Promise<T>;
   post<T>(path: string, options?: RequestOptions): Promise<T>;

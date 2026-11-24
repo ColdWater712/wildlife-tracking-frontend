@@ -3,7 +3,14 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { DragEvent } from "react";
-import { ImagePlus, LoaderCircle, UploadCloud, X } from "lucide-react";
+import {
+  AudioLines,
+  FileText,
+  ImagePlus,
+  LoaderCircle,
+  UploadCloud,
+  X,
+} from "lucide-react";
 
 import { useToast } from "@/components/toast";
 import { AiPredictionResult } from "./ai-prediction-result";
@@ -31,12 +38,28 @@ import {
 } from "@/types/ai.type";
 import { formatDate } from "@/utils/format";
 
+const ACCEPTED_FILE_ATTRIBUTE = [
+  ...AI_ACCEPTED_FILE_TYPES,
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".mp4",
+  ".mov",
+  ".webm",
+  ".wav",
+  ".mp3",
+  ".m4a",
+  ".ogg",
+  ".flac",
+].join(",");
+
 const validateFile = (file: File): string | null => {
   if (!AI_ACCEPTED_FILE_TYPES.includes(file.type as (typeof AI_ACCEPTED_FILE_TYPES)[number])) {
-    return "Format gambar harus JPG, JPEG, PNG, atau WEBP.";
+    return "Format file harus gambar, video, atau audio yang didukung.";
   }
   if (file.size > AI_MAX_FILE_SIZE_BYTES) {
-    return "Ukuran gambar maksimal 5 MB.";
+    return `Ukuran file maksimal ${AI_MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.`;
   }
   return null;
 };
@@ -80,7 +103,7 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
 
   const handleSubmit = () => {
     if (!file) {
-      setFileError("Pilih gambar terlebih dahulu.");
+      setFileError("Pilih media terlebih dahulu.");
       return;
     }
 
@@ -93,22 +116,22 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
     uploadMutation.mutate(
       {
         file,
-        reportId: reportId === "" ? null : Number(reportId),
+        report_id: reportId === "" ? null : Number(reportId),
       },
       {
         onSuccess: (response) => {
-          showToast("Gambar berhasil dianalisis AI.", "success");
+          showToast("Media berhasil dianalisis AI.", "success");
           setResult(response.data.prediction);
           setFile(null);
           setFileError(undefined);
         },
         onError: (error) => {
           showToast(
-            formatApiError(error, "Gagal menganalisis gambar. Silakan coba lagi."),
+            formatApiError(error, "Gagal menganalisis media. Silakan coba lagi."),
             "error",
           );
           const fieldErrors = getApiFieldErrors(error);
-          setFileError(fieldErrors.file ?? "Gambar gagal diproses backend.");
+          setFileError(fieldErrors.file ?? "Media gagal diproses backend.");
         },
       },
     );
@@ -123,21 +146,21 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="AI Vision"
-        title="Identifikasi Satwa dari Gambar"
-        description="Unggah foto dari lapangan untuk mendapatkan prediksi spesies dari model AI. Hasil bersifat advisory dan memerlukan verifikasi manusia."
+        title="Identifikasi Satwa dari Media"
+        description="Unggah gambar, video, atau audio dari lapangan untuk mendapatkan analisis dari model AI. Hasil bersifat advisory dan memerlukan verifikasi manusia."
       />
 
       <FormSection
-        title="Unggah Gambar"
-        description="Format JPG, JPEG, PNG, atau WEBP dengan ukuran maksimal 5 MB. Gambar diproses oleh backend Laravel."
+        title="Unggah Media"
+        description="Format gambar, video, atau audio yang didukung dengan ukuran maksimal 50 MB. Media diproses oleh backend Laravel."
       >
         <FormGrid columns={2}>
           <FormField
-            label="File Gambar"
+            label="File Media"
             htmlFor="ai-file"
             required
             error={fileError}
-            hint="Seret gambar ke area ini atau klik untuk memilih."
+            hint="Seret media ke area ini atau klik untuk memilih."
           >
             <div
               onDragOver={(event) => event.preventDefault()}
@@ -146,16 +169,29 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
             >
               {previewUrl ? (
                 <div className="flex w-full flex-col items-center gap-3">
-                  <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-line bg-surface">
-                    <Image
+                  {file?.type.startsWith("image/") ? (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-line bg-surface">
+                      <Image
+                        src={previewUrl}
+                        alt="Pratinjau media yang akan dianalisis"
+                        fill
+                        unoptimized
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : file?.type.startsWith("video/") ? (
+                    <video
                       src={previewUrl}
-                      alt="Pratinjau gambar yang akan dianalisis"
-                      fill
-                      unoptimized
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-contain"
+                      controls
+                      className="aspect-video w-full rounded-lg border border-line bg-surface"
                     />
-                  </div>
+                  ) : (
+                    <div className="flex w-full items-center gap-3 rounded-lg border border-line bg-surface p-4">
+                      <AudioLines aria-hidden="true" className="size-6 text-primary" />
+                      <audio src={previewUrl} controls className="min-w-0 flex-1" />
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <p className="max-w-full truncate text-xs font-medium text-ink-soft">
                       {file?.name}
@@ -163,7 +199,7 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label="Hapus gambar"
+                      aria-label="Hapus media"
                       icon={<X className="size-3.5" />}
                       disabled={isPending}
                       onClick={() => {
@@ -179,19 +215,19 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
                 <>
                   <UploadCloud aria-hidden="true" className="size-8 text-primary" />
                   <p className="mt-2 text-sm font-medium text-ink-soft">
-                    Seret gambar ke sini
+                    Seret media ke sini
                   </p>
                   <label
                     htmlFor="ai-file"
                     className="mt-3 inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-3 text-xs font-semibold text-ink-soft transition hover:border-primary hover:text-primary"
                   >
-                    <ImagePlus aria-hidden="true" className="size-4" />
-                    Pilih Gambar
+                    <FileText aria-hidden="true" className="size-4" />
+                    Pilih Media
                   </label>
                   <input
                     id="ai-file"
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                    accept={ACCEPTED_FILE_ATTRIBUTE}
                     className="sr-only"
                     aria-describedby={fieldDescribedBy(
                       "ai-file",
@@ -210,7 +246,7 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
             <FormField
               label="Laporan Insiden Terkait"
               htmlFor="ai-report-id"
-              hint="Opsional. Hubungkan gambar dengan laporan insiden yang sudah ada."
+              hint="Opsional. Hubungkan media dengan laporan insiden yang sudah ada."
             >
               <SelectInput
                 id="ai-report-id"
@@ -241,7 +277,7 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
               <FormAlert
                 message={formatApiError(
                   uploadMutation.error,
-                  "Gagal menganalisis gambar.",
+                  "Gagal menganalisis media.",
                 )}
               />
             ) : null}
@@ -254,7 +290,7 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
               )}
               <span>
                 {isPending
-                  ? "Backend sedang memproses gambar dengan model AI. Harap tunggu..."
+                  ? "Backend sedang memproses media dengan model AI. Harap tunggu..."
                   : "Prediksi AI dapat membantu identifikasi, tetapi keputusan akhir tetap oleh petugas."}
               </span>
             </div>

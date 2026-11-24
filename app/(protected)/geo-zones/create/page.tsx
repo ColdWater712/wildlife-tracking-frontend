@@ -30,6 +30,7 @@ import {
   formatApiError,
   getApiFieldErrors,
 } from "@/services/api";
+import { GEO_ZONE_TYPES, type GeoZoneCreatePayload } from "@/types/geo-zone.type";
 
 type GeoZoneFormState = {
   zone_name: string;
@@ -60,12 +61,7 @@ const ZONE_FIELDS: FieldName[] = [
   "polygon_geojson",
 ];
 
-const ZONE_TYPE_SUGGESTIONS = [
-  "permukiman",
-  "jalan_raya",
-  "perkebunan",
-  "koridor_ekologis",
-] as const;
+const ZONE_TYPE_SUGGESTIONS = GEO_ZONE_TYPES;
 
 const isInRange = (value: string, min: number, max: number): boolean => {
   if (value.trim() === "") return true;
@@ -79,7 +75,7 @@ const geoZoneSchema = z.object({
     .string()
     .trim()
     .min(1, "Nama zona wajib diisi.")
-    .max(100, "Nama zona maksimal 100 karakter."),
+    .max(150, "Nama zona maksimal 150 karakter."),
   zone_type: z
     .string()
     .trim()
@@ -97,8 +93,8 @@ const geoZoneSchema = z.object({
     .string()
     .trim()
     .refine(
-      (value) => isInRange(value, 0, Number.MAX_SAFE_INTEGER),
-      "Radius tidak boleh negatif.",
+      (value) => isInRange(value, 0.001, 1000),
+      "Radius harus antara 0.001 dan 1000 km.",
     ),
   polygon_geojson: z
     .string()
@@ -107,11 +103,16 @@ const geoZoneSchema = z.object({
       if (value === "") return true;
 
       try {
-        return typeof JSON.parse(value) === "object";
+        const parsed = JSON.parse(value) as { type?: unknown };
+        return (
+          parsed !== null &&
+          typeof parsed === "object" &&
+          (parsed.type === "Polygon" || parsed.type === "MultiPolygon")
+        );
       } catch {
         return false;
       }
-    }, "GeoJSON harus berupa objek JSON yang valid."),
+    }, "GeoJSON harus berupa Polygon atau MultiPolygon yang valid."),
 });
 
 export default function GeoZoneCreatePage() {
@@ -164,15 +165,13 @@ export default function GeoZoneCreatePage() {
     const centerLon = toOptionalNumber(parsed.data.center_lon);
     const radiusKm = toOptionalNumber(parsed.data.radius_km);
 
-    const payload = {
+    const payload: GeoZoneCreatePayload = {
       zone_name: parsed.data.zone_name,
       zone_type: parsed.data.zone_type,
-      ...(centerLat !== undefined ? { center_lat: centerLat } : {}),
-      ...(centerLon !== undefined ? { center_lon: centerLon } : {}),
-      ...(radiusKm !== undefined ? { radius_km: radiusKm } : {}),
-      ...(parsed.data.polygon_geojson
-        ? { polygon_geojson: parsed.data.polygon_geojson }
-        : {}),
+      center_lat: centerLat ?? null,
+      center_lon: centerLon ?? null,
+      radius_km: radiusKm ?? null,
+      polygon_geojson: parsed.data.polygon_geojson || null,
     };
 
     try {

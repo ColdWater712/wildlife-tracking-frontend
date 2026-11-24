@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound, useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
@@ -38,6 +38,7 @@ import {
   getApiFieldErrors,
   toApiErrorState,
 } from "@/services/api";
+import { GEO_ZONE_TYPES, type GeoZoneUpdatePayload } from "@/types/geo-zone.type";
 
 type GeoZoneFormState = {
   zone_name: string;
@@ -68,12 +69,7 @@ const ZONE_FIELDS: FieldName[] = [
   "polygon_geojson",
 ];
 
-const ZONE_TYPE_SUGGESTIONS = [
-  "permukiman",
-  "jalan_raya",
-  "perkebunan",
-  "koridor_ekologis",
-] as const;
+const ZONE_TYPE_SUGGESTIONS = GEO_ZONE_TYPES;
 
 const isInRange = (value: string, min: number, max: number): boolean => {
   if (value.trim() === "") return true;
@@ -87,7 +83,7 @@ const geoZoneSchema = z.object({
     .string()
     .trim()
     .min(1, "Nama zona wajib diisi.")
-    .max(100, "Nama zona maksimal 100 karakter."),
+    .max(150, "Nama zona maksimal 150 karakter."),
   zone_type: z
     .string()
     .trim()
@@ -105,8 +101,8 @@ const geoZoneSchema = z.object({
     .string()
     .trim()
     .refine(
-      (value) => isInRange(value, 0, Number.MAX_SAFE_INTEGER),
-      "Radius tidak boleh negatif.",
+      (value) => isInRange(value, 0.001, 1000),
+      "Radius harus antara 0.001 dan 1000 km.",
     ),
   polygon_geojson: z
     .string()
@@ -115,11 +111,16 @@ const geoZoneSchema = z.object({
       if (value === "") return true;
 
       try {
-        return typeof JSON.parse(value) === "object";
+        const parsed = JSON.parse(value) as { type?: unknown };
+        return (
+          parsed !== null &&
+          typeof parsed === "object" &&
+          (parsed.type === "Polygon" || parsed.type === "MultiPolygon")
+        );
       } catch {
         return false;
       }
-    }, "GeoJSON harus berupa objek JSON yang valid."),
+    }, "GeoJSON harus berupa Polygon atau MultiPolygon yang valid."),
 });
 
 const normalizeGeoJson = (
@@ -141,17 +142,24 @@ export default function GeoZoneUpdatePage() {
   const record = detailQuery.data ?? null;
   const updateMutation = useGeoZoneUpdate(record?.zone_id ?? 0);
 
-  const [form, setForm] = useState<GeoZoneFormState>(() =>
-    record
-      ? {
-          zone_name: record.zone_name,
-          zone_type: record.zone_type,
-          center_lat: stringOrEmpty(record.center_lat),
-          center_lon: stringOrEmpty(record.center_lon),
-          radius_km: stringOrEmpty(record.radius_km),
-          polygon_geojson: normalizeGeoJson(record.polygon_geojson),
-        }
-      : INITIAL_FORM,
+  const initialForm = useMemo<GeoZoneFormState>(
+    () =>
+      record
+        ? {
+            zone_name: record.zone_name,
+            zone_type: record.zone_type,
+            center_lat: stringOrEmpty(record.center_lat),
+            center_lon: stringOrEmpty(record.center_lon),
+            radius_km: stringOrEmpty(record.radius_km),
+            polygon_geojson: normalizeGeoJson(record.polygon_geojson),
+          }
+        : INITIAL_FORM,
+    [record],
+  );
+  const [overrides, setOverrides] = useState<Partial<GeoZoneFormState>>({});
+  const form = useMemo(
+    () => ({ ...initialForm, ...overrides }),
+    [initialForm, overrides],
   );
   const [validationError, setValidationError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors<FieldName>>({});
@@ -176,7 +184,7 @@ export default function GeoZoneUpdatePage() {
     key: K,
     value: GeoZoneFormState[K],
   ) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setOverrides((previous) => ({ ...previous, [key]: value }));
     setValidationError(null);
     setFieldErrors((previous) => ({ ...previous, [key]: undefined }));
   };
@@ -203,15 +211,13 @@ export default function GeoZoneUpdatePage() {
     const centerLon = toOptionalNumber(parsed.data.center_lon);
     const radiusKm = toOptionalNumber(parsed.data.radius_km);
 
-    const payload = {
+    const payload: GeoZoneUpdatePayload = {
       zone_name: parsed.data.zone_name,
       zone_type: parsed.data.zone_type,
-      ...(centerLat !== undefined ? { center_lat: centerLat } : {}),
-      ...(centerLon !== undefined ? { center_lon: centerLon } : {}),
-      ...(radiusKm !== undefined ? { radius_km: radiusKm } : {}),
-      ...(parsed.data.polygon_geojson
-        ? { polygon_geojson: parsed.data.polygon_geojson }
-        : {}),
+      center_lat: centerLat ?? null,
+      center_lon: centerLon ?? null,
+      radius_km: radiusKm ?? null,
+      polygon_geojson: parsed.data.polygon_geojson || null,
     };
 
     try {

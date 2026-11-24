@@ -5,12 +5,14 @@ import type {
   ApiClientConfig,
   ApiErrorKind,
   ApiErrorState,
+  ApiListResult,
   ApiResponse,
   BlobResponse,
   HttpMethod,
   RequestOptions,
 } from "@/types/api.type";
 import type { BackendActionResult } from "@/types/backend-action.type";
+import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
 
 export { resolveErrorKind };
 
@@ -52,6 +54,47 @@ const buildUrl = (config: ApiClientConfig, path: string): string => {
   const suffix = path.startsWith("/") ? path : `/${path}`;
   return `${config.baseUrl}${suffix}`;
 };
+
+const readHeaderNumber = (value: string | null): number | null => {
+  if (value === null || value.trim() === "") return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : null;
+};
+
+export const getPaginationMeta = (
+  headers: Headers,
+): TYPE_META_PAGGINATION | null => {
+  const total = readHeaderNumber(headers.get("X-Total-Count"));
+
+  if (total === null) return null;
+
+  const page = readHeaderNumber(headers.get("X-Current-Page")) ?? 1;
+  const perPage = readHeaderNumber(headers.get("X-Per-Page")) ?? total;
+  const lastPage = readHeaderNumber(headers.get("X-Last-Page"));
+  const totalPages =
+    lastPage ?? (perPage > 0 ? Math.ceil(total / perPage) : 1);
+
+  return {
+    total,
+    total_items: total,
+    page,
+    per_page: perPage,
+    total_pages: totalPages,
+  };
+};
+
+export const buildFallbackMeta = (
+  total: number,
+  page = 1,
+  perPage = total,
+): TYPE_META_PAGGINATION => ({
+  total,
+  total_items: total,
+  page: page > 0 ? page : 1,
+  per_page: perPage > 0 ? perPage : total,
+  total_pages: perPage > 0 ? Math.ceil(total / perPage) : 1,
+});
 
 const resolveBody = (
   method: HttpMethod,
@@ -234,6 +277,45 @@ export const createApiClient = (config: ApiClientConfig = {}): ApiClient => {
     }
   };
 
+  const requestList = async <T>(
+    method: HttpMethod,
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<ApiListResult<T>> => {
+    try {
+      const response = await requestRaw(method, path, options);
+
+      if (response.status === 204) {
+        return { body: undefined as T, meta: null };
+      }
+
+      const body = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new ApiError(
+          response.status,
+          resolveErrorKind(response.status),
+          extractApiMessage(
+            body,
+            `Permintaan gagal dengan status ${response.status}.`,
+          ),
+          extractApiErrors(body),
+        );
+      }
+
+      return {
+        body: body as T,
+        meta: getPaginationMeta(response.headers),
+      };
+    } catch (error) {
+      return normalizeRequestError(
+        error,
+        path,
+        options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      );
+    }
+  };
+
   const getBlob = async (
     path: string,
     options: RequestOptions = {},
@@ -273,6 +355,7 @@ export const createApiClient = (config: ApiClientConfig = {}): ApiClient => {
   return {
     request,
     requestRaw,
+    requestList,
     getBlob,
     get: <T>(path: string, options?: RequestOptions): Promise<T> =>
       request<T>("GET", path, options),
@@ -365,6 +448,21 @@ const createActionApiClient = (): ApiClient => {
     });
   };
 
+  const requestList = async <T>(
+    method: HttpMethod,
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<ApiListResult<T>> => {
+    const result = await runBackendAction(method, path, options);
+
+    if (!result.ok) throw toActionApiError(result);
+
+    return {
+      body: result.body as T,
+      meta: result.meta ?? null,
+    };
+  };
+
   const getBlob = async (
     path: string,
     options: RequestOptions = {},
@@ -390,6 +488,7 @@ const createActionApiClient = (): ApiClient => {
   return {
     request,
     requestRaw,
+    requestList,
     getBlob,
     get: <T>(path: string, options?: RequestOptions): Promise<T> =>
       request<T>("GET", path, options),

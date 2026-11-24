@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound, useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
@@ -40,7 +40,7 @@ import {
 } from "@/services/api";
 import type {
   DeviceCondition,
-  TYPE_TRACKING_DEVICE_PAYLOAD,
+  TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD,
 } from "@/types/device.type";
 
 type DeviceFormState = {
@@ -96,12 +96,16 @@ const deviceSchema = z.object({
       (value) =>
         value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
       "Format tanggal pemasangan tidak valid.",
+    )
+    .refine(
+      (value) => value === "" || value <= new Date().toISOString().slice(0, 10),
+      "Tanggal pemasangan tidak boleh di masa depan.",
     ),
   battery_life_months: z
     .number()
     .int("Masa pakai baterai harus bilangan bulat.")
-    .min(1, "Masa pakai baterai minimal 1 bulan.")
-    .max(120, "Masa pakai baterai maksimal 120 bulan."),
+    .min(0, "Masa pakai baterai minimal 0 bulan.")
+    .max(240, "Masa pakai baterai maksimal 240 bulan."),
   battery_level: z
     .number()
     .int("Level baterai harus bilangan bulat.")
@@ -132,19 +136,26 @@ export default function DeviceUpdatePage() {
   const record = detailQuery.data?.data ?? null;
   const updateMutation = useTrackingDeviceUpdate(record?.device_id ?? 0);
 
-  const [form, setForm] = useState<DeviceFormState>(() =>
-    record
-      ? {
-          model: record.model,
-          installation_date: stringOrEmpty(record.installation_date),
-          battery_life_months: record.battery_life_months ?? 12,
-          battery_level: record.battery_level ?? 100,
-          signal_strength: record.signal_strength ?? 0,
-          is_active: record.is_active === true || record.is_active === 1,
-          device_condition: record.device_condition,
-          last_recorded_at: stringOrEmpty(record.last_recorded_at),
-        }
-      : INITIAL_FORM,
+  const initialForm = useMemo<DeviceFormState>(
+    () =>
+      record
+        ? {
+            model: record.model,
+            installation_date: stringOrEmpty(record.installation_date),
+            battery_life_months: record.battery_life_months ?? 12,
+            battery_level: record.battery_level ?? 100,
+            signal_strength: record.signal_strength ?? 0,
+            is_active: record.is_active === true,
+            device_condition: record.device_condition,
+            last_recorded_at: stringOrEmpty(record.last_recorded_at),
+          }
+        : INITIAL_FORM,
+    [record],
+  );
+  const [overrides, setOverrides] = useState<Partial<DeviceFormState>>({});
+  const form = useMemo(
+    () => ({ ...initialForm, ...overrides }),
+    [initialForm, overrides],
   );
   const [validationError, setValidationError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FormErrors<FieldName>>({});
@@ -169,7 +180,7 @@ export default function DeviceUpdatePage() {
     key: K,
     value: DeviceFormState[K],
   ) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setOverrides((previous) => ({ ...previous, [key]: value }));
     setValidationError(null);
     setFieldErrors((previous) => ({ ...previous, [key]: undefined }));
   };
@@ -192,15 +203,15 @@ export default function DeviceUpdatePage() {
       return;
     }
 
-    const payload: TYPE_TRACKING_DEVICE_PAYLOAD = {
+    const payload: TYPE_TRACKING_DEVICE_UPDATE_PAYLOAD = {
       model: parsed.data.model,
-      installation_date: parsed.data.installation_date || undefined,
+      installation_date: parsed.data.installation_date || null,
       battery_life_months: parsed.data.battery_life_months,
       battery_level: parsed.data.battery_level,
       signal_strength: parsed.data.signal_strength,
       is_active: parsed.data.is_active,
       device_condition: parsed.data.device_condition as DeviceCondition,
-      last_recorded_at: parsed.data.last_recorded_at || undefined,
+      last_recorded_at: parsed.data.last_recorded_at || null,
     };
 
     try {

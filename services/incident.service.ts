@@ -1,6 +1,6 @@
 import { api, unwrapData } from "@/services/api";
+
 import type { ApiResponse } from "@/types/api.type";
-import type { QUERY_PARAMS_API_GET_ALL } from "@/types/endpoint.type";
 import type {
   ApiIncidentReport,
   CreateIncidentReportPayload,
@@ -25,50 +25,59 @@ const mapIncidentFromApi = (report: ApiIncidentReport): IncidentReport => ({
   timestamp: report.timestamp,
   latitude: report.latitude,
   longitude: report.longitude,
-  location: report.location ?? "Lokasi Tidak Diketahui",
+  location: report.location ?? null,
   animal_id: report.animal_id ?? null,
   species_id: report.species_id ?? null,
+  zone_id: report.zone_id ?? null,
+  photo_url: report.photo_url ?? null,
   status: report.status ?? "pending",
   sync_status: mapSyncStatus(report.sync_status),
-  animal_code: report.animal?.name ?? report.animal?.animal_code ?? null,
-  photo_url: null,
+  source: report.source ?? "manual",
+  animal_code:
+    report.animal?.name_animal ??
+    report.animal?.name ??
+    report.animal?.animal_code ??
+    null,
+  reporter: report.reporter ?? null,
   animal: report.animal ?? null,
   species: report.species ?? null,
+  zone: report.zone ?? null,
+  media: report.media ?? [],
+  created_at: report.created_at ?? null,
+  updated_at: report.updated_at ?? null,
 });
 
-const filterReports = (
-  reports: IncidentReport[],
-  params?: IncidentReportListParams,
-): IncidentReport[] =>
-  reports.filter((report) => {
-    const matchesType =
-      params?.incidentType === undefined ||
-      report.incident_type === params.incidentType;
+const toApiParams = (params?: IncidentReportListParams) => {
+  if (!params) return undefined;
 
-    const matchesSync =
-      params?.syncStatus === undefined ||
-      report.sync_status === params.syncStatus;
-
-    return matchesType && matchesSync;
-  });
-
-export const getIncidentReports = async (
-  params?: Partial<QUERY_PARAMS_API_GET_ALL> & IncidentReportListParams,
-): Promise<ApiResponse<IncidentReport[]>> => {
-  const response = await api.get<ApiResponse<ApiIncidentReport[]>>("/incidents", {
-    params,
-  });
-
-  const reports = unwrapData(response).map(mapIncidentFromApi);
+  const {
+    incidentType,
+    syncStatus,
+    ...rest
+  } = params;
 
   return {
-    success: true,
-    message: "OK",
-    data: filterReports(reports, params).sort(
-      (left, right) =>
-        new Date(right.timestamp).getTime() -
-        new Date(left.timestamp).getTime(),
-    ),
+    ...rest,
+    incident_type: params.incident_type ?? incidentType,
+    sync_status: params.sync_status ?? syncStatus,
+  };
+};
+
+export const getIncidentReports = async (
+  params?: IncidentReportListParams,
+): Promise<ApiResponse<IncidentReport[]>> => {
+  const result = await api.requestList<ApiResponse<ApiIncidentReport[]>>(
+    "GET",
+    "/incidents",
+    { params: toApiParams(params) },
+  );
+
+  return {
+    success: result.body.success,
+    message: result.body.message ?? "OK",
+    data: unwrapData(result.body).map(mapIncidentFromApi),
+    errors: result.body.errors,
+    meta: result.meta,
   };
 };
 
@@ -118,16 +127,55 @@ export const updateIncidentReport = async (
   };
 };
 
-export const getPendingSyncReports = async (): Promise<
-  ApiResponse<IncidentReport[]>
-> => {
-  const response = await getIncidentReports();
+export const updateIncidentSyncStatus = async (
+  id: number,
+  sync_status: IncidentSyncStatus,
+): Promise<ApiResponse<IncidentReport>> => {
+  const response = await api.patch<ApiResponse<ApiIncidentReport>>(
+    `/incidents/${id}/sync-status`,
+    { body: { sync_status } },
+  );
 
   return {
     success: true,
-    message: "OK",
-    data: (response.data ?? []).filter(
-      (report) => report.sync_status !== "synced",
-    ),
+    message: response.message,
+    data: mapIncidentFromApi(unwrapData(response)),
   };
 };
+
+export const deleteIncidentReport = async (
+  id: number,
+): Promise<ApiResponse<null>> =>
+  api.delete<ApiResponse<null>>(`/incidents/${id}`);
+
+export const getIncidentMedia = async (
+  id: number,
+): Promise<unknown[]> => {
+  const response = await api.get<ApiResponse<unknown[]>>(
+    `/incidents/${id}/media`,
+  );
+
+  return unwrapData(response) ?? [];
+};
+
+export const uploadIncidentMedia = async (
+  id: number,
+  file: File,
+  analyze = false,
+): Promise<unknown> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("analyze", analyze ? "1" : "0");
+
+  const response = await api.post<ApiResponse<unknown>>(
+    `/incidents/${id}/media`,
+    { formData, timeoutMs: 120_000 },
+  );
+
+  return unwrapData(response);
+};
+
+export const getPendingSyncReports = async (): Promise<
+  ApiResponse<IncidentReport[]>
+> =>
+  getIncidentReports({ sync_status: "pending_sync" });

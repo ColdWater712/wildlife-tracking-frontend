@@ -20,7 +20,10 @@ import {
 } from "@/hooks/use-notifications";
 import { toApiErrorState } from "@/services/api";
 import { formatDate } from "@/utils/format";
-import type { NotificationType } from "@/types/notification.type";
+import {
+  NOTIFICATION_TYPE_LABELS,
+  type NotificationType,
+} from "@/types/notification.type";
 import { cn } from "@/lib/utils";
 
 type NotificationItem = {
@@ -33,8 +36,8 @@ type NotificationItem = {
 
 const TYPE_OPTIONS = [
   { label: "Semua", value: "all" },
-  { label: "Zona Berisiko", value: "risk_zone" },
-  { label: "Perangkat", value: "device_alert" },
+  { label: NOTIFICATION_TYPE_LABELS.risk_zone, value: "risk_zone" },
+  { label: NOTIFICATION_TYPE_LABELS.device_alert, value: "device_alert" },
   { label: "Sistem", value: "system" },
 ] as const;
 
@@ -48,7 +51,7 @@ function getNotificationConfig(type: NotificationType) {
     case "risk_zone":
       return {
         icon: AlertTriangle,
-        label: "Zona Berisiko",
+        label: NOTIFICATION_TYPE_LABELS.risk_zone,
         variant: "danger" as const,
         iconBg: "bg-danger-soft",
         iconColor: "text-danger",
@@ -56,7 +59,7 @@ function getNotificationConfig(type: NotificationType) {
     case "device_alert":
       return {
         icon: RadioTower,
-        label: "Peringatan Perangkat",
+        label: NOTIFICATION_TYPE_LABELS.device_alert,
         variant: "warning" as const,
         iconBg: "bg-warning-soft",
         iconColor: "text-warning",
