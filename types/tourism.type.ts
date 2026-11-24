@@ -186,6 +186,7 @@ export type TYPE_PAYMENT_INFO = {
   qris_merchant_name: string | null;
   payment_window_minutes: number;
   gateway_enabled: boolean;
+  midtrans_enabled?: boolean;
 };
 
 export type TYPE_PARTICIPANT = {

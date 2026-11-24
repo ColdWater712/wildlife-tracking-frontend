@@ -82,6 +82,10 @@ export const VISITOR_BOOKING_SERVICE = {
     });
   },
 
+  /** Buat transaksi Midtrans Snap; kembalikan URL halaman pembayaran Midtrans. */
+  PAY_ONLINE: async (code: string): Promise<ApiResponse<{ redirect_url: string; reference: string }>> =>
+    api.post<ApiResponse<{ redirect_url: string; reference: string }>>(`/visitor/bookings/${enc(code)}/pay-online`, { timeoutMs: 30_000 }),
+
   GET_TICKET: async (code: string): Promise<ApiResponse<TYPE_TICKET>> =>
     api.get<ApiResponse<TYPE_TICKET>>(`/visitor/bookings/${enc(code)}/ticket`),
 

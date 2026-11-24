@@ -17,6 +17,7 @@ import { formatDate } from "@/utils/format";
 
 import type { DeviceCondition } from "@/types/device.type";
 
+import { DeviceTokenPanel } from "./device-token";
 import { DeviceOperations } from "./device-operations";
 
 const CONDITION_LABEL: Record<DeviceCondition, string> = {
@@ -260,6 +261,8 @@ export default function DeviceDetailContent({ canManage, canWrite }: DeviceDetai
       </section>
 
       <DeviceOperations device={record} canManage={canManage} canWrite={canWrite} />
+
+      {canManage ? <DeviceTokenPanel deviceId={record.device_id} /> : null}
     </div>
   );
 }

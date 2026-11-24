@@ -152,6 +152,9 @@ export const usePaymentProofUpload = () => {
   });
 };
 
+export const usePayOnline = () =>
+  useMutation({ mutationFn: (code: string) => VISITOR_BOOKING_SERVICE.PAY_ONLINE(code) });
+
 export const useBookingReview = () => {
   const invalidate = useInvalidateTourism();
   return useMutation({

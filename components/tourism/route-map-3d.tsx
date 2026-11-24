@@ -21,10 +21,17 @@ export type RouteMap3DHandle = { flyThrough: (id: number) => void; stop: () => v
 
 type Basemap = "satellite" | "osm";
 
-/* Sumber tile publik tanpa API key. Dipanggil langsung dari browser pengguna (lihat README: privasi & lisensi). */
-const TERRARIUM = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
-const SATELLITE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const OSM = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+/*
+ * Sumber tile publik tanpa API key, bisa diganti lewat env (mis. penyedia berlisensi dengan key untuk trafik besar).
+ * Dipanggil langsung dari browser pengguna (lihat README: privasi & lisensi).
+ */
+const TERRARIUM =
+  process.env.NEXT_PUBLIC_MAP_TERRAIN_URL || "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+const SATELLITE =
+  process.env.NEXT_PUBLIC_MAP_SATELLITE_URL ||
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const OSM = process.env.NEXT_PUBLIC_MAP_STREET_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const SATELLITE_ATTRIBUTION = process.env.NEXT_PUBLIC_MAP_SATELLITE_ATTRIBUTION || "Citra © Esri, Maxar, Earthstar Geographics";
 const EXAGGERATION = 1.6;
 /** Pusat TN Gunung Leuser bila belum ada rute. */
 const LEUSER: [number, number] = [97.6, 3.75];
@@ -32,7 +39,7 @@ const LEUSER: [number, number] = [97.6, 3.75];
 const buildStyle = (basemap: Basemap): StyleSpecification => ({
   version: 8,
   sources: {
-    satellite: { type: "raster", tiles: [SATELLITE], tileSize: 256, maxzoom: 18, attribution: "Citra © Esri, Maxar, Earthstar Geographics" },
+    satellite: { type: "raster", tiles: [SATELLITE], tileSize: 256, maxzoom: 18, attribution: SATELLITE_ATTRIBUTION },
     osm: { type: "raster", tiles: [OSM], tileSize: 256, maxzoom: 19, attribution: "© OpenStreetMap contributors" },
     terrainDem: { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15, attribution: "Elevasi: Mapzen Terrain Tiles (AWS Open Data)" },
     hillshadeDem: { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15 },

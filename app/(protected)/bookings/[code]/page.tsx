@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-import { ArrowLeft, Backpack, Building2, Clock, Printer, QrCode, Upload, XCircle } from "lucide-react";
+import { ArrowLeft, Backpack, Building2, Clock, CreditCard, Printer, QrCode, Upload, XCircle } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { FormAlert, TextArea } from "@/components/form";
@@ -17,6 +17,7 @@ import {
   useMyTicket,
   usePaymentInfo,
   usePaymentProofUpload,
+  usePayOnline,
 } from "@/hooks/use-tourism";
 import { formatApiError, toApiErrorState } from "@/services/api";
 import { PAYMENT_METHOD_LABELS, SHIFT_LABELS, VISITOR_TYPE_LABELS } from "@/types/tourism.type";
@@ -36,6 +37,7 @@ export default function BookingDetailPage() {
   const uploadMutation = usePaymentProofUpload();
   const cancelMutation = useBookingCancel();
   const reviewMutation = useBookingReview();
+  const payOnlineMutation = usePayOnline();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [review, setReview] = useState({ route_rating: 0, guide_rating: 0, comment: "" });
@@ -65,6 +67,18 @@ export default function BookingDetailPage() {
       showToast(formatApiError(error, "Gagal mengunggah bukti."), "error");
     } finally {
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  // Hanya halaman pembayaran resmi Midtrans yang boleh dibuka (cegah redirect ke situs lain).
+  const onPayOnline = async () => {
+    try {
+      const response = await payOnlineMutation.mutateAsync(code);
+      const url = new URL(response.data.redirect_url);
+      if (url.protocol !== "https:" || !/(^|\.)midtrans\.com$/.test(url.hostname)) throw new Error("URL pembayaran tidak dikenali.");
+      window.location.assign(url.toString());
+    } catch (error) {
+      showToast(formatApiError(error, "Gagal membuka pembayaran online."), "error");
     }
   };
 
@@ -150,6 +164,16 @@ export default function BookingDetailPage() {
                 )}
                 {payment?.status === "rejected" && payment.rejection_reason ? (
                   <FormAlert message={`Bukti sebelumnya ditolak: ${payment.rejection_reason}`} />
+                ) : null}
+                {paymentInfo.data?.midtrans_enabled ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary-soft/40 p-4">
+                    <p className="font-semibold text-ink">Bayar online (QRIS, virtual account, e-wallet, kartu)</p>
+                    <p className="text-xs text-muted">Diproses Midtrans; tiket terbit otomatis setelah pembayaran berhasil, tanpa unggah bukti.</p>
+                    <Button icon={<CreditCard className="size-4" />} loading={payOnlineMutation.isPending} onClick={() => void onPayOnline()}>
+                      Bayar online sekarang
+                    </Button>
+                    <p className="text-center text-xs text-muted">atau bayar manual & unggah bukti di bawah</p>
+                  </div>
                 ) : null}
                 <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="sr-only" id="proof" onChange={(event) => void onUpload(event.target.files?.[0])} />
                 <Button icon={<Upload className="size-4" />} loading={uploadMutation.isPending} onClick={() => fileRef.current?.click()}>
