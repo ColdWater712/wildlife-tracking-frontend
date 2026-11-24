@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 24 November 2026: modul wisata & role pengunjung](#pembaruan-24-november-2026-modul-wisata--role-pengunjung)
 - [Pembaruan 24 November 2026: semua endpoint backend](#pembaruan-24-november-2026-semua-endpoint-backend)
 - [1. Ringkasan aplikasi](#1-ringkasan-aplikasi)
 - [2. Status implementasi](#2-status-implementasi)
@@ -19,6 +20,84 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 24 November 2026: modul wisata & role pengunjung
+
+Frontend untuk modul wisata di backend (`9ee3dd5`, tabel `tour_routes`, `tour_guides`, `guide_shifts`, `bookings`, `payments`, `tour_reviews`). Struktur dan komponen mengikuti konvensi repo ini (lihat bagian berikutnya).
+
+### Role dan izin
+
+| Role | Izin wisata | Menu yang tampil |
+|---|---|---|
+| `pengunjung` (baru) | `book_tickets` | Jelajah Tur, Jadwal Pemandu, Pesanan Saya, Profil. Tidak melihat data konservasi. |
+| `konservasionis_lapangan` | + `validate_tickets` | Check-in Tiket |
+| `administrator_sistem` | semua (`*`) | Seluruh menu "Kelola Wisata" |
+
+`types/auth.type.ts` memuat role dan izin baru; `lib/navigation.ts` kini menerima izin berupa array (cukup salah satu), sehingga menu Profil terbuka untuk pengunjung. Halaman yang bukan haknya tampil "Akses ditolak", dan backend tetap membalas 403.
+
+### Halaman
+
+| Rute | Untuk | Isi | Endpoint |
+|---|---|---|---|
+| `/register` (publik) | calon pengunjung | Daftar akun, langsung masuk. Role selalu `pengunjung` (ditentukan server). Ada link dari halaman login. | `POST /register` |
+| `/tours` | pengunjung | Katalog rute + tabel tarif PNBP | `GET /tourism/routes`, `/tourism/prices` |
+| `/tours/[slug]` | pengunjung | Itinerary, peta jalur & titik kumpul (Leaflet), profil ketinggian, satwa, paket, barang bawaan, aturan, shift terdekat, ulasan | `GET /tourism/routes/{slug}` |
+| `/tours/[slug]/book` | pengunjung | Pilih shift, jumlah WNI/pelajar/WNA/drone, nama peserta, kontak darurat, metode bayar, rincian harga langsung dari server | `POST /tourism/quote`, `POST /visitor/bookings` |
+| `/guides`, `/guides/[id]` | pengunjung | Siapa bertugas per tanggal & shift, sisa kuota, satwa favorit + alasan, fun fact, bahasa, sertifikasi, rating | `GET /tourism/schedule`, `/tourism/guides`, `/tourism/guides/{id}` |
+| `/bookings`, `/bookings/[code]` | pengunjung | Hitung mundur batas bayar, rekening tujuan, unggah bukti, batal, e-tiket QR (+cetak), checklist bawaan, ulasan setelah check-in | `/visitor/bookings*`, `/tourism/payment-info` |
+| `/tourism/check-in` | petugas loket | Ketik atau pindai QR (kamera, `BarcodeDetector`), daftar kunjungan hari ini | `POST /tourism/check-in`, `GET /tourism/check-in/today` |
+| `/tourism/bookings`, `/tourism/bookings/[code]` | admin | Filter status/tanggal/kode, pendapatan lunas, detail peserta & pembayaran, batal/refund | `/tourism/admin/bookings*` |
+| `/tourism/payments` | admin | Pratinjau bukti (gambar/PDF), terima → tiket terbit, tolak dengan alasan | `/tourism/admin/payments*` |
+| `/tourism/routes` (+ `create`, `[id]/edit`) | admin | CRUD rute, itinerary, waypoint | `/tourism/admin/routes*` |
+| `/tourism/guides` | admin | CRUD pemandu + unggah foto | `/tourism/admin/guides*` |
+| `/tourism/shifts` | admin | CRUD shift, batalkan shift | `/tourism/admin/shifts*` |
+| `/tourism/prices` | admin | Ubah tarif, kelola hari libur nasional | `/tourism/admin/prices`, `/holidays` |
+| `/tourism/reviews` | admin | Tampilkan/sembunyikan ulasan | `/tourism/admin/reviews*` |
+
+File baru: `types/tourism.type.ts`, `services/tourism.service.ts` (`TOURISM_CATALOG_SERVICE`, `VISITOR_BOOKING_SERVICE`, `TICKET_CHECK_IN_SERVICE`, `TOURISM_ADMIN_SERVICE`), `hooks/use-tourism.ts`, `hooks/use-register.ts`, `components/tourism/*` (badge status, rating, avatar pemandu, QR, hitung mundur, peta rute). Dependensi baru: `qrcode` (QR dibuat di browser, payload tidak dikirim ke layanan luar).
+
+### Tarif (PP 36/2024, TN Gunung Leuser kelas III)
+
+| Kategori | Senin–Sabtu | Minggu/libur |
+|---|---|---|
+| WNI | Rp10.000 | Rp15.000 |
+| Pelajar/mahasiswa (min. 5 orang) | Rp5.000 | Rp7.500 |
+| WNA | Rp150.000 | Rp150.000 |
+| Drone | Rp2.000.000/unit/hari | Rp2.000.000/unit/hari |
+
+Tiket masuk dikalikan jumlah hari tur, lalu ditambah jasa pemandu per orang sesuai rute. Frontend hanya menampilkan harga; total selalu dihitung backend.
+
+### Keamanan di sisi frontend
+
+- Token tetap di cookie httpOnly. Semua panggilan lewat server action proxy, termasuk registrasi.
+- Role tidak dikirim saat registrasi. Validasi zod di klien hanya untuk UX; aturan sebenarnya ada di backend.
+- Bukti bayar dibatasi JPG/PNG/WEBP/PDF maksimal 5 MB, dicek sebelum diunggah. Bukti dibuka sebagai blob privat (`no-store`).
+- Ulasan dirender sebagai teks (React escape) dan tag HTML juga dibuang di server. Nama pengulas disingkat oleh backend.
+- Profil publik pemandu tidak memuat kontak pribadi.
+- E-tiket memakai token HMAC dari backend. Uji end-to-end memastikan QR palsu ditolak dan tiket tidak bisa dipakai dua kali.
+
+### Hasil uji (lokal, backend `migrate:fresh --seed`)
+
+Alur yang diuji dengan Playwright:
+
+1. Daftar akun pengunjung, lalu lihat katalog, detail rute, dan jadwal pemandu.
+2. Pesan 1 WNI + 1 WNA. Harga dari server: Rp10.000 + Rp150.000 + 2 × Rp400.000 = Rp960.000.
+3. Unggah bukti bayar.
+4. Admin memverifikasi pembayaran, lalu e-tiket QR terbit.
+5. Petugas lapangan check-in: QR palsu ditolak, tiket dipakai ulang ditolak.
+6. Pengunjung menulis ulasan, dan tag `<script>` terbuang.
+
+Selain itu, pengunjung yang membuka `/dashboard` atau `/tourism/*` mendapat "Akses ditolak", dan backend membalas 403. `tsc`, `eslint` (tanpa error baru) dan `next build` lulus.
+
+### Masih dikembangkan
+
+- **Payment gateway otomatis**: backend sudah punya webhook HMAC, tetapi belum ada integrasi penyedia (Midtrans/Xendit). Saat ini bayar manual lewat transfer/QRIS lalu diverifikasi petugas. Rekening tujuan diisi lewat `.env` backend (`TOURISM_BANK_*`).
+- **Refund**: hanya ditandai di sistem; pengembalian dana dilakukan manual.
+- **Peta 3D, model 3D satwa, dan POS loket** sesuai "Next Plan": belum dikerjakan. Peta saat ini Leaflet 2D ditambah profil ketinggian dari waypoint.
+- **Pemindaian QR kamera** butuh browser dengan `BarcodeDetector` (Chrome/Edge/Android). Di browser lain, ketik isi QR.
+- **Data contoh**: rute, pemandu, shift, dan hari libur tanggal tetap. Hari libur bertanggal bergerak (Idul Fitri, Waisak, dsb.) ditambahkan admin di `/tourism/prices`.
 
 ---
 
