@@ -187,6 +187,33 @@ export type TYPE_PAYMENT_INFO = {
   payment_window_minutes: number;
   gateway_enabled: boolean;
   midtrans_enabled?: boolean;
+  simulator_enabled?: boolean;
+};
+
+export type TYPE_SIMULATE_PAYMENT_CHANNEL =
+  | "qris"
+  | "va_bca"
+  | "va_bni"
+  | "va_bri"
+  | "va_mandiri"
+  | "gopay"
+  | "ovo"
+  | "dana"
+  | "shopeepay";
+
+export type TYPE_SIMULATE_PAYMENT_PAYLOAD = {
+  channel: TYPE_SIMULATE_PAYMENT_CHANNEL;
+  outcome?: "paid" | "failed";
+};
+
+export type TYPE_SIMULATE_PAYMENT_RESPONSE = {
+  booking: TYPE_BOOKING;
+  simulation: {
+    channel: TYPE_SIMULATE_PAYMENT_CHANNEL;
+    outcome: "paid" | "failed";
+    transaction_id: string | null;
+    verified_automatically: boolean;
+  };
 };
 
 export type TYPE_PARTICIPANT = {

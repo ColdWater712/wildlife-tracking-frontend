@@ -3,13 +3,20 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-import { ArrowLeft, Backpack, Building2, Clock, CreditCard, Printer, QrCode, Upload, XCircle } from "lucide-react";
+import { ArrowLeft, Backpack, Building2, Clock, CreditCard, Printer, QrCode, ShieldCheck, Upload, XCircle } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { FormAlert, TextArea } from "@/components/form";
 import { useToast } from "@/components/toast";
 import { ErrorState, Loading, Modal } from "@/components/ui";
-import { BookingStatusBadge, Countdown, PaymentStatusBadge, RatingInput, TicketQr } from "@/components/tourism";
+import {
+  BookingStatusBadge,
+  Countdown,
+  PaymentSimulatorModal,
+  PaymentStatusBadge,
+  RatingInput,
+  TicketQr,
+} from "@/components/tourism";
 import {
   useBookingCancel,
   useBookingReview,
@@ -18,8 +25,10 @@ import {
   usePaymentInfo,
   usePaymentProofUpload,
   usePayOnline,
+  useSimulatePayment,
 } from "@/hooks/use-tourism";
 import { formatApiError, toApiErrorState } from "@/services/api";
+import type { TYPE_SIMULATE_PAYMENT_CHANNEL } from "@/types/tourism.type";
 import { PAYMENT_METHOD_LABELS, SHIFT_LABELS, VISITOR_TYPE_LABELS } from "@/types/tourism.type";
 import { formatDateTime, formatLongDate, formatRupiah } from "@/utils/format";
 
@@ -38,8 +47,10 @@ export default function BookingDetailPage() {
   const cancelMutation = useBookingCancel();
   const reviewMutation = useBookingReview();
   const payOnlineMutation = usePayOnline();
+  const simulatePaymentMutation = useSimulatePayment();
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [review, setReview] = useState({ route_rating: 0, guide_rating: 0, comment: "" });
   const refetchBooking = bookingQuery.refetch;
   const handleExpire = useCallback(() => void refetchBooking(), [refetchBooking]);
@@ -79,6 +90,20 @@ export default function BookingDetailPage() {
       window.location.assign(url.toString());
     } catch (error) {
       showToast(formatApiError(error, "Gagal membuka pembayaran online."), "error");
+    }
+  };
+
+  const onSimulatePayment = async (channel: TYPE_SIMULATE_PAYMENT_CHANNEL, outcome: "paid" | "failed") => {
+    try {
+      const response = await simulatePaymentMutation.mutateAsync({ code, payload: { channel, outcome } });
+      if (response.data.simulation.outcome === "paid") {
+        setSimulatorOpen(false);
+        showToast("Pembayaran terverifikasi otomatis. E-tiket siap digunakan!", "success");
+      } else {
+        showToast("Simulasi pembayaran gagal. Anda dapat mencoba kanal lain.", "error");
+      }
+    } catch (error) {
+      showToast(formatApiError(error, "Gagal memproses simulasi pembayaran."), "error");
     }
   };
 
@@ -164,6 +189,20 @@ export default function BookingDetailPage() {
                 )}
                 {payment?.status === "rejected" && payment.rejection_reason ? (
                   <FormAlert message={`Bukti sebelumnya ditolak: ${payment.rejection_reason}`} />
+                ) : null}
+                {paymentInfo.data?.simulator_enabled ? (
+                  <div className="flex flex-col gap-2 rounded-2xl border border-primary/40 bg-primary-soft/50 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-ink">Bayar Instan & Verifikasi Otomatis (QRIS, Virtual Account, E-Wallet)</p>
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">Gratis · Simulasi</span>
+                    </div>
+                    <p className="text-xs text-muted">
+                      Pembayaran langsung terverifikasi oleh sistem tanpa antrean petugas, dan e-tiket QR langsung terbit.
+                    </p>
+                    <Button icon={<ShieldCheck className="size-4" />} onClick={() => setSimulatorOpen(true)}>
+                      Bayar Sekarang
+                    </Button>
+                  </div>
                 ) : null}
                 {paymentInfo.data?.midtrans_enabled ? (
                   <div className="flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary-soft/40 p-4">
@@ -267,6 +306,11 @@ export default function BookingDetailPage() {
                 <li key={item.payment_id} className="flex flex-col gap-1 rounded-xl border border-line p-3">
                   <div className="flex items-center justify-between gap-2"><span className="font-mono text-xs">{item.reference}</span><PaymentStatusBadge status={item.status} /></div>
                   <span className="text-xs text-muted">{PAYMENT_METHOD_LABELS[item.method]} · {formatRupiah(item.amount)}</span>
+                  {item.status === "paid" && !item.verifier ? (
+                    <span className="inline-flex w-fit items-center gap-1 text-[11px] font-semibold text-forest-primary">
+                      <ShieldCheck className="size-3" /> Terverifikasi otomatis
+                    </span>
+                  ) : null}
                   {item.rejection_reason ? <span className="text-xs text-danger">Alasan: {item.rejection_reason}</span> : null}
                 </li>
               ))}
@@ -300,6 +344,17 @@ export default function BookingDetailPage() {
           <Button variant="danger" loading={cancelMutation.isPending} onClick={() => void onCancel()}>Ya, batalkan</Button>
         </div>
       </Modal>
+
+      <PaymentSimulatorModal
+        open={simulatorOpen}
+        onClose={() => setSimulatorOpen(false)}
+        bookingCode={booking.booking_code}
+        reference={payment?.reference ?? booking.booking_code}
+        amount={booking.total_amount}
+        merchantName={paymentInfo.data?.qris_merchant_name || "BBTNGL E-Ticketing"}
+        pending={simulatePaymentMutation.isPending}
+        onSimulate={onSimulatePayment}
+      />
     </div>
   );
 }

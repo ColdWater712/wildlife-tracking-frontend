@@ -15,6 +15,7 @@ import type {
   TYPE_QUOTE_PAYLOAD,
   TYPE_REVIEW_PAYLOAD,
   TYPE_SCHEDULE_PARAMS,
+  TYPE_SIMULATE_PAYMENT_PAYLOAD,
   TYPE_TICKET_PRICE,
   TYPE_TOUR_GUIDE_PAYLOAD,
   TYPE_TOUR_ROUTE_PAYLOAD,
@@ -154,6 +155,15 @@ export const usePaymentProofUpload = () => {
 
 export const usePayOnline = () =>
   useMutation({ mutationFn: (code: string) => VISITOR_BOOKING_SERVICE.PAY_ONLINE(code) });
+
+export const useSimulatePayment = () => {
+  const invalidate = useInvalidateTourism();
+  return useMutation({
+    mutationFn: ({ code, payload }: { code: string; payload: TYPE_SIMULATE_PAYMENT_PAYLOAD }) =>
+      VISITOR_BOOKING_SERVICE.SIMULATE_PAYMENT(code, payload),
+    onSuccess: invalidate,
+  });
+};
 
 export const useBookingReview = () => {
   const invalidate = useInvalidateTourism();

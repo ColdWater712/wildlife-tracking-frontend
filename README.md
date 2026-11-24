@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 26 November 2026 (lanjutan 2): peta 3D kualitas tinggi & simulator pembayaran otomatis](#pembaruan-26-november-2026-lanjutan-2-peta-3d-kualitas-tinggi--simulator-pembayaran-otomatis)
 - [Pembaruan 26 November 2026 (lanjutan): perbaikan pesan error login & audit](#pembaruan-26-november-2026-lanjutan-perbaikan-pesan-error-login--audit)
 - [Pembaruan 26 November 2026: satwa 3D, perbaikan bug & risiko](#pembaruan-26-november-2026-satwa-3d-perbaikan-bug--risiko)
 - [Pembaruan 25 November 2026: POS loket & peta 3D](#pembaruan-25-november-2026-pos-loket--peta-3d)
@@ -23,6 +24,19 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 26 November 2026 (lanjutan 2): peta 3D kualitas tinggi & simulator pembayaran otomatis
+
+- **Peta & Rute 3D (`components/tourism/route-map-3d.tsx`)**:
+  - **3 mode basemap gratis tanpa API key**: **Satelit Hybrid** (Esri World Imagery + overlay batas wilayah, nama tempat & jalan yang dapat di-toggle), **Topografi** (OpenTopoMap dengan garis kontur & jalur), dan **Peta Jalan** (CARTO Voyager `@2x`). Semua tetap dapat dioverride lewat env `NEXT_PUBLIC_MAP_*`.
+  - **Kontrol & HUD 3D**: proyeksi globe pada zoom jauh, atmosfer langit, kontrol geolokasi, pilihan skala relief (`1×`, `1.8×`, `2.5×`), tombol reset kamera, penanda titik Mulai & Puncak (mdpl) saat rute dipilih, serta HUD koordinat & elevasi real-time saat kursor digerakkan.
+  - **Fly-through interaktif**: tombol jeda/lanjut, kecepatan `1×` / `2×`, jarak tempuh (`km`), dan elevasi (`mdpl`).
+- **Simulator Payment Gateway Otomatis (`components/tourism/payment-simulator-modal.tsx`, `app/(protected)/bookings/[code]/page.tsx`)**:
+  - Ketika `PAYMENT_SIMULATOR_ENABLED=true` di backend, halaman detail pemesanan menampilkan kartu **Bayar Instan & Verifikasi Otomatis** dengan modal checkout realistis (**QRIS Instan** dengan QR yang di-generate di browser, **Virtual Account** BCA/BNI/BRI/Mandiri dengan tombol salin, dan **E-Wallet** GoPay/OVO/DANA/ShopeePay).
+  - Pembayaran simulasi memanggil `POST /visitor/bookings/{code}/simulate-payment`, langsung memverifikasi status ke `paid`, dan menerbitkan e-tiket QR tanpa antrean verifikasi manual petugas.
+- **Hasil uji**: `npx tsc --noEmit` (0 error), `npm run lint` (0 error, 1 peringatan bawaan TanStack Table), `npm run build` lulus.
 
 ---
 

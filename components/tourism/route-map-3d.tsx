@@ -4,7 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MlMap, Marker, StyleSpecification } from "maplibre-gl";
-import { Layers, Mountain, Pause, Play } from "lucide-react";
+import { Compass, Layers, Mountain, Pause, Play, RotateCcw, Square, Tag } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,49 +19,91 @@ export type Map3DRoute = {
 
 export type RouteMap3DHandle = { flyThrough: (id: number) => void; stop: () => void; focus: (id: number | null) => void };
 
-type Basemap = "satellite" | "osm";
+type Basemap = "hybrid" | "topo" | "street";
+type ReliefScale = 1 | 1.8 | 2.5;
 
 /*
- * Sumber tile publik tanpa API key, bisa diganti lewat env (mis. penyedia berlisensi dengan key untuk trafik besar).
- * Dipanggil langsung dari browser pengguna (lihat README: privasi & lisensi).
+ * Sumber tile publik gratis tanpa API key, tetap dapat diganti via NEXT_PUBLIC_MAP_* bila memakai penyedia berbayar.
  */
 const TERRARIUM =
-  process.env.NEXT_PUBLIC_MAP_TERRAIN_URL || "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+  process.env.NEXT_PUBLIC_MAP_TERRAIN_URL ||
+  "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
 const SATELLITE =
   process.env.NEXT_PUBLIC_MAP_SATELLITE_URL ||
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const OSM = process.env.NEXT_PUBLIC_MAP_STREET_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-const SATELLITE_ATTRIBUTION = process.env.NEXT_PUBLIC_MAP_SATELLITE_ATTRIBUTION || "Citra © Esri, Maxar, Earthstar Geographics";
-const EXAGGERATION = 1.6;
+const LABELS_OVERLAY =
+  process.env.NEXT_PUBLIC_MAP_LABELS_URL ||
+  "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+const ROADS_OVERLAY =
+  process.env.NEXT_PUBLIC_MAP_ROADS_URL ||
+  "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
+const TOPO =
+  process.env.NEXT_PUBLIC_MAP_TOPO_URL ||
+  "https://a.tile.opentopomap.org/{z}/{x}/{y}.png";
+const STREET =
+  process.env.NEXT_PUBLIC_MAP_STREET_URL ||
+  "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png";
+const SATELLITE_ATTRIBUTION =
+  process.env.NEXT_PUBLIC_MAP_SATELLITE_ATTRIBUTION || "Citra © Esri, Maxar, Earthstar Geographics";
+const DEFAULT_EXAGGERATION: ReliefScale = 1.8;
 /** Pusat TN Gunung Leuser bila belum ada rute. */
 const LEUSER: [number, number] = [97.6, 3.75];
 
-const buildStyle = (basemap: Basemap): StyleSpecification => ({
+const buildStyle = (basemap: Basemap, showLabels: boolean, exaggeration: ReliefScale): StyleSpecification => ({
   version: 8,
   sources: {
     satellite: { type: "raster", tiles: [SATELLITE], tileSize: 256, maxzoom: 18, attribution: SATELLITE_ATTRIBUTION },
-    osm: { type: "raster", tiles: [OSM], tileSize: 256, maxzoom: 19, attribution: "© OpenStreetMap contributors" },
-    terrainDem: { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15, attribution: "Elevasi: Mapzen Terrain Tiles (AWS Open Data)" },
+    roadsOverlay: { type: "raster", tiles: [ROADS_OVERLAY], tileSize: 256, maxzoom: 18 },
+    labelsOverlay: { type: "raster", tiles: [LABELS_OVERLAY], tileSize: 256, maxzoom: 18 },
+    topo: { type: "raster", tiles: [TOPO], tileSize: 256, maxzoom: 17, attribution: "© OpenTopoMap (CC-BY-SA)" },
+    street: { type: "raster", tiles: [STREET], tileSize: 256, maxzoom: 19, attribution: "© OpenStreetMap contributors, © CARTO" },
+    terrainDem: {
+      type: "raster-dem",
+      tiles: [TERRARIUM],
+      encoding: "terrarium",
+      tileSize: 256,
+      maxzoom: 15,
+      attribution: "Elevasi: Mapzen Terrain Tiles (AWS Open Data)",
+    },
     hillshadeDem: { type: "raster-dem", tiles: [TERRARIUM], encoding: "terrarium", tileSize: 256, maxzoom: 15 },
   },
   layers: [
-    { id: "satellite", type: "raster", source: "satellite", layout: { visibility: basemap === "satellite" ? "visible" : "none" } },
-    { id: "osm", type: "raster", source: "osm", layout: { visibility: basemap === "osm" ? "visible" : "none" } },
+    { id: "satellite", type: "raster", source: "satellite", layout: { visibility: basemap === "hybrid" ? "visible" : "none" } },
+    {
+      id: "roadsOverlay",
+      type: "raster",
+      source: "roadsOverlay",
+      layout: { visibility: basemap === "hybrid" && showLabels ? "visible" : "none" },
+      paint: { "raster-opacity": 0.75 },
+    },
+    {
+      id: "labelsOverlay",
+      type: "raster",
+      source: "labelsOverlay",
+      layout: { visibility: basemap === "hybrid" && showLabels ? "visible" : "none" },
+      paint: { "raster-opacity": 0.92 },
+    },
+    { id: "topo", type: "raster", source: "topo", layout: { visibility: basemap === "topo" ? "visible" : "none" } },
+    { id: "street", type: "raster", source: "street", layout: { visibility: basemap === "street" ? "visible" : "none" } },
     {
       id: "hillshade",
       type: "hillshade",
       source: "hillshadeDem",
-      paint: { "hillshade-shadow-color": "#13241a", "hillshade-highlight-color": "#ffffff", "hillshade-exaggeration": 0.3 },
+      paint: {
+        "hillshade-shadow-color": "#0e1d14",
+        "hillshade-highlight-color": "#ffffff",
+        "hillshade-exaggeration": basemap === "hybrid" ? 0.38 : 0.25,
+      },
     },
   ],
-  terrain: { source: "terrainDem", exaggeration: EXAGGERATION },
+  terrain: { source: "terrainDem", exaggeration },
   sky: {
-    "sky-color": "#a9cbe0",
-    "horizon-color": "#e6eee4",
-    "fog-color": "#dce6d8",
-    "sky-horizon-blend": 0.6,
-    "horizon-fog-blend": 0.7,
-    "fog-ground-blend": 0.35,
+    "sky-color": "#7cb5db",
+    "horizon-color": "#dceae3",
+    "fog-color": "#d2e1d9",
+    "sky-horizon-blend": 0.55,
+    "horizon-fog-blend": 0.65,
+    "fog-ground-blend": 0.3,
   },
 });
 
@@ -111,17 +153,34 @@ export const RouteMap3D = forwardRef<
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const detailMarkersRef = useRef<Marker[]>([]);
   const hikerRef = useRef<Marker | null>(null);
   const frameRef = useRef<number | null>(null);
   const routesRef = useRef(routes);
   const onSelectRef = useRef(onSelect);
   const tileErrorsRef = useRef(0);
+  const pausedRef = useRef(false);
+  const speedRef = useRef<1 | 2>(1);
+  const elapsedRef = useRef(0);
+  const lastTickRef = useRef(0);
+
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [tilesWarning, setTilesWarning] = useState(false);
-  const [basemap, setBasemap] = useState<Basemap>("satellite");
+  const [basemap, setBasemap] = useState<Basemap>("hybrid");
+  const [showLabels, setShowLabels] = useState(true);
   const [terrainOn, setTerrainOn] = useState(true);
-  const [flying, setFlying] = useState<{ name: string; elevation: number; progress: number } | null>(null);
+  const [reliefScale, setReliefScale] = useState<ReliefScale>(DEFAULT_EXAGGERATION);
+  const [cursorHud, setCursorHud] = useState<{ lat: number; lon: number; elevation: number | null } | null>(null);
+  const [flying, setFlying] = useState<{
+    name: string;
+    elevation: number;
+    distanceKm: number;
+    totalKm: number;
+    progress: number;
+    paused: boolean;
+    speed: 1 | 2;
+  } | null>(null);
 
   useEffect(() => {
     routesRef.current = routes;
@@ -132,7 +191,10 @@ export const RouteMap3D = forwardRef<
     const map = mapRef.current;
     if (!map) return;
     const list = routesRef.current.filter((route) => (id ? route.id === id : true));
-    const points = list.flatMap((route) => [...route.waypoints.map(toLngLat), ...(route.meeting ? [[route.meeting.lon, route.meeting.lat] as [number, number]] : [])]);
+    const points = list.flatMap((route) => [
+      ...route.waypoints.map(toLngLat),
+      ...(route.meeting ? [[route.meeting.lon, route.meeting.lat] as [number, number]] : []),
+    ]);
     if (points.length === 0) return;
     const lons = points.map((point) => point[0]);
     const lats = points.map((point) => point[1]);
@@ -141,13 +203,14 @@ export const RouteMap3D = forwardRef<
         [Math.min(...lons), Math.min(...lats)],
         [Math.max(...lons), Math.max(...lats)],
       ],
-      { padding: 70, pitch: 62, bearing: -25, duration: animate ? 1600 : 0, maxZoom: 15 },
+      { padding: 70, pitch: 62, bearing: -25, duration: animate ? 1500 : 0, maxZoom: 15.5 },
     );
   }, []);
 
   const stop = useCallback(() => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
+    pausedRef.current = false;
     hikerRef.current?.remove();
     hikerRef.current = null;
     setFlying(null);
@@ -163,32 +226,52 @@ export const RouteMap3D = forwardRef<
       const maplibregl = (await import("maplibre-gl")).default;
       const points = route.waypoints;
       const cumulative = [0];
-      for (let i = 1; i < points.length; i++) cumulative.push(cumulative[i - 1] + distance(toLngLat(points[i - 1]), toLngLat(points[i])));
+      for (let i = 1; i < points.length; i++) {
+        cumulative.push(cumulative[i - 1] + distance(toLngLat(points[i - 1]), toLngLat(points[i])));
+      }
       const total = cumulative[cumulative.length - 1];
-      // ±1,2 detik per 100 m, dibatasi 12–40 detik.
-      const duration = Math.min(40_000, Math.max(12_000, total * 12));
+      const totalKm = Math.max(0.1, total / 1000);
+      const duration = Math.min(42_000, Math.max(12_000, total * 12));
 
       const dot = document.createElement("div");
-      dot.className = "size-4 rounded-full border-2 border-white shadow-lg";
+      dot.className = "size-4 rounded-full border-2 border-white shadow-lg ring-4 ring-white/40";
       dot.style.background = route.color;
       hikerRef.current = new maplibregl.Marker({ element: dot }).setLngLat(toLngLat(points[0])).addTo(map);
 
       let smoothBearing = bearing(toLngLat(points[0]), toLngLat(points[1]));
-      const start = performance.now();
+      elapsedRef.current = 0;
+      lastTickRef.current = performance.now();
+
       const step = (now: number) => {
-        const progress = Math.min(1, (now - start) / duration);
-        const here = pointAt(points, cumulative, progress * total);
-        const ahead = pointAt(points, cumulative, Math.min(total, progress * total + Math.max(60, total * 0.05)));
+        const dt = now - lastTickRef.current;
+        lastTickRef.current = now;
+        if (!pausedRef.current) {
+          elapsedRef.current += dt * speedRef.current;
+        }
+        const progress = Math.min(1, elapsedRef.current / duration);
+        const coveredMeters = progress * total;
+        const here = pointAt(points, cumulative, coveredMeters);
+        const ahead = pointAt(points, cumulative, Math.min(total, coveredMeters + Math.max(60, total * 0.05)));
         const target = bearing(here.lngLat, ahead.lngLat);
         const delta = ((target - smoothBearing + 540) % 360) - 180;
-        smoothBearing = (smoothBearing + delta * 0.05 + 360) % 360;
+        if (!pausedRef.current) {
+          smoothBearing = (smoothBearing + delta * 0.05 + 360) % 360;
+          map.jumpTo({ center: here.lngLat, bearing: smoothBearing, pitch: 72, zoom: 15.6 });
+          hikerRef.current?.setLngLat(here.lngLat);
+        }
+        setFlying({
+          name: route.name,
+          elevation: Math.round(here.elevation),
+          distanceKm: Number((coveredMeters / 1000).toFixed(2)),
+          totalKm: Number(totalKm.toFixed(2)),
+          progress,
+          paused: pausedRef.current,
+          speed: speedRef.current,
+        });
 
-        map.jumpTo({ center: here.lngLat, bearing: smoothBearing, pitch: 70, zoom: 15.3 });
-        hikerRef.current?.setLngLat(here.lngLat);
-        setFlying({ name: route.name, elevation: Math.round(here.elevation), progress });
-
-        if (progress < 1) frameRef.current = requestAnimationFrame(step);
-        else {
+        if (progress < 1) {
+          frameRef.current = requestAnimationFrame(step);
+        } else {
           frameRef.current = null;
           window.setTimeout(() => {
             hikerRef.current?.remove();
@@ -198,10 +281,12 @@ export const RouteMap3D = forwardRef<
           }, 800);
         }
       };
-      map.easeTo({ center: toLngLat(points[0]), zoom: 15.3, pitch: 70, bearing: smoothBearing, duration: 1500 });
+
+      map.easeTo({ center: toLngLat(points[0]), zoom: 15.6, pitch: 72, bearing: smoothBearing, duration: 1400 });
       window.setTimeout(() => {
+        lastTickRef.current = performance.now();
         frameRef.current = requestAnimationFrame(step);
-      }, 1500);
+      }, 1400);
     },
     [fitTo, stop],
   );
@@ -218,11 +303,11 @@ export const RouteMap3D = forwardRef<
       try {
         map = new maplibregl.Map({
           container: containerRef.current,
-          style: buildStyle("satellite"),
+          style: buildStyle("hybrid", true, DEFAULT_EXAGGERATION),
           center: LEUSER,
           zoom: 9,
-          pitch: 55,
-          maxPitch: 80,
+          pitch: 58,
+          maxPitch: 82,
           attributionControl: { compact: true },
         });
       } catch {
@@ -231,25 +316,59 @@ export const RouteMap3D = forwardRef<
       }
       mapRef.current = map;
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+      map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: false }), "top-right");
       map.addControl(new maplibregl.FullscreenControl(), "top-right");
       map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
 
       map.on("error", (event) => {
-        // Tile gagal (offline/diblokir): peta tetap jalan, beri tahu pengguna sekali.
         if ("tile" in event || "sourceId" in event) {
           tileErrorsRef.current += 1;
           if (tileErrorsRef.current === 4) setTilesWarning(true);
         }
       });
-      // Interaksi manual menghentikan animasi fly-through.
+
       map.on("mousedown", stop);
       map.on("touchstart", stop);
       map.on("wheel", stop);
 
+      map.on("mousemove", (event) => {
+        const elev = map.queryTerrainElevation(event.lngLat);
+        setCursorHud({
+          lat: Number(event.lngLat.lat.toFixed(5)),
+          lon: Number(event.lngLat.lng.toFixed(5)),
+          elevation: elev !== null && Number.isFinite(elev) ? Math.round(elev) : null,
+        });
+      });
+      map.on("mouseout", () => setCursorHud(null));
+
       map.on("load", () => {
+        try {
+          map.setProjection({ type: "globe" });
+        } catch {
+          // Abaikan bila versi GPU/driver tidak mendukung proyeksi globe.
+        }
         map.addSource("routes", { type: "geojson", data: routesGeoJson(routesRef.current) });
-        map.addLayer({ id: "route-casing", type: "line", source: "routes", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.85 } });
-        map.addLayer({ id: "route-line", type: "line", source: "routes", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "color"], "line-width": 4.5 } });
+        map.addLayer({
+          id: "route-shadow",
+          type: "line",
+          source: "routes",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#09130d", "line-width": 11, "line-opacity": 0.35, "line-blur": 3 },
+        });
+        map.addLayer({
+          id: "route-casing",
+          type: "line",
+          source: "routes",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.9 },
+        });
+        map.addLayer({
+          id: "route-line",
+          type: "line",
+          source: "routes",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": ["get", "color"], "line-width": 4.5 },
+        });
         map.on("click", "route-line", (event) => {
           const id = Number(event.features?.[0]?.properties?.id);
           if (id) onSelectRef.current?.(id);
@@ -264,6 +383,7 @@ export const RouteMap3D = forwardRef<
       cancelled = true;
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       markersRef.current.forEach((marker) => marker.remove());
+      detailMarkersRef.current.forEach((marker) => marker.remove());
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -284,7 +404,7 @@ export const RouteMap3D = forwardRef<
         .map((route) => {
           const element = document.createElement("button");
           element.type = "button";
-          element.className = "rounded-full border-2 border-white px-2 py-0.5 text-[11px] font-bold text-white shadow-lg";
+          element.className = "rounded-full border-2 border-white px-2.5 py-0.5 text-[11px] font-bold text-white shadow-lg transition hover:scale-105";
           element.style.background = route.color;
           element.textContent = route.name.length > 26 ? `${route.name.slice(0, 24)}…` : route.name;
           element.title = route.meeting?.label ?? route.name;
@@ -300,21 +420,70 @@ export const RouteMap3D = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, routes, fitTo]);
 
-  // Sorot rute terpilih.
+  // Sorot rute terpilih + tampilkan penanda Start & Puncak.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    map.setPaintProperty("route-line", "line-opacity", selectedId ? ["case", ["==", ["get", "id"], selectedId], 1, 0.35] : 1);
-    map.setPaintProperty("route-line", "line-width", selectedId ? ["case", ["==", ["get", "id"], selectedId], 6, 3.5] : 4.5);
-    if (selectedId) fitTo(selectedId);
-  }, [ready, selectedId, fitTo]);
+    map.setPaintProperty("route-line", "line-opacity", selectedId ? ["case", ["==", ["get", "id"], selectedId], 1, 0.32] : 1);
+    map.setPaintProperty("route-line", "line-width", selectedId ? ["case", ["==", ["get", "id"], selectedId], 6.5, 3.5] : 4.5);
+
+    detailMarkersRef.current.forEach((marker) => marker.remove());
+    detailMarkersRef.current = [];
+
+    if (selectedId) {
+      fitTo(selectedId);
+      const selectedRoute = routes.find((r) => r.id === selectedId);
+      if (selectedRoute && selectedRoute.waypoints.length >= 2) {
+        let active = true;
+        void import("maplibre-gl").then(({ default: maplibregl }) => {
+          if (!active) return;
+          const startWp = selectedRoute.waypoints[0];
+          const peakWp = selectedRoute.waypoints.reduce((best, cur) => (cur[2] > best[2] ? cur : best), selectedRoute.waypoints[0]);
+
+          const createBadge = (text: string, bg: string) => {
+            const el = document.createElement("div");
+            el.className = "rounded-lg border border-white px-2 py-0.5 text-[10px] font-bold text-white shadow-md";
+            el.style.background = bg;
+            el.textContent = text;
+            return el;
+          };
+
+          detailMarkersRef.current = [
+            new maplibregl.Marker({ element: createBadge(`Mulai · ${Math.round(startWp[2])} mdpl`, "#14532d"), anchor: "top" })
+              .setLngLat(toLngLat(startWp))
+              .addTo(map),
+            new maplibregl.Marker({ element: createBadge(`Puncak · ${Math.round(peakWp[2])} mdpl`, "#b45309"), anchor: "bottom" })
+              .setLngLat(toLngLat(peakWp))
+              .addTo(map),
+          ];
+        });
+        return () => {
+          active = false;
+        };
+      }
+    }
+  }, [ready, selectedId, routes, fitTo]);
 
   const switchBasemap = (value: Basemap) => {
     setBasemap(value);
     const map = mapRef.current;
     if (!map) return;
-    map.setLayoutProperty("satellite", "visibility", value === "satellite" ? "visible" : "none");
-    map.setLayoutProperty("osm", "visibility", value === "osm" ? "visible" : "none");
+    map.setLayoutProperty("satellite", "visibility", value === "hybrid" ? "visible" : "none");
+    map.setLayoutProperty("roadsOverlay", "visibility", value === "hybrid" && showLabels ? "visible" : "none");
+    map.setLayoutProperty("labelsOverlay", "visibility", value === "hybrid" && showLabels ? "visible" : "none");
+    map.setLayoutProperty("topo", "visibility", value === "topo" ? "visible" : "none");
+    map.setLayoutProperty("street", "visibility", value === "street" ? "visible" : "none");
+    map.setPaintProperty("hillshade", "hillshade-exaggeration", value === "hybrid" ? 0.38 : 0.25);
+  };
+
+  const toggleLabels = () => {
+    const next = !showLabels;
+    setShowLabels(next);
+    const map = mapRef.current;
+    if (!map) return;
+    const vis = basemap === "hybrid" && next ? "visible" : "none";
+    map.setLayoutProperty("roadsOverlay", "visibility", vis);
+    map.setLayoutProperty("labelsOverlay", "visibility", vis);
   };
 
   const toggleTerrain = () => {
@@ -322,8 +491,25 @@ export const RouteMap3D = forwardRef<
     if (!map) return;
     const next = !terrainOn;
     setTerrainOn(next);
-    map.setTerrain(next ? { source: "terrainDem", exaggeration: EXAGGERATION } : null);
+    map.setTerrain(next ? { source: "terrainDem", exaggeration: reliefScale } : null);
     map.easeTo({ pitch: next ? 62 : 0, duration: 800 });
+  };
+
+  const changeReliefScale = (scale: ReliefScale) => {
+    setReliefScale(scale);
+    const map = mapRef.current;
+    if (!map || !terrainOn) return;
+    map.setTerrain({ source: "terrainDem", exaggeration: scale });
+  };
+
+  const togglePause = () => {
+    pausedRef.current = !pausedRef.current;
+    setFlying((prev) => (prev ? { ...prev, paused: pausedRef.current } : prev));
+  };
+
+  const toggleSpeed = () => {
+    speedRef.current = speedRef.current === 1 ? 2 : 1;
+    setFlying((prev) => (prev ? { ...prev, speed: speedRef.current } : prev));
   };
 
   if (failed) {
@@ -335,42 +521,114 @@ export const RouteMap3D = forwardRef<
       {/* maplibre memberi .maplibregl-map position:relative, jadi ukuran harus eksplisit (bukan absolute inset-0). */}
       <div ref={containerRef} className="h-full w-full" />
 
-      <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-        <div className="flex overflow-hidden rounded-xl bg-white/95 text-xs font-semibold shadow">
-          {(["satellite", "osm"] as const).map((value) => (
-            <button key={value} type="button" onClick={() => switchBasemap(value)} className={cn("inline-flex items-center gap-1.5 px-3 py-2", basemap === value ? "bg-primary text-white" : "text-ink-soft")}>
-              <Layers className="size-3.5" /> {value === "satellite" ? "Satelit" : "Peta"}
+      <div className="absolute left-3 top-3 flex max-w-[calc(100%-4rem)] flex-wrap items-center gap-2">
+        <div className="flex overflow-hidden rounded-xl bg-white/95 text-xs font-semibold shadow backdrop-blur">
+          {(
+            [
+              { id: "hybrid", label: "Satelit" },
+              { id: "topo", label: "Topografi" },
+              { id: "street", label: "Peta" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => switchBasemap(id)}
+              className={cn("inline-flex items-center gap-1.5 px-3 py-2 transition", basemap === id ? "bg-primary text-white" : "text-ink-soft hover:bg-surface-muted")}
+            >
+              <Layers className="size-3.5" /> {label}
             </button>
           ))}
         </div>
-        <button type="button" onClick={toggleTerrain} aria-pressed={terrainOn} className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow", terrainOn ? "bg-primary text-white" : "bg-white/95 text-ink-soft")}>
+
+        {basemap === "hybrid" ? (
+          <button
+            type="button"
+            onClick={toggleLabels}
+            aria-pressed={showLabels}
+            className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", showLabels ? "bg-primary text-white" : "bg-white/95 text-ink-soft")}
+          >
+            <Tag className="size-3.5" /> Label
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={toggleTerrain}
+          aria-pressed={terrainOn}
+          className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", terrainOn ? "bg-primary text-white" : "bg-white/95 text-ink-soft")}
+        >
           <Mountain className="size-3.5" /> Relief 3D
+        </button>
+
+        {terrainOn ? (
+          <div className="flex overflow-hidden rounded-xl bg-white/95 text-[11px] font-semibold shadow backdrop-blur" aria-label="Skala relief">
+            {([1, 1.8, 2.5] as const).map((scale) => (
+              <button
+                key={scale}
+                type="button"
+                onClick={() => changeReliefScale(scale)}
+                className={cn("px-2.5 py-2 transition", reliefScale === scale ? "bg-primary text-white" : "text-ink-soft hover:bg-surface-muted")}
+              >
+                {scale}×
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => fitTo(selectedId, true)}
+          title="Reset tampilan kamera"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white/95 px-3 py-2 text-xs font-semibold text-ink-soft shadow backdrop-blur hover:bg-white"
+        >
+          <RotateCcw className="size-3.5" /> Reset
         </button>
       </div>
 
+      {cursorHud ? (
+        <div className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-2 rounded-xl bg-forest-black/80 px-3 py-1.5 font-mono text-[11px] text-white shadow backdrop-blur sm:flex">
+          <Compass className="size-3.5 text-primary-soft" />
+          <span>{cursorHud.lat}, {cursorHud.lon}</span>
+          {cursorHud.elevation !== null ? <span className="border-l border-white/25 pl-2 font-semibold">{cursorHud.elevation} mdpl</span> : null}
+        </div>
+      ) : null}
+
       {flying ? (
-        <div className="absolute inset-x-3 bottom-8 mx-auto max-w-md rounded-2xl bg-forest-black/80 p-3 text-white backdrop-blur">
-          <div className="flex items-center justify-between gap-3 text-xs">
+        <div className="absolute inset-x-3 bottom-10 mx-auto max-w-lg rounded-2xl bg-forest-black/85 p-3 text-white shadow-xl backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="truncate font-semibold">{flying.name}</span>
-            <span className="tabular-nums">{flying.elevation} m dpl</span>
-            <button type="button" onClick={stop} className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2 py-1 font-semibold hover:bg-white/25">
-              <Pause className="size-3.5" /> Stop
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="tabular-nums text-white/80">{flying.distanceKm} / {flying.totalKm} km</span>
+              <span className="rounded bg-white/15 px-1.5 py-0.5 tabular-nums font-semibold">{flying.elevation} mdpl</span>
+              <button type="button" onClick={toggleSpeed} className="rounded-lg bg-white/15 px-2 py-1 font-semibold hover:bg-white/25">
+                {flying.speed}×
+              </button>
+              <button type="button" onClick={togglePause} className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2 py-1 font-semibold hover:bg-white/25">
+                {flying.paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+                {flying.paused ? "Lanjut" : "Jeda"}
+              </button>
+              <button type="button" onClick={stop} className="inline-flex items-center gap-1 rounded-lg bg-danger/80 px-2 py-1 font-semibold hover:bg-danger">
+                <Square className="size-3" /> Stop
+              </button>
+            </div>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20"><div className="h-full bg-white" style={{ width: `${flying.progress * 100}%` }} /></div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20">
+            <div className="h-full bg-white transition-all duration-100" style={{ width: `${flying.progress * 100}%` }} />
+          </div>
         </div>
       ) : selectedId && routes.find((route) => route.id === selectedId)?.waypoints.length ? (
         <button
           type="button"
           onClick={() => void flyThrough(selectedId)}
-          className="absolute bottom-8 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary-dark shadow-lg hover:bg-white/90"
+          className="absolute bottom-10 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary-dark shadow-lg hover:bg-white/90"
         >
           <Play className="size-4" /> Jelajahi jalur (fly-through)
         </button>
       ) : null}
 
       {tilesWarning ? (
-        <p className="absolute right-3 top-28 max-w-60 rounded-xl bg-white/95 p-2.5 text-[11px] leading-4 text-ink-soft shadow">
+        <p className="absolute right-3 top-36 max-w-60 rounded-xl bg-white/95 p-2.5 text-[11px] leading-4 text-ink-soft shadow">
           Sebagian citra/elevasi gagal dimuat. Periksa koneksi internet; jalur & titik kumpul tetap ditampilkan.
         </p>
       ) : null}

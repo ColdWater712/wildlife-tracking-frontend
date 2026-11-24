@@ -17,6 +17,8 @@ import type {
   TYPE_REVIEW_PAYLOAD,
   TYPE_ROUTE_DETAIL,
   TYPE_SCHEDULE_PARAMS,
+  TYPE_SIMULATE_PAYMENT_PAYLOAD,
+  TYPE_SIMULATE_PAYMENT_RESPONSE,
   TYPE_TICKET,
   TYPE_TICKET_PRICE,
   TYPE_TOUR_GUIDE,
@@ -85,6 +87,16 @@ export const VISITOR_BOOKING_SERVICE = {
   /** Buat transaksi Midtrans Snap; kembalikan URL halaman pembayaran Midtrans. */
   PAY_ONLINE: async (code: string): Promise<ApiResponse<{ redirect_url: string; reference: string }>> =>
     api.post<ApiResponse<{ redirect_url: string; reference: string }>>(`/visitor/bookings/${enc(code)}/pay-online`, { timeoutMs: 30_000 }),
+
+  /** Simulasi pembayaran gateway gratis (QRIS / VA / E-Wallet) dengan verifikasi otomatis. */
+  SIMULATE_PAYMENT: async (
+    code: string,
+    payload: TYPE_SIMULATE_PAYMENT_PAYLOAD,
+  ): Promise<ApiResponse<TYPE_SIMULATE_PAYMENT_RESPONSE>> =>
+    api.post<ApiResponse<TYPE_SIMULATE_PAYMENT_RESPONSE>>(`/visitor/bookings/${enc(code)}/simulate-payment`, {
+      body: payload,
+      timeoutMs: 20_000,
+    }),
 
   GET_TICKET: async (code: string): Promise<ApiResponse<TYPE_TICKET>> =>
     api.get<ApiResponse<TYPE_TICKET>>(`/visitor/bookings/${enc(code)}/ticket`),
