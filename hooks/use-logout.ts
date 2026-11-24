@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-import { useToast } from "@/components/providers/toast-provider";
+import { useToast } from "@/components/toast";
 import { logoutRequest } from "@/services/auth.service";
 
 export const useLogout = () => {

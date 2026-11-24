@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { AiPendingVerificationView } from "@/components/shared/ai/ai-pending-verification-view";
 import { getSessionUser } from "@/lib/session";
+
+import AiPendingVerificationContent from "./index";
 
 export default async function AiPendingVerificationPage() {
   const user = await getSessionUser();
@@ -10,5 +11,5 @@ export default async function AiPendingVerificationPage() {
     redirect("/ai/vision");
   }
 
-  return <AiPendingVerificationView />;
+  return <AiPendingVerificationContent />;
 }

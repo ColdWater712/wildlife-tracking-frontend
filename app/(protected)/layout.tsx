@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import { redirect } from "next/navigation";
 
-import { AppShell } from "@/components/layout/app-shell";
+import { AppShell } from "@/components/navigation/main";
 import { getVerifiedSession } from "@/services/session.service";
 
 export default async function ProtectedLayout({

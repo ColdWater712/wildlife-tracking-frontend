@@ -1,6 +1,6 @@
 import { CircleAlert, RotateCcw } from "lucide-react";
 import type { ApiErrorKind } from "@/types/api.type";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 
 const TITLES: Record<ApiErrorKind, string> = {

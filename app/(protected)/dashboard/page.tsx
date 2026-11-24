@@ -1,8 +1,8 @@
-import { DashboardView } from "@/components/shared/dashboard/dashboard-view";
+import DashboardPage from "./index";
 import { getSessionUser } from "@/lib/session";
 
-export default async function DashboardPage() {
+export default async function DashboardRoute() {
   const user = await getSessionUser();
 
-  return <DashboardView role={user?.role ?? "konservasionis_lapangan"} />;
+  return <DashboardPage role={user?.role ?? "konservasionis_lapangan"} />;
 }

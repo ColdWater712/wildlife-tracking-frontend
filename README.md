@@ -177,15 +177,14 @@ Laravel /api/login dan /api/me
 ```text
 wildlife-tracking-frontend/
 ├── app/
-│   ├── (protected)/
-│   ├── login/
+│   ├── (protected)/<module>/_components/
+│   ├── login/_components/
 │   ├── error.tsx
 │   ├── not-found.tsx
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
 ├── components/
-│   ├── auth/
 │   ├── layout/
 │   ├── providers/
 │   ├── shared/
@@ -209,7 +208,8 @@ wildlife-tracking-frontend/
 | --- | --- |
 | `app/` | Routing, layout, metadata, error dan not-found. Semua `page.tsx` adalah Server Component dan mendelegasikan interaktivitas ke komponen lain. |
 | `components/ui/` | Primitive generik: button, form, panel, modal, confirmation dialog, data table, filter, loading, empty/error state, badge, stat card, breadcrumb. |
-| `components/shared/<domain>/` | View, list, detail, form, kolom tabel, dan filter per modul. |
+| `components/shared/` | Komponen aplikasi generik lintas modul, saat ini `form-page.tsx`. |
+| `app/(protected)/<module>/_components/` | View, list, detail, form, kolom tabel, dan filter yang hanya dipakai oleh modul rute tersebut. |
 | `components/layout/` | `AppShell`, `Header`, `Sidebar`, `MobileNav`, `NavIcon`. |
 | `components/providers/` | `QueryProvider` dan `ToastProvider`. |
 | `hooks/` | Custom hook TanStack Query, auth, debounce, dan utilitas klien. |
@@ -225,7 +225,7 @@ Alias `@/*` menunjuk ke root frontend. Tidak ada direktori `src/`, `features/`, 
 
 - `app/layout.tsx` dan seluruh `app/**/page.tsx` adalah Server Component.
 - `app/(protected)/layout.tsx` memverifikasi sesi di server dan membungkus halaman dengan `AppShell`.
-- Interaktivitas berada di komponen bertanda `"use client"`, terutama `components/shared/*`, `components/ui/*`, dan `components/providers/*`.
+- Interaktivitas berada di komponen bertanda `"use client"`, terutama `app/**/_components/*`, `components/ui/*`, dan `components/providers/*`.
 - Satu-satunya file `"use server"` adalah `services/backend-actions.ts`.
 - Tidak ada `app/api/`, route handler, `middleware.ts`, atau `proxy.ts`.
 - `next.config.ts` hanya menyediakan rewrite legacy `/master-data/{animals,species,devices,geo-zones}` ke rute tanpa prefiks.
@@ -275,7 +275,7 @@ Peta langsung memakai tile OpenStreetMap eksternal dan tidak memiliki polling ot
 | Zona geografis | `/geo-zones`, `/geo-zones/create`, `/geo-zones/[id]/update` | List, peta, detail via modal, tambah, ubah, hapus |
 | Insiden | `/incidents`, `/incidents/create`, `/incidents/[id]/update` | List, filter, tambah, ubah |
 
-Create dan Update untuk setiap modul memakai satu form yang sama melalui `components/shared/form-page.tsx`. Halaman update memanggil `notFound()` untuk ID tidak valid. Halaman detail saat ini meneruskan ID invalid menjadi `-1` dan menampilkan empty state, bukan 404.
+Create dan Update untuk setiap modul memakai satu form modul di `app/(protected)/<module>/_components/` yang dibungkus shell generik `components/shared/form-page.tsx`. Halaman update memanggil `notFound()` untuk ID tidak valid. Halaman detail saat ini meneruskan ID invalid menjadi `-1` dan menampilkan empty state, bukan 404.
 
 ### 5.4 AI
 
@@ -590,8 +590,8 @@ Warning ESLint berasal terutama dari `react-hooks/exhaustive-deps`, ref cleanup 
 3. Tambahkan tipe payload/respons di `types/`.
 4. Tambahkan method ke service modul yang sudah ada; jangan membuat HTTP client baru.
 5. Tambahkan hook TanStack Query jika ada pengambilan data atau mutasi.
-6. Bangun atau perbarui komponen di `components/shared/<domain>/`.
-7. Pasang komponen pada halaman tipis di `app/(protected)/`.
+6. Bangun atau perbarui komponen modul di `app/(protected)/<module>/_components/`.
+7. Pasang dan komposisikan komponen pada `page.tsx` di `app/(protected)/`.
 8. Perbarui `lib/navigation.ts` bila menu berubah.
 9. Perbarui README ini dalam PR yang sama bila status, endpoint, konfigurasi, atau keterbatasan berubah.
 10. Jalankan lint, pemeriksaan tipe, dan build.

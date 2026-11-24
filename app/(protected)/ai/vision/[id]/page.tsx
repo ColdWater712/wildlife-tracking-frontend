@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
-import { AiPredictionDetailView } from "@/components/shared/ai/ai-prediction-detail-view";
 import { getSessionUser } from "@/lib/session";
+
+import AiPredictionDetailContent from "./index";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -18,8 +19,7 @@ export default async function AiPredictionDetailPage({ params }: PageProps) {
   const user = await getSessionUser();
 
   return (
-    <AiPredictionDetailView
-      predictionId={predictionId}
+    <AiPredictionDetailContent
       canVerify={user?.role === "peneliti_ekologi"}
     />
   );

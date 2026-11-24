@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { useToast } from "@/components/providers/toast-provider";
+import { useToast } from "@/components/toast";
 import { getDefaultRouteForRole } from "@/lib/navigation";
 import { formatApiMessage } from "@/services/api";
 import { loginRequest } from "@/services/auth.service";

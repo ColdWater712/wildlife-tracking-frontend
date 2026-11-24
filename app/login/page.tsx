@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/components/auth/login-form";
 import { getDefaultRouteForRole } from "@/lib/navigation";
 import { getVerifiedSession } from "@/services/session.service";
+
+import LoginForm from "./index";
 
 type LoginPageProps = {
   searchParams: Promise<{ reason?: string | string[] }>;
