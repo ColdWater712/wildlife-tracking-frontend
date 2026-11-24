@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Backpack,
@@ -18,11 +19,16 @@ import {
 } from "lucide-react";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ui";
-import { ElevationProfile, GuideAvatar, RatingStars, RouteMap } from "@/components/tourism";
+import { ElevationProfile, GuideAvatar, RatingStars, RouteMap, routeColor } from "@/components/tourism";
 import { useTourRoute } from "@/hooks/use-tourism";
 import { toApiErrorState } from "@/services/api";
 import { DIFFICULTY_LABELS, SHIFT_LABELS, type TYPE_PUBLIC_SHIFT } from "@/types/tourism.type";
 import { formatDate, formatLongDate, formatRupiah } from "@/utils/format";
+
+const RouteMap3D = dynamic(() => import("@/components/tourism/route-map-3d").then((module) => module.RouteMap3D), {
+  ssr: false,
+  loading: () => <div className="h-96 animate-pulse rounded-2xl bg-surface-muted" />,
+});
 
 function ListCard({ title, icon, items }: { title: string; icon: React.ReactNode; items: string[] }) {
   return (
@@ -81,6 +87,25 @@ export default function TourDetailPage() {
   const routeQuery = useTourRoute(slug ?? "");
   const detail = routeQuery.data;
   const route = detail?.route;
+  const [view, setView] = useState<"2d" | "3d">("2d");
+  const routes3d = useMemo(
+    () =>
+      route
+        ? [
+            {
+              id: route.route_id,
+              name: route.name,
+              color: routeColor(0),
+              waypoints: route.waypoints ?? [],
+              meeting:
+                route.meeting_lat && route.meeting_lon
+                  ? { lat: Number(route.meeting_lat), lon: Number(route.meeting_lon), label: route.meeting_point }
+                  : null,
+            },
+          ]
+        : [],
+    [route],
+  );
 
   const meeting = useMemo(
     () =>
@@ -166,9 +191,26 @@ export default function TourDetailPage() {
           </section>
 
           <section className="ui-panel p-5">
-            <h2 className="mb-1 flex items-center gap-2 text-base font-bold text-ink"><MapPin className="size-4 text-primary" />Peta jalur & titik kumpul</h2>
-            <p className="mb-4 text-sm text-muted">{route.meeting_point}</p>
-            {route.waypoints && route.waypoints.length > 1 ? (
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-base font-bold text-ink"><MapPin className="size-4 text-primary" />Peta jalur & titik kumpul</h2>
+              <div className="flex overflow-hidden rounded-lg border border-line text-xs font-semibold" role="tablist" aria-label="Mode peta">
+                {(["2d", "3d"] as const).map((mode) => (
+                  <button key={mode} type="button" role="tab" aria-selected={view === mode} onClick={() => setView(mode)} className={view === mode ? "bg-primary px-3 py-1.5 text-white" : "px-3 py-1.5 text-ink-soft"}>
+                    {mode === "2d" ? "2D" : "3D"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="mb-4 text-sm text-muted">
+              {route.meeting_point} ·{" "}
+              <Link href="/tours/map-3d" className="font-semibold text-primary hover:underline">semua rute dalam 3D</Link>
+            </p>
+            {view === "3d" ? (
+              <div className="flex flex-col gap-4">
+                <RouteMap3D routes={routes3d} selectedId={route.route_id} className="h-[440px]" />
+                {route.waypoints && route.waypoints.length > 1 ? <ElevationProfile waypoints={route.waypoints} /> : null}
+              </div>
+            ) : route.waypoints && route.waypoints.length > 1 ? (
               <div className="flex flex-col gap-4">
                 <RouteMap waypoints={route.waypoints} meeting={meeting} />
                 <ElevationProfile waypoints={route.waypoints} />

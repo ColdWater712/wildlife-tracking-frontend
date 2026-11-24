@@ -97,9 +97,14 @@ export default function ToursPage() {
         title="Jelajah Tur & Rute"
         description="Pilih rute, cek jadwal pemandu per shift, lalu pesan tiket. Semua tur wajib didampingi pemandu berlisensi."
         actions={
-          <Link href="/guides" className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft hover:border-primary hover:text-primary">
-            <Users className="size-4" /> Jadwal Pemandu
-          </Link>
+          <>
+            <Link href="/tours/map-3d" className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-dark">
+              <Mountain className="size-4" /> Peta 3D
+            </Link>
+            <Link href="/guides" className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft hover:border-primary hover:text-primary">
+              <Users className="size-4" /> Jadwal Pemandu
+            </Link>
+          </>
         }
       />
 

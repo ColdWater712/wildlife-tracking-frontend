@@ -4,3 +4,4 @@ export * from "./rating";
 export * from "./status";
 export * from "./ticket-qr";
 export * from "./route-map";
+export * from "./route-colors";
