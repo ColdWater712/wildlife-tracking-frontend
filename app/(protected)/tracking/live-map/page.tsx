@@ -75,6 +75,7 @@ function RealMap({
   });
 }, []);
   useEffect(() => {
+    const markerStore = markersRef.current;
     let cancelled = false;
 
     async function initializeMap() {
@@ -111,8 +112,8 @@ function RealMap({
       zoneLayersRef.current?.remove();
       zoneLayersRef.current = null;
 
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current.clear();
+      markerStore.forEach((marker) => marker.remove());
+      markerStore.clear();
 
       mapRef.current?.remove();
       mapRef.current = null;
@@ -237,6 +238,7 @@ function RealMap({
   }, [zones, mapReady]);
 
   useEffect(() => {
+    const markerStore = markersRef.current;
     const currentMap = mapRef.current;
 
     if (currentMap === null || !mapReady) return;
@@ -343,8 +345,8 @@ function RealMap({
     return () => {
       cancelled = true;
 
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current.clear();
+      markerStore.forEach((marker) => marker.remove());
+      markerStore.clear();
     };
   }, [animals, mapReady, onSelect]);
 
@@ -418,8 +420,8 @@ export default function LiveMapPage() {
     refetch: refetchGeoZones,
   } = useGeoZones();
 
-  const devices = devicesData?.data ?? [];
-  const readings = readingsData?.data ?? [];
+  const devices = useMemo(() => devicesData?.data ?? [], [devicesData]);
+  const readings = useMemo(() => readingsData?.data ?? [], [readingsData]);
 
   const animalItems = useMemo<MapAnimal[]>(() => {
     return devices.flatMap((device) => {

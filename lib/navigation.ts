@@ -123,7 +123,7 @@ const TOURISM_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_ITEMS: NavItem[] = [
-  { label: "Profil Saya", href: "/profile", icon: "profile", permission: ["view_data", "book_tickets"] },
+  { label: "Profil Saya", href: "/profile", icon: "profile", permission: ["view_data", "book_tickets", "sell_tickets"] },
 ];
 
 const ALL_SECTIONS: NavSection[] = [
