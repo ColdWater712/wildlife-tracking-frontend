@@ -62,8 +62,9 @@ export const formatGeoJson = (
 
 /** Rupiah tanpa desimal, mis. 150000 → "Rp150.000". */
 export const formatRupiah = (value: number | string | null | undefined): string => {
-  const amount = Number(value ?? 0);
-  return `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number.isFinite(amount) ? amount : 0)}`;
+  const raw = Number(value ?? 0);
+  const amount = Number.isFinite(raw) ? raw : 0;
+  return `${amount < 0 ? "−" : ""}Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Math.abs(amount))}`;
 };
 
 /** Tanggal panjang Indonesia, mis. "Senin, 24 November 2026". */

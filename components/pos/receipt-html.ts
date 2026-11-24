@@ -15,8 +15,10 @@ const esc = (value: unknown): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const rp = (value: number | null | undefined) =>
-  `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(value ?? 0))}`;
+const rp = (value: number | null | undefined) => {
+  const amount = Number(value ?? 0);
+  return `${amount < 0 ? "−" : ""}Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Math.abs(amount))}`;
+};
 
 const TZ = "Asia/Jakarta";
 const dateTime = (value: string | null | undefined) =>
