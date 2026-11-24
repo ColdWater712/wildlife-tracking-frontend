@@ -135,6 +135,14 @@ export function NormalManualView({
                     </div>
                     <h4 className="mt-1.5 text-sm font-bold text-ink">{step.heading[locale]}</h4>
                     <p className="mt-1 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                    <ul className="mt-2.5 flex flex-col gap-1 text-xs leading-5 text-ink-soft">
+                      {step.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="flex items-start gap-2">
+                          <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                          <span>{detail[locale]}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
               </ol>

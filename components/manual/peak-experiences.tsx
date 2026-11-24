@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -13,22 +13,49 @@ import {
   Pause,
   Play,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 
 import type { AppLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import type { ManualChapter } from "./manual-data";
+import type { ManualChapter, ManualStep } from "./manual-data";
 
 const LivingWorldCanvas = dynamic(
   () => import("./living-world-canvas").then((mod) => mod.LivingWorldCanvas),
   {
     ssr: false,
     loading: () => (
-      <div className="h-[380px] w-full animate-pulse rounded-2xl border border-line bg-surface-muted" />
+      <div className="h-[420px] w-full animate-pulse rounded-2xl border border-line bg-surface-muted" />
     ),
   },
 );
+
+const SolarSystemCanvas = dynamic(
+  () => import("./solar-system-canvas").then((mod) => mod.SolarSystemCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[420px] w-full animate-pulse rounded-2xl border border-line bg-surface-muted" />
+    ),
+  },
+);
+
+function StepDetailsList({ step, locale, darkText = false }: { step: ManualStep; locale: AppLocale; darkText?: boolean }) {
+  return (
+    <ul className={cn("mt-2.5 flex flex-col gap-1.5 text-xs leading-5", darkText ? "text-white/85" : "text-ink-soft")}>
+      {step.details.map((detail, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span
+            className={cn(
+              "mt-1.5 size-1.5 shrink-0 rounded-full",
+              darkText ? "bg-emerald-300" : "bg-primary",
+            )}
+          />
+          <span>{detail[locale]}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function ChapterFooter({ chapter, locale }: { chapter: ManualChapter; locale: AppLocale }) {
   return (
@@ -68,7 +95,7 @@ function ChapterFooter({ chapter, locale }: { chapter: ManualChapter; locale: Ap
   );
 }
 
-/** Bab 01: Tipografi 3D berlapis yang mengikuti arah kursor + kartu langkah yang mudah dibaca. */
+/** Bab 01: SELURUH HALAMAN berada dalam panggung 3D berlapis yang bereaksi terhadap pointer. */
 function Typography3DStage({
   chapter,
   locale,
@@ -78,7 +105,7 @@ function Typography3DStage({
   locale: AppLocale;
   reducedMotion: boolean;
 }) {
-  const [tilt, setTilt] = useState({ rx: -4, ry: 6 });
+  const [tilt, setTilt] = useState({ rx: -2, ry: 3 });
   const stageRef = useRef<HTMLDivElement>(null);
 
   const handleMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -86,86 +113,110 @@ function Typography3DStage({
     const rect = stageRef.current.getBoundingClientRect();
     const nx = (e.clientX - rect.left) / rect.width - 0.5;
     const ny = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ rx: -ny * 18, ry: nx * 24 });
+    setTilt({ rx: -ny * 10, ry: nx * 14 });
   };
 
   return (
-    <div>
+    <div
+      ref={stageRef}
+      onPointerMove={handleMove}
+      onPointerLeave={() => setTilt({ rx: -2, ry: 3 })}
+      className="relative rounded-3xl border border-line bg-gradient-to-br from-surface-muted/70 via-background to-primary-soft/40 p-4 sm:p-7"
+      style={{ perspective: "1500px" }}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-semibold text-muted">
+          {locale === "en"
+            ? "Move your cursor across the page to tilt the entire 3D chapter stage"
+            : "Gerakkan kursor di seluruh halaman untuk memiringkan panggung bab 3D"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setTilt({ rx: 0, ry: 0 })}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-muted"
+        >
+          <RotateCcw className="size-3" /> Reset 3D
+        </button>
+      </div>
+
       <div
-        ref={stageRef}
-        onPointerMove={handleMove}
-        onPointerLeave={() => setTilt({ rx: -4, ry: 6 })}
-        className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#0f1f17] via-[#1b3629] to-[#294d3b] p-8 text-white shadow-xl sm:p-10"
-        style={{ perspective: "1100px" }}
+        className="transition-transform duration-200 ease-out"
+        style={{
+          transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+          transformStyle: "preserve-3d",
+        }}
       >
+        {/* Layer Hero (+38px Z) */}
         <div
-          className="transition-transform duration-200 ease-out"
-          style={{
-            transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
-            transformStyle: "preserve-3d",
-          }}
+          className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-[#0f1f17] via-[#1b3629] to-[#294d3b] p-7 text-white shadow-2xl sm:p-9"
+          style={{ transform: "translateZ(38px)", transformStyle: "preserve-3d" }}
         >
           <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#b4d6bc]">
             BAB {chapter.number} · {chapter.peakBadge[locale]}
           </p>
           <h3
-            className="mt-3 text-3xl font-black tracking-tight sm:text-5xl"
+            className="mt-2.5 text-2xl font-black tracking-tight sm:text-4xl"
             style={{
-              transform: "translateZ(36px)",
+              transform: "translateZ(26px)",
               textShadow:
                 "0 1px 0 #1f4432, 0 2px 0 #1a3a2b, 0 3px 0 #153023, 0 4px 0 #11261c, 0 10px 24px rgba(0,0,0,0.45)",
             }}
           >
             {chapter.title[locale]}
           </h3>
-          <p
-            className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base"
-            style={{ transform: "translateZ(18px)" }}
-          >
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             {chapter.summary[locale]}
           </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {chapter.roles.map((r, i) => (
+              <span
+                key={i}
+                className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur"
+              >
+                {r[locale]}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {chapter.roles.map((r, i) => (
-            <span
-              key={i}
-              className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur"
+        {/* Layer Kartu Langkah (+22px Z) */}
+        <div
+          className="mt-6 grid gap-4 md:grid-cols-2"
+          style={{ transform: "translateZ(22px)", transformStyle: "preserve-3d" }}
+        >
+          {chapter.steps.map((step, index) => (
+            <article
+              key={step.id}
+              className="ui-panel flex flex-col justify-between p-5 shadow-lg transition-transform duration-200 hover:border-primary"
+              style={{ transform: `translateZ(${index % 2 === 0 ? 10 : 4}px)` }}
             >
-              {r[locale]}
-            </span>
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-bold text-primary">0{index + 1}</span>
+                  {step.badge ? (
+                    <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary-dark">
+                      {step.badge[locale]}
+                    </span>
+                  ) : null}
+                </div>
+                <h4 className="mt-1.5 text-base font-bold text-ink">{step.heading[locale]}</h4>
+                <p className="mt-1 text-sm leading-6 text-ink-soft">{step.body[locale]}</p>
+                <StepDetailsList step={step} locale={locale} />
+              </div>
+            </article>
           ))}
         </div>
-      </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {chapter.steps.map((step, index) => (
-          <article
-            key={step.id}
-            className="ui-panel flex flex-col gap-2 p-5 transition hover:-translate-y-0.5 hover:border-primary"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs font-bold text-primary">
-                0{index + 1}
-              </span>
-              {step.badge ? (
-                <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold text-primary-dark">
-                  {step.badge[locale]}
-                </span>
-              ) : null}
-            </div>
-            <h4 className="text-base font-bold text-ink">{step.heading[locale]}</h4>
-            <p className="text-sm leading-6 text-ink-soft">{step.body[locale]}</p>
-          </article>
-        ))}
+        {/* Layer Footer (+12px Z) */}
+        <div style={{ transform: "translateZ(12px)" }}>
+          <ChapterFooter chapter={chapter} locale={locale} />
+        </div>
       </div>
-
-      <ChapterFooter chapter={chapter} locale={locale} />
     </div>
   );
 }
 
-/** Bab 02: Satu halaman bab 3D dua sisi yang dapat diputar bebas 360° dengan drag, slider, atau Flip 180°. */
+/** Bab 02: Halaman bab 3D dua sisi yang dapat diputar bebas 360°. */
 function RotatablePageStage({
   chapter,
   locale,
@@ -209,7 +260,7 @@ function RotatablePageStage({
             type="range"
             min={-180}
             max={180}
-            value={Math.round(((rotY % 360) + 540) % 360 - 180)}
+            value={Math.round((((rotY % 360) + 540) % 360) - 180)}
             aria-label={locale === "en" ? "Rotate 3D page" : "Putar halaman 3D"}
             onChange={(e) => setRotY(Number(e.target.value))}
             className="w-28 accent-primary"
@@ -239,17 +290,16 @@ function RotatablePageStage({
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerLeave={onUp}
-        className="mx-auto w-full max-w-3xl cursor-grab select-none py-4 active:cursor-grabbing"
+        className="mx-auto w-full max-w-4xl cursor-grab select-none py-4 active:cursor-grabbing"
         style={{ perspective: "1400px" }}
       >
         <div
-          className="relative min-h-[390px] w-full transition-transform duration-150 ease-out"
+          className="relative min-h-[450px] w-full transition-transform duration-150 ease-out"
           style={{
             transformStyle: "preserve-3d",
             transform: `rotateX(${rotX}deg) rotateY(${rotY}deg)`,
           }}
         >
-          {/* Sisi Depan */}
           <div
             className="ui-panel absolute inset-0 flex flex-col justify-between p-6 sm:p-8"
             style={{ backfaceVisibility: "hidden" }}
@@ -271,7 +321,8 @@ function RotatablePageStage({
                       0{i + 1} · {step.badge?.[locale]}
                     </p>
                     <h4 className="mt-1 text-sm font-bold text-ink">{step.heading[locale]}</h4>
-                    <p className="mt-1.5 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                    <p className="mt-1 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                    <StepDetailsList step={step} locale={locale} />
                   </div>
                 ))}
               </div>
@@ -283,7 +334,6 @@ function RotatablePageStage({
             </p>
           </div>
 
-          {/* Sisi Belakang (diputar 180 derajat) */}
           <div
             className="ui-panel absolute inset-0 flex flex-col justify-between border-primary/40 bg-surface p-6 sm:p-8"
             style={{
@@ -307,7 +357,8 @@ function RotatablePageStage({
                       0{i + 3} · {step.badge?.[locale]}
                     </p>
                     <h4 className="mt-1 text-sm font-bold text-ink">{step.heading[locale]}</h4>
-                    <p className="mt-1.5 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                    <p className="mt-1 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                    <StepDetailsList step={step} locale={locale} />
                   </div>
                 ))}
               </div>
@@ -324,64 +375,8 @@ function RotatablePageStage({
   );
 }
 
-/** Bab 03: Konsol Pipeline AI 3D interaktif. */
-function NeuralConsoleStage({ chapter, locale }: { chapter: ManualChapter; locale: AppLocale }) {
-  const [active, setActive] = useState(0);
-  const current = chapter.steps[active] ?? chapter.steps[0];
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div
-        className="rounded-2xl border border-line bg-gradient-to-br from-[#0e1920] via-[#13252c] to-[#19332c] p-6 text-white shadow-xl"
-        style={{ perspective: "1000px" }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-3">
-          <span className="inline-flex items-center gap-2 font-mono text-xs font-bold tracking-wider text-emerald-300">
-            <Cpu className="size-4" /> AI PIPELINE MATRIX · CPU + GROQ FALLBACK
-          </span>
-          <span className="text-xs text-white/70">
-            {locale === "en" ? "Click any node to inspect" : "Klik simpul mana saja untuk detail"}
-          </span>
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-4">
-          {chapter.steps.map((step, idx) => (
-            <button
-              key={step.id}
-              type="button"
-              onClick={() => setActive(idx)}
-              className={cn(
-                "rounded-xl border p-3.5 text-left transition-all duration-200",
-                idx === active
-                  ? "scale-[1.03] border-emerald-400 bg-emerald-500/20 shadow-lg ring-2 ring-emerald-400/40"
-                  : "border-white/15 bg-white/5 hover:border-white/40 hover:bg-white/10",
-              )}
-            >
-              <span className="font-mono text-[11px] font-bold text-emerald-300">
-                NODE 0{idx + 1}
-              </span>
-              <p className="mt-1 text-sm font-bold text-white">{step.badge?.[locale]}</p>
-              <p className="mt-1 line-clamp-2 text-xs text-white/75">{step.heading[locale]}</p>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-5 rounded-xl border border-white/15 bg-black/25 p-5">
-          <p className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-300">
-            0{active + 1} · {current.badge?.[locale]}
-          </p>
-          <h4 className="mt-1 text-lg font-bold text-white">{current.heading[locale]}</h4>
-          <p className="mt-2 text-sm leading-6 text-white/85">{current.body[locale]}</p>
-        </div>
-      </div>
-
-      <ChapterFooter chapter={chapter} locale={locale} />
-    </div>
-  );
-}
-
-/** Bab 04: Dunia 3D interaktif Gunung Leuser (Three.js) + detail langkah. */
-function LivingWorldStage({
+/** Bab 03: Karusel Silinder 3D AI yang terus berputar (bisa di-drag, klik kartu, atau jeda). */
+function NeuralConsoleStage({
   chapter,
   locale,
   reducedMotion,
@@ -391,46 +386,243 @@ function LivingWorldStage({
   reducedMotion: boolean;
 }) {
   const [active, setActive] = useState(0);
+  const [spinning, setSpinning] = useState(true);
+  const [angleOffset, setAngleOffset] = useState(0);
+  const dragRef = useRef<{ active: boolean; x: number }>({ active: false, x: 0 });
+  const count = chapter.steps.length;
+  const stepAngle = 360 / count;
+
+  useEffect(() => {
+    if (!spinning || reducedMotion) return;
+    const id = window.setInterval(() => {
+      setAngleOffset((prev) => prev - 0.35);
+    }, 30);
+    return () => window.clearInterval(id);
+  }, [spinning, reducedMotion]);
+
+  const snapTo = (idx: number) => {
+    setSpinning(false);
+    setActive(idx);
+    setAngleOffset(-idx * stepAngle);
+  };
+
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragRef.current = { active: true, x: e.clientX };
+    setSpinning(false);
+  };
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    const dx = e.clientX - dragRef.current.x;
+    dragRef.current.x = e.clientX;
+    setAngleOffset((prev) => prev + dx * 0.45);
+  };
+  const onUp = () => {
+    dragRef.current.active = false;
+  };
+
   const current = chapter.steps[active] ?? chapter.steps[0];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#0b161c] via-[#10242b] to-[#17332b] p-5 text-white shadow-xl sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
+          <span className="inline-flex items-center gap-2 font-mono text-xs font-bold tracking-wider text-emerald-300">
+            <Cpu className="size-4" /> AI 3D CYLINDRICAL CAROUSEL · YAMNET + SPECIESNET + SFACE
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSpinning((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold hover:bg-white/20"
+            >
+              {spinning ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
+              {spinning
+                ? locale === "en"
+                  ? "Pause Spin"
+                  : "Jeda Putar"
+                : locale === "en"
+                  ? "Auto Spin"
+                  : "Putar Otomatis"}
+            </button>
+            <button
+              type="button"
+              onClick={() => snapTo((active - 1 + count) % count)}
+              className="inline-flex size-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 hover:bg-white/20"
+              aria-label="Previous AI stage"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => snapTo((active + 1) % count)}
+              className="inline-flex size-8 items-center justify-center rounded-xl border border-white/20 bg-white/10 hover:bg-white/20"
+              aria-label="Next AI stage"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Panggung Silinder 3D */}
+        <div
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerLeave={onUp}
+          className="relative mx-auto my-6 flex h-64 w-full max-w-2xl cursor-grab items-center justify-center select-none active:cursor-grabbing"
+          style={{ perspective: "1100px" }}
+        >
+          <div
+            className="relative h-48 w-64 transition-transform duration-150 ease-out sm:w-72"
+            style={{
+              transformStyle: "preserve-3d",
+              transform: `rotateY(${angleOffset}deg)`,
+            }}
+          >
+            {chapter.steps.map((step, idx) => {
+              const cardAngle = idx * stepAngle;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => snapTo(idx)}
+                  style={{
+                    transform: `rotateY(${cardAngle}deg) translateZ(215px)`,
+                  }}
+                  className={cn(
+                    "absolute inset-0 flex flex-col justify-between rounded-2xl border p-4 text-left backdrop-blur-md transition-colors",
+                    idx === active
+                      ? "border-emerald-300 bg-emerald-900/85 ring-2 ring-emerald-400/50"
+                      : "border-white/25 bg-[#0e2026]/85 hover:border-emerald-300/70",
+                  )}
+                >
+                  <div>
+                    <span className="font-mono text-[11px] font-bold text-emerald-300">
+                      STAGE 0{idx + 1} · {step.badge?.[locale]}
+                    </span>
+                    <h4 className="mt-1.5 text-sm font-bold text-white">{step.heading[locale]}</h4>
+                  </div>
+                  <p className="line-clamp-3 text-xs text-white/80">{step.body[locale]}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Panel detail lengkap untuk stage terpilih */}
+        <div className="rounded-2xl border border-white/15 bg-black/30 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-300">
+              0{active + 1} · {current.badge?.[locale]}
+            </span>
+            <div className="flex gap-1.5">
+              {chapter.steps.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => snapTo(idx)}
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition",
+                    idx === active ? "bg-emerald-400 text-forest-black" : "bg-white/10 text-white/80 hover:bg-white/20",
+                  )}
+                >
+                  0{idx + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+          <h4 className="mt-2 text-lg font-bold text-white">{current.heading[locale]}</h4>
+          <p className="mt-1 text-sm text-white/85">{current.body[locale]}</p>
+          <StepDetailsList step={current} locale={locale} darkText />
+        </div>
+      </div>
+
+      <ChapterFooter chapter={chapter} locale={locale} />
+    </div>
+  );
+}
+
+/** Bab 04: Gunung Leuser 3D berputar dengan 4 POI yang bisa di-zoom in ke sisi gunung. */
+function LivingWorldStage({
+  chapter,
+  locale,
+  reducedMotion,
+}: {
+  chapter: ManualChapter;
+  locale: AppLocale;
+  reducedMotion: boolean;
+}) {
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const current = focusedIndex !== null ? chapter.steps[focusedIndex] : null;
 
   return (
     <div className="flex flex-col gap-5">
       <LivingWorldCanvas
         locale={locale}
         steps={chapter.steps}
-        activeStepIndex={active}
-        onSelectStep={setActive}
+        focusedIndex={focusedIndex}
+        onSelectStep={setFocusedIndex}
         reducedMotion={reducedMotion}
       />
 
-      <div className="ui-panel p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
-            {locale === "en" ? `Waypoint 0${active + 1}` : `Titik 0${active + 1}`} ·{" "}
-            {current.badge?.[locale]}
-          </span>
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => setActive((i) => (i - 1 + chapter.steps.length) % chapter.steps.length)}
-              className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-              aria-label="Previous waypoint"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActive((i) => (i + 1) % chapter.steps.length)}
-              className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-              aria-label="Next waypoint"
-            >
-              <ChevronRight className="size-4" />
-            </button>
+      {current ? (
+        <div className="ui-panel p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
+              POI 0{(focusedIndex ?? 0) + 1} · {current.badge?.[locale]}
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFocusedIndex(null)}
+                className="rounded-lg border border-line px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-muted"
+              >
+                {locale === "en" ? "Overview (Spin)" : "Overview (Putar)"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFocusedIndex((i) => (((i ?? 0) - 1 + chapter.steps.length) % chapter.steps.length))
+                }
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
+                aria-label="Previous POI"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFocusedIndex((i) => (((i ?? 0) + 1) % chapter.steps.length))}
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
+                aria-label="Next POI"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
+          <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
+          <p className="mt-1.5 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
+          <StepDetailsList step={current} locale={locale} />
         </div>
-        <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
-        <p className="mt-1.5 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
-      </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {chapter.steps.map((step, idx) => (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => setFocusedIndex(idx)}
+              className="ui-panel p-4 text-left transition hover:-translate-y-0.5 hover:border-primary"
+            >
+              <span className="font-mono text-xs font-bold text-primary">
+                POI 0{idx + 1} · {step.badge?.[locale]}
+              </span>
+              <h4 className="mt-1.5 text-sm font-bold text-ink">{step.heading[locale]}</h4>
+              <p className="mt-1 text-xs text-muted">
+                {locale === "en" ? "Click to zoom to mountain side →" : "Klik untuk zoom ke sisi gunung →"}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
 
       <ChapterFooter chapter={chapter} locale={locale} />
     </div>
@@ -443,7 +635,7 @@ function TactileDeckStage({ chapter, locale }: { chapter: ManualChapter; locale:
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-3 md:grid-cols-4" style={{ perspective: "1000px" }}>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" style={{ perspective: "1000px" }}>
         {chapter.steps.map((step, idx) => {
           const isSelected = idx === active;
           const offset = idx - active;
@@ -454,7 +646,7 @@ function TactileDeckStage({ chapter, locale }: { chapter: ManualChapter; locale:
               onClick={() => setActive(idx)}
               className={cn(
                 "ui-panel flex flex-col justify-between p-5 text-left transition-all duration-300",
-                isSelected ? "border-primary ring-2 ring-primary/30" : "opacity-80 hover:opacity-100",
+                isSelected ? "border-primary ring-2 ring-primary/30" : "opacity-85 hover:opacity-100",
               )}
               style={{
                 transform: isSelected
@@ -467,8 +659,9 @@ function TactileDeckStage({ chapter, locale }: { chapter: ManualChapter; locale:
                   0{idx + 1} · {step.badge?.[locale]}
                 </span>
                 <h4 className="mt-2 text-sm font-bold text-ink">{step.heading[locale]}</h4>
+                <p className="mt-2 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
+                <StepDetailsList step={step} locale={locale} />
               </div>
-              <p className="mt-3 text-xs leading-5 text-ink-soft">{step.body[locale]}</p>
             </button>
           );
         })}
@@ -479,79 +672,87 @@ function TactileDeckStage({ chapter, locale }: { chapter: ManualChapter; locale:
   );
 }
 
-/** Bab 06: Atlas Orbital 3D (Ensiklopedia Satwa 3D & Bantuan Cepat). */
-function OrbitalAtlasStage({ chapter, locale }: { chapter: ManualChapter; locale: AppLocale }) {
-  const [active, setActive] = useState(0);
-  const [orbitPaused, setOrbitPaused] = useState(false);
-  const current = chapter.steps[active] ?? chapter.steps[0];
+/** Bab 06: Tata Surya 3D Satwa & Bantuan Cepat (planet berputar; klik planet untuk zoom in). */
+function OrbitalAtlasStage({
+  chapter,
+  locale,
+  reducedMotion,
+}: {
+  chapter: ManualChapter;
+  locale: AppLocale;
+  reducedMotion: boolean;
+}) {
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const current = focusedIndex !== null ? chapter.steps[focusedIndex] : null;
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="ui-panel overflow-hidden p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-            <Sparkles className="size-4" />
-            {chapter.peakBadge[locale]}
-          </div>
-          <button
-            type="button"
-            onClick={() => setOrbitPaused((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-muted"
-          >
-            {orbitPaused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
-            {orbitPaused
-              ? locale === "en"
-                ? "Resume Orbit"
-                : "Lanjut Orbit"
-              : locale === "en"
-                ? "Pause Orbit"
-                : "Jeda Orbit"}
-          </button>
-        </div>
+      <SolarSystemCanvas
+        locale={locale}
+        steps={chapter.steps}
+        focusedIndex={focusedIndex}
+        onSelectStep={setFocusedIndex}
+        reducedMotion={reducedMotion}
+      />
 
-        <div className="mt-5 grid items-center gap-6 lg:grid-cols-[280px_1fr]">
-          <div
-            className="relative mx-auto flex size-60 items-center justify-center rounded-full border border-dashed border-primary/40 bg-primary-soft/30"
-            style={{ transform: "rotateX(22deg)" }}
-          >
-            <div className="flex size-24 flex-col items-center justify-center rounded-full bg-primary text-center text-white shadow-lg">
-              <span className="font-mono text-xs font-bold">TNGL</span>
-              <span className="text-[10px] opacity-85">3D ATLAS</span>
-            </div>
-
-            {chapter.steps.map((step, idx) => {
-              const angle = ((idx / chapter.steps.length) * 360 + (orbitPaused ? 0 : active * 25)) * (Math.PI / 180);
-              const x = Math.cos(angle) * 96;
-              const y = Math.sin(angle) * 96;
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => setActive(idx)}
-                  style={{ transform: `translate(${x}px, ${y}px)` }}
-                  className={cn(
-                    "absolute flex size-11 items-center justify-center rounded-full border-2 text-xs font-bold shadow transition-all",
-                    idx === active
-                      ? "scale-110 border-white bg-primary text-white ring-4 ring-primary/30"
-                      : "border-line bg-surface text-ink hover:border-primary",
-                  )}
-                  title={step.heading[locale]}
-                >
-                  0{idx + 1}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="rounded-2xl border border-line bg-surface-muted/50 p-5">
+      {current ? (
+        <div className="ui-panel p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
-              0{active + 1} · {current.badge?.[locale]}
+              Planet 0{(focusedIndex ?? 0) + 1} · {current.badge?.[locale]}
             </span>
-            <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
-            <p className="mt-2 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFocusedIndex(null)}
+                className="rounded-lg border border-line px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-muted"
+              >
+                {locale === "en" ? "Back to Solar System" : "Kembali ke Tata Surya"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFocusedIndex((i) => (((i ?? 0) - 1 + chapter.steps.length) % chapter.steps.length))
+                }
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
+                aria-label="Previous planet"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFocusedIndex((i) => (((i ?? 0) + 1) % chapter.steps.length))}
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
+                aria-label="Next planet"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
+          <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
+          <p className="mt-1.5 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
+          <StepDetailsList step={current} locale={locale} />
         </div>
-      </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {chapter.steps.map((step, idx) => (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => setFocusedIndex(idx)}
+              className="ui-panel p-4 text-left transition hover:-translate-y-0.5 hover:border-primary"
+            >
+              <span className="font-mono text-xs font-bold text-primary">
+                Planet 0{idx + 1} · {step.badge?.[locale]}
+              </span>
+              <h4 className="mt-1.5 text-sm font-bold text-ink">{step.heading[locale]}</h4>
+              <p className="mt-1 text-xs text-muted">
+                {locale === "en" ? "Click to zoom into planet →" : "Klik untuk zoom ke planet →"}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
 
       <ChapterFooter chapter={chapter} locale={locale} />
     </div>
@@ -573,12 +774,12 @@ export function PeakExperienceStage({
     case "rotatablePage":
       return <RotatablePageStage chapter={chapter} locale={locale} />;
     case "neuralConsole":
-      return <NeuralConsoleStage chapter={chapter} locale={locale} />;
+      return <NeuralConsoleStage chapter={chapter} locale={locale} reducedMotion={reducedMotion} />;
     case "livingWorld":
       return <LivingWorldStage chapter={chapter} locale={locale} reducedMotion={reducedMotion} />;
     case "tactileDeck":
       return <TactileDeckStage chapter={chapter} locale={locale} />;
     case "orbitalAtlas":
-      return <OrbitalAtlasStage chapter={chapter} locale={locale} />;
+      return <OrbitalAtlasStage chapter={chapter} locale={locale} reducedMotion={reducedMotion} />;
   }
 }
