@@ -54,6 +54,7 @@ const BINARY_CONTENT_TYPES = [
   "application/geo+json",
   "application/pdf",
   "application/octet-stream",
+  "model/",
 ];
 
 /**
