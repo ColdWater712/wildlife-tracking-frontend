@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Leaf } from "lucide-react";
@@ -220,6 +221,13 @@ export default function LoginForm({ notice }: { notice?: string }) {
                 {isSubmitting ? "Memproses..." : "Masuk"}
               </Button>
             </form>
+
+            <div className="mt-6 rounded-2xl border border-line bg-surface-muted px-4 py-3 text-center text-sm text-ink-soft">
+              Ingin berkunjung ke TN Gunung Leuser?{" "}
+              <Link href="/register" className="font-semibold text-primary hover:text-primary-dark">
+                Daftar akun pengunjung
+              </Link>
+            </div>
 
             <p className="mt-8 text-center text-xs leading-5 text-muted">
               Sistem Pelacakan Pergerakan Satwa Liar

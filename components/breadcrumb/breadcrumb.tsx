@@ -50,11 +50,14 @@ export function Breadcrumb({ items }: BreadcrumbProps) {
   );
 }
 
-export const buildPathBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
+export const buildPathBreadcrumbs = (
+  pathname: string,
+  home: BreadcrumbItem = { label: "Dashboard", href: "/dashboard" },
+): BreadcrumbItem[] => {
   const segments = pathname.split("/").filter(Boolean);
 
   return [
-    { label: "Dashboard", href: "/dashboard" },
+    home,
     ...segments.slice(1).map((segment, index) => ({
       label: formatSegment(segment),
       href: `/${segments.slice(0, index + 2).join("/")}`,

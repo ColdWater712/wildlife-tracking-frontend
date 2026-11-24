@@ -15,14 +15,17 @@ import {
   getAuthToken,
   setAuthCookies,
 } from "@/services/cookie-token";
-import { authenticateWithLaravel } from "@/services/laravel-auth.service";
+import {
+  authenticateWithLaravel,
+  registerWithLaravel,
+} from "@/services/laravel-auth.service";
 import type {
   BackendActionPayload,
   BackendActionResult,
   LoginActionResult,
   LogoutActionResult,
 } from "@/types/backend-action.type";
-import type { TYPE_LOGIN_REQUEST } from "@/types/auth.type";
+import type { TYPE_LOGIN_REQUEST, TYPE_REGISTER_REQUEST } from "@/types/auth.type";
 
 const normalizePath = (path: string): string =>
   path.replace(/^\/api\/backend(?=\/|$)/, "") || "/";
@@ -94,6 +97,45 @@ export const loginAction = async (
       status: 503,
       message:
         "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan.",
+      errors: null,
+    };
+  }
+};
+
+/** Daftar akun pengunjung lalu langsung masuk (cookie sesi diset seperti login). */
+export const registerAction = async (
+  payload: TYPE_REGISTER_REQUEST,
+): Promise<LoginActionResult> => {
+  const read = (value: unknown) => (typeof value === "string" ? value : "");
+  const clean: TYPE_REGISTER_REQUEST = {
+    full_name: read(payload?.full_name).trim(),
+    username: read(payload?.username).trim(),
+    email: read(payload?.email).trim(),
+    phone: read(payload?.phone).trim(),
+    password: read(payload?.password),
+    password_confirmation: read(payload?.password_confirmation),
+  };
+
+  try {
+    const result = await registerWithLaravel(clean);
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        status: result.status,
+        message: result.message,
+        errors: result.errors,
+      };
+    }
+
+    await setAuthCookies(result.user, result.token);
+
+    return { ok: true, message: "Pendaftaran berhasil. Selamat datang!", user: result.user };
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      message: "Tidak dapat menghubungi API backend. Pastikan server Laravel berjalan.",
       errors: null,
     };
   }

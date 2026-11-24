@@ -9,7 +9,7 @@ import {
   Breadcrumb,
   buildPathBreadcrumbs,
 } from "@/components/breadcrumb";
-import { findNavTitle } from "@/lib/navigation";
+import { findNavTitle, getDefaultRouteForRole } from "@/lib/navigation";
 import type { SessionUser } from "@/lib/session";
 import { TYPE_ROLE_LABELS } from "@/types/auth.type";
 
@@ -28,7 +28,10 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
   const unreadCount = data?.data?.length ?? 0;
   const isMenuOpen = openMenuPathname === pathname;
   const title = findNavTitle(user.role, pathname);
-  const breadcrumbItems = buildPathBreadcrumbs(pathname).map(
+  // Pengunjung tidak punya akses dashboard; awal breadcrumb memakai halaman utama role-nya.
+  const homeHref = getDefaultRouteForRole(user.role);
+  const home = homeHref === "/dashboard" ? undefined : { label: findNavTitle(user.role, homeHref), href: homeHref };
+  const breadcrumbItems = buildPathBreadcrumbs(pathname, home).map(
     (item, index, items) =>
       index === items.length - 1 ? { ...item, label: title } : item,
   );

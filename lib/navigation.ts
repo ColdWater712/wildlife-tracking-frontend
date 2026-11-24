@@ -28,14 +28,22 @@ export type NavIcon =
   | "log"
   | "profile"
   | "check"
-  | "history";
+  | "history"
+  | "route"
+  | "ticket"
+  | "guide"
+  | "wallet"
+  | "star"
+  | "scan"
+  | "price"
+  | "calendar";
 
 export type NavItem = {
   label: string;
   href: string;
   icon: NavIcon;
-  /** Izin backend (tabel role_permissions) yang dibutuhkan untuk membuka menu ini. */
-  permission: AppPermission;
+  /** Izin backend (tabel role_permissions) yang dibutuhkan; jika array, cukup salah satu. */
+  permission: AppPermission | AppPermission[];
 };
 
 export type NavSection = {
@@ -86,8 +94,26 @@ const SYSTEM_ITEMS: NavItem[] = [
   { label: "Log Aktivitas", href: "/activity-logs", icon: "log", permission: "manage_users" },
 ];
 
+/** Menu pengunjung (role pengunjung hanya punya izin book_tickets). */
+const VISITOR_ITEMS: NavItem[] = [
+  { label: "Jelajah Tur", href: "/tours", icon: "route", permission: "book_tickets" },
+  { label: "Jadwal Pemandu", href: "/guides", icon: "guide", permission: "book_tickets" },
+  { label: "Pesanan Saya", href: "/bookings", icon: "ticket", permission: "book_tickets" },
+];
+
+const TOURISM_ITEMS: NavItem[] = [
+  { label: "Check-in Tiket", href: "/tourism/check-in", icon: "scan", permission: "validate_tickets" },
+  { label: "Pemesanan", href: "/tourism/bookings", icon: "ticket", permission: "manage_tourism" },
+  { label: "Verifikasi Pembayaran", href: "/tourism/payments", icon: "wallet", permission: "manage_tourism" },
+  { label: "Rute Tur", href: "/tourism/routes", icon: "route", permission: "manage_tourism" },
+  { label: "Pemandu", href: "/tourism/guides", icon: "guide", permission: "manage_tourism" },
+  { label: "Shift Pemandu", href: "/tourism/shifts", icon: "calendar", permission: "manage_tourism" },
+  { label: "Tarif & Libur", href: "/tourism/prices", icon: "price", permission: "manage_tourism" },
+  { label: "Ulasan", href: "/tourism/reviews", icon: "star", permission: "manage_tourism" },
+];
+
 const ACCOUNT_ITEMS: NavItem[] = [
-  { label: "Profil Saya", href: "/profile", icon: "profile", permission: "view_data" },
+  { label: "Profil Saya", href: "/profile", icon: "profile", permission: ["view_data", "book_tickets"] },
 ];
 
 const ALL_SECTIONS: NavSection[] = [
@@ -97,13 +123,20 @@ const ALL_SECTIONS: NavSection[] = [
   { title: "Master Data", items: MASTER_DATA_ITEMS },
   { title: "Laporan", items: REPORT_ITEMS },
   { title: "Sistem", items: SYSTEM_ITEMS },
+  { title: "Wisata", items: VISITOR_ITEMS },
+  { title: "Kelola Wisata", items: TOURISM_ITEMS },
   { title: "Akun", items: ACCOUNT_ITEMS },
 ];
+
+const itemAllowed = (role: TYPE_USER_ROLE, item: NavItem): boolean =>
+  (Array.isArray(item.permission) ? item.permission : [item.permission]).some((permission) =>
+    roleHasPermission(role, permission),
+  );
 
 const sectionsForRole = (role: TYPE_USER_ROLE): NavSection[] =>
   ALL_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => roleHasPermission(role, item.permission)),
+    items: section.items.filter((item) => itemAllowed(role, item)),
   })).filter((section) => section.items.length > 0);
 
 export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
@@ -111,6 +144,7 @@ export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
   peneliti_ekologi: sectionsForRole("peneliti_ekologi"),
   administrator_sistem: sectionsForRole("administrator_sistem"),
   pengambil_kebijakan: sectionsForRole("pengambil_kebijakan"),
+  pengunjung: sectionsForRole("pengunjung"),
 };
 
 /** Halaman tambah/ubah memakai izin backend yang lebih ketat daripada menu daftarnya. */
@@ -122,6 +156,7 @@ const WRITE_ROUTES: { pattern: RegExp; permission: AppPermission }[] = [
   { pattern: /^\/incidents\/create$/, permission: "create_data" },
   { pattern: /^\/incidents\/[^/]+\/(edit|update)$/, permission: "update_data" },
   { pattern: /^\/zone-visits\/create$/, permission: "create_data" },
+  { pattern: /^\/tours\/[^/]+\/book$/, permission: "book_tickets" },
 ];
 
 export const DEFAULT_ROLE: TYPE_USER_ROLE = "konservasionis_lapangan";

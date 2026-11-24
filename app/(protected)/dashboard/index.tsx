@@ -49,6 +49,7 @@ const ROLE_LABELS: Record<TYPE_USER_ROLE, string> = {
   peneliti_ekologi: "Peneliti Ekologi",
   administrator_sistem: "Administrator Sistem",
   pengambil_kebijakan: "Pengambil Kebijakan",
+  pengunjung: "Pengunjung",
 };
 
 const QUICK_LINKS = [

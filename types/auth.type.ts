@@ -4,13 +4,15 @@ export type TYPE_USER_ROLE =
   | "konservasionis_lapangan"
   | "peneliti_ekologi"
   | "administrator_sistem"
-  | "pengambil_kebijakan";
+  | "pengambil_kebijakan"
+  | "pengunjung";
 
 export const USER_ROLES = [
   "konservasionis_lapangan",
   "peneliti_ekologi",
   "administrator_sistem",
   "pengambil_kebijakan",
+  "pengunjung",
 ] as const satisfies readonly TYPE_USER_ROLE[];
 
 export const normalizeUserRole = (value: unknown): TYPE_USER_ROLE | null => {
@@ -34,7 +36,10 @@ export type AppPermission =
   | "manage_master_data"
   | "upload_media"
   | "verify_ai"
-  | "export_data";
+  | "export_data"
+  | "book_tickets"
+  | "manage_tourism"
+  | "validate_tickets";
 
 export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
   konservasionis_lapangan: [
@@ -43,6 +48,7 @@ export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
     "update_data",
     "upload_media",
     "verify_ai",
+    "validate_tickets",
   ],
   peneliti_ekologi: [
     "view_data",
@@ -66,6 +72,9 @@ export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
     "upload_media",
     "verify_ai",
     "export_data",
+    "book_tickets",
+    "manage_tourism",
+    "validate_tickets",
   ],
   pengambil_kebijakan: [
     "view_data",
@@ -73,6 +82,7 @@ export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
     "upload_media",
     "export_data",
   ],
+  pengunjung: ["book_tickets"],
 };
 
 export const roleHasPermission = (
@@ -112,6 +122,16 @@ export const TYPE_ROLE_LABELS: Record<TYPE_USER_ROLE, string> = {
   peneliti_ekologi: "Peneliti Ekologi",
   administrator_sistem: "Administrator Sistem",
   pengambil_kebijakan: "Pengambil Kebijakan",
+  pengunjung: "Pengunjung",
+};
+
+export type TYPE_REGISTER_REQUEST = {
+  full_name: string;
+  username: string;
+  email: string;
+  phone?: string;
+  password: string;
+  password_confirmation: string;
 };
 
 export type TYPE_LOGIN_PAYLOAD = {
