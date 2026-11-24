@@ -59,3 +59,23 @@ export const formatGeoJson = (
 
   return JSON.stringify(value, null, 2);
 };
+
+/** Rupiah tanpa desimal, mis. 150000 → "Rp150.000". */
+export const formatRupiah = (value: number | string | null | undefined): string => {
+  const amount = Number(value ?? 0);
+  return `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number.isFinite(amount) ? amount : 0)}`;
+};
+
+/** Tanggal panjang Indonesia, mis. "Senin, 24 November 2026". */
+export const formatLongDate = (value: string | null | undefined): string => {
+  if (!value) return "-";
+  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+};
+
+/** Tanggal lokal (bukan UTC) dalam format YYYY-MM-DD. */
+export const toLocalDateInput = (date: Date = new Date()): string => {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+};
