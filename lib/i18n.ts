@@ -76,6 +76,7 @@ export const NAV_LABELS: Record<AppLocale, Record<string, string>> = {
     "/tourism/prices": "Tarif & Libur",
     "/tourism/reviews": "Ulasan",
     "/wildlife-3d": "Satwa 3D",
+    "/manual": "Panduan Pengguna",
     "/profile": "Profil Saya",
   },
   en: {
@@ -120,6 +121,7 @@ export const NAV_LABELS: Record<AppLocale, Record<string, string>> = {
     "/tourism/prices": "Prices & Holidays",
     "/tourism/reviews": "Reviews",
     "/wildlife-3d": "3D Wildlife",
+    "/manual": "User Manual",
     "/profile": "My Profile",
   },
 };

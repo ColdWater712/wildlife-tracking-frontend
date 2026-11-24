@@ -36,6 +36,7 @@ const ICON_PATHS: Record<NavIcon, string> = {
   species3d: "M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5",
   cashier: "M4 10h16v10H4zM7 10V6h10v4M9 4h6M8 14h2M14 14h2M8 17h8",
   globe: "M3 20l6-12 4 6 3-4 5 10H3zM14 5.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0",
+  book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z",
 };
 
 export function NavIconGlyph({ icon, className }: { icon: NavIcon; className?: string }) {

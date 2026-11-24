@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 26 November 2026 (lanjutan 4): panduan pengguna interaktif (`/manual`, Normal & Peak Mode)](#pembaruan-26-november-2026-lanjutan-4-panduan-pengguna-interaktif-manual-normal--peak-mode)
 - [Pembaruan 26 November 2026 (lanjutan 3): notifikasi semua role (no-show), dark/light mode & bahasa ID/EN](#pembaruan-26-november-2026-lanjutan-3-notifikasi-semua-role-no-show-darklight-mode--bahasa-iden)
 - [Pembaruan 26 November 2026 (lanjutan 2): peta 3D kualitas tinggi & simulator pembayaran otomatis](#pembaruan-26-november-2026-lanjutan-2-peta-3d-kualitas-tinggi--simulator-pembayaran-otomatis)
 - [Pembaruan 26 November 2026 (lanjutan): perbaikan pesan error login & audit](#pembaruan-26-november-2026-lanjutan-perbaikan-pesan-error-login--audit)
@@ -25,6 +26,14 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 26 November 2026 (lanjutan 4): panduan pengguna interaktif (`/manual`, Normal & Peak Mode)
+
+- **Menu Panduan Pengguna (`/manual`, semua 6 role)**: berisi 6 bab lengkap (sistem & role, pelacakan & insiden, analisis AI, wisata & pembayaran otomatis, POS loket & check-in, ensiklopedia satwa 3D & bantuan cepat) dalam Bahasa Indonesia & Inggris serta mendukung Dark/Light mode.
+- **Normal Mode**: tata letak dokumentasi standar dengan daftar isi sticky, pencarian topik, langkah bernomor, dan tautan langsung ke fitur terkait.
+- **Peak Mode**: pengalaman interaktif 3D per bab — tipografi 3D berlapis (Bab 01), lembaran bab 3D dua sisi yang dapat diputar 360° (Bab 02), konsol pipeline AI 3D (Bab 03), dunia mini 3D interaktif Gunung Leuser berbasis Three.js dengan mode Siang/Malam (Bab 04), dek kartu taktil 3D (Bab 05), dan atlas orbital 3D (Bab 06).
 
 ---
 
