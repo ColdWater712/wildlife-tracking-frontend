@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 25 November 2026: POS loket & peta 3D](#pembaruan-25-november-2026-pos-loket--peta-3d)
 - [Pembaruan 24 November 2026: modul wisata & role pengunjung](#pembaruan-24-november-2026-modul-wisata--role-pengunjung)
 - [Pembaruan 24 November 2026: semua endpoint backend](#pembaruan-24-november-2026-semua-endpoint-backend)
 - [1. Ringkasan aplikasi](#1-ringkasan-aplikasi)
@@ -20,6 +21,60 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 25 November 2026: POS loket & peta 3D
+
+Lanjutan "Next Plan": **POS (Point of Sales)** untuk penjualan tiket walk-in di loket dan **peta & rute 3D**. Backend: `wildlife-tracking-backend` commit `df3cbcc` (POS), `8abd0f9` (zona waktu WIB), `08818b9` (rate limit).
+
+### POS loket
+
+| Rute | Untuk | Isi | Endpoint |
+|---|---|---|---|
+| `/pos` | kasir (`sell_tickets`) | Buka sesi kas → pilih rute, tanggal (7 hari), shift (hanya yang masih bisa dijual), jumlah WNI/pelajar/WNA/drone, nama pembeli → total dari server → bayar Tunai (tombol uang pas/pecahan, kembalian otomatis), QRIS, atau EDC (no. referensi) → struk + tiket QR. Opsi "langsung check-in" untuk kunjungan hari ini. Panel samping: ringkasan sesi, kas di laci, cetak ulang, void (wajib alasan), laporan X, tutup kas | `/pos/session*`, `/pos/sales*`, `/tourism/schedule`, `/tourism/quote` |
+| `/pos/sessions`, `/pos/sessions/[id]` | kasir (miliknya) / admin (semua) | Riwayat sesi, selisih kas, daftar transaksi, cetak laporan X/Z | `/pos/sessions*` |
+| `/pos/report` | pengelola (`manage_tourism`) | Laporan harian online + loket: total, **PNBP vs jasa pemandu**, per metode, per kanal, per sesi kasir; cetak A4 | `GET /pos/report` |
+
+- **Role baru `petugas_loket`** (`sell_tickets` + `validate_tickets`). Akun contoh: `loket@wildlife.id` / `password123`. Menu "Loket" berisi Kasir, Check-in Tiket, Riwayat Sesi Kas, dan Laporan Harian (khusus admin).
+- **Struk thermal 58/80 mm.** Struk dan laporan dibuat sebagai dokumen HTML tersendiri (`components/pos/receipt-html.ts`) dan dicetak dari iframe `sandbox`, sehingga ukuran kertas tidak bentrok dengan `@page` A4 aplikasi. Semua teks di-escape dan iframe tidak menjalankan skrip. Lebar kertas dipilih di halaman kasir dan disimpan per komputer (localStorage).
+- **"Hari ini" mengikuti WIB**, bukan zona waktu komputer kasir (`app/(protected)/pos/utils.ts`), sama dengan backend (`TOURISM_TIMEZONE`). Shift masih bisa dijual sampai 30 menit setelah jam mulai.
+- Struk memuat porsi PNBP (PP 36/2024) agar mudah direkonsiliasi dengan setoran kas negara.
+
+### Peta & rute 3D
+
+| Rute | Isi |
+|---|---|
+| `/tours/map-3d` (menu "Peta 3D") | Relief 3D kawasan (data elevasi) + citra satelit/peta. Semua jalur tur berwarna, label titik kumpul, klik rute untuk detail + profil ketinggian. **Fly-through**: kamera terbang mengikuti jalur sambil menampilkan ketinggian saat itu |
+| `/tours/[slug]` | Tombol 2D/3D di bagian "Peta jalur & titik kumpul" |
+
+- **Library**: `maplibre-gl@5.19.0` (WebGL, open source). Komponen `components/tourism/route-map-3d.tsx` dimuat dengan `next/dynamic` (`ssr: false`) dan tidak masuk barrel, jadi halaman lain tidak ikut memuatnya.
+- **Data**: memakai `waypoints` rute dari backend (`[lat, lon, ketinggian]`). Admin bisa menambah titik lewat `/tourism/routes/[id]/edit` agar jalur makin detail.
+- **Sumber tile** (tanpa API key, diunduh langsung oleh browser pengguna):
+  - Elevasi: Mapzen Terrain Tiles di AWS Open Data.
+  - Citra satelit: Esri World Imagery.
+  - Peta: OpenStreetMap.
+  - Atribusi tampil di pojok peta.
+- **Mode cadangan**: jika WebGL tidak tersedia, muncul pesan dan pengguna diarahkan ke peta 2D. Jika tile gagal dimuat (offline), jalur dan titik kumpul tetap tampil dengan peringatan.
+
+### Hasil uji
+
+- `tsc`, `eslint` (tanpa error baru), dan `next build` lulus.
+- Backend: `php artisan test` 110/110 (termasuk `PosTest` 8).
+- Uji browser (Playwright) terhadap backend lokal:
+  - **Kasir**: buka sesi → jual 3 orang tunai (kembalian benar) → struk → jual QRIS → void → tutup kas dengan selisih → laporan Z.
+  - **Akses**: kasir ditolak di `/pos/report`.
+  - **Admin**: membuka laporan harian.
+  - **Pengunjung**: peta 3D, pilih rute, fly-through, dan mode 3D di detail rute.
+  - Sandbox tidak bisa mengakses server tile, jadi uji peta memakai tile elevasi/citra sintetis. Di laptop dengan internet, tile asli dimuat.
+
+### Masih dikembangkan / risiko
+
+- **Printer**: cetak lewat dialog print browser. Untuk satu klik, jadikan printer thermal default dan jalankan Chrome dengan `--kiosk-printing`. ESC/POS langsung (laci kas otomatis) belum ada.
+- **Offline**: loket butuh koneksi ke server. Belum ada mode offline.
+- **Lisensi & privasi tile**: Esri World Imagery dan tile OSM punya kebijakan penggunaan wajar. Untuk trafik publik besar, pakai penyedia berlisensi (MapTiler/Stadia dengan API key) atau tile sendiri. Browser pengunjung menghubungi server tile pihak ketiga, sehingga IP-nya terlihat oleh mereka.
+- **Akurasi jalur 3D**: elevasi global beresolusi ±30–90 m, dan waypoint contoh hanya 4–5 titik per rute. Garis peta bukan panduan navigasi.
+- **Model 3D satwa** (bagian "User: 3D model" di Next Plan) belum dikerjakan.
 
 ---
 
