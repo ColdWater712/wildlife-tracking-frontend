@@ -36,7 +36,9 @@ export type NavIcon =
   | "star"
   | "scan"
   | "price"
-  | "calendar";
+  | "calendar"
+  | "cashier"
+  | "globe";
 
 export type NavItem = {
   label: string;
@@ -97,12 +99,20 @@ const SYSTEM_ITEMS: NavItem[] = [
 /** Menu pengunjung (role pengunjung hanya punya izin book_tickets). */
 const VISITOR_ITEMS: NavItem[] = [
   { label: "Jelajah Tur", href: "/tours", icon: "route", permission: "book_tickets" },
+  { label: "Peta 3D", href: "/tours/map-3d", icon: "globe", permission: "book_tickets" },
   { label: "Jadwal Pemandu", href: "/guides", icon: "guide", permission: "book_tickets" },
   { label: "Pesanan Saya", href: "/bookings", icon: "ticket", permission: "book_tickets" },
 ];
 
-const TOURISM_ITEMS: NavItem[] = [
+/** Loket: kasir POS walk-in dan pemeriksaan tiket di pintu masuk. */
+const COUNTER_ITEMS: NavItem[] = [
+  { label: "Kasir (POS)", href: "/pos", icon: "cashier", permission: "sell_tickets" },
   { label: "Check-in Tiket", href: "/tourism/check-in", icon: "scan", permission: "validate_tickets" },
+  { label: "Riwayat Sesi Kas", href: "/pos/sessions", icon: "history", permission: "sell_tickets" },
+  { label: "Laporan Harian", href: "/pos/report", icon: "recap", permission: "manage_tourism" },
+];
+
+const TOURISM_ITEMS: NavItem[] = [
   { label: "Pemesanan", href: "/tourism/bookings", icon: "ticket", permission: "manage_tourism" },
   { label: "Verifikasi Pembayaran", href: "/tourism/payments", icon: "wallet", permission: "manage_tourism" },
   { label: "Rute Tur", href: "/tourism/routes", icon: "route", permission: "manage_tourism" },
@@ -124,6 +134,7 @@ const ALL_SECTIONS: NavSection[] = [
   { title: "Laporan", items: REPORT_ITEMS },
   { title: "Sistem", items: SYSTEM_ITEMS },
   { title: "Wisata", items: VISITOR_ITEMS },
+  { title: "Loket", items: COUNTER_ITEMS },
   { title: "Kelola Wisata", items: TOURISM_ITEMS },
   { title: "Akun", items: ACCOUNT_ITEMS },
 ];
@@ -144,6 +155,7 @@ export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
   peneliti_ekologi: sectionsForRole("peneliti_ekologi"),
   administrator_sistem: sectionsForRole("administrator_sistem"),
   pengambil_kebijakan: sectionsForRole("pengambil_kebijakan"),
+  petugas_loket: sectionsForRole("petugas_loket"),
   pengunjung: sectionsForRole("pengunjung"),
 };
 
@@ -157,6 +169,8 @@ const WRITE_ROUTES: { pattern: RegExp; permission: AppPermission }[] = [
   { pattern: /^\/incidents\/[^/]+\/(edit|update)$/, permission: "update_data" },
   { pattern: /^\/zone-visits\/create$/, permission: "create_data" },
   { pattern: /^\/tours\/[^/]+\/book$/, permission: "book_tickets" },
+  // /pos/report berada di bawah menu /pos (kasir), tetapi laporan harian khusus pengelola.
+  { pattern: /^\/pos\/report/, permission: "manage_tourism" },
 ];
 
 export const DEFAULT_ROLE: TYPE_USER_ROLE = "konservasionis_lapangan";

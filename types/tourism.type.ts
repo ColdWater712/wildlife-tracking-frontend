@@ -14,7 +14,7 @@ export type TYPE_BOOKING_STATUS =
   | "cancelled"
   | "expired";
 
-export type TYPE_PAYMENT_METHOD = "bank_transfer" | "qris" | "ewallet" | "gateway";
+export type TYPE_PAYMENT_METHOD = "bank_transfer" | "qris" | "ewallet" | "gateway" | "cash" | "edc";
 
 export type TYPE_PAYMENT_STATUS =
   | "pending"
@@ -201,6 +201,9 @@ export type TYPE_PAYMENT = {
   reference: string;
   method: TYPE_PAYMENT_METHOD;
   amount: number;
+  received_amount?: number | null;
+  change_amount?: number | null;
+  external_reference?: string | null;
   status: TYPE_PAYMENT_STATUS;
   has_proof: boolean;
   paid_at: string | null;
@@ -236,6 +239,11 @@ export type TYPE_TOUR_REVIEW = {
 export type TYPE_BOOKING = {
   booking_id: number;
   booking_code: string;
+  channel?: "online" | "pos";
+  pos_session_id?: number | null;
+  sold_by?: number | null;
+  seller?: { user_id: number; full_name: string } | null;
+  pos_session?: { session_id: number; counter_name: string } | null;
   route_id: number;
   shift_id: number;
   visit_date: string;
@@ -276,7 +284,7 @@ export type TYPE_BOOKING_PAYLOAD = {
   contact_phone: string;
   emergency_contact: string;
   notes?: string;
-  payment_method: Exclude<TYPE_PAYMENT_METHOD, "gateway">;
+  payment_method: "bank_transfer" | "qris" | "ewallet";
   participants: TYPE_PARTICIPANT[];
 };
 
@@ -322,6 +330,8 @@ export const PAYMENT_METHOD_LABELS: Record<TYPE_PAYMENT_METHOD, string> = {
   qris: "QRIS",
   ewallet: "E-Wallet",
   gateway: "Payment Gateway",
+  cash: "Tunai",
+  edc: "Kartu (EDC)",
 };
 
 export const DIFFICULTY_LABELS: Record<TYPE_DIFFICULTY, string> = {

@@ -5,6 +5,7 @@ export type TYPE_USER_ROLE =
   | "peneliti_ekologi"
   | "administrator_sistem"
   | "pengambil_kebijakan"
+  | "petugas_loket"
   | "pengunjung";
 
 export const USER_ROLES = [
@@ -12,6 +13,7 @@ export const USER_ROLES = [
   "peneliti_ekologi",
   "administrator_sistem",
   "pengambil_kebijakan",
+  "petugas_loket",
   "pengunjung",
 ] as const satisfies readonly TYPE_USER_ROLE[];
 
@@ -39,7 +41,8 @@ export type AppPermission =
   | "export_data"
   | "book_tickets"
   | "manage_tourism"
-  | "validate_tickets";
+  | "validate_tickets"
+  | "sell_tickets";
 
 export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
   konservasionis_lapangan: [
@@ -75,6 +78,7 @@ export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
     "book_tickets",
     "manage_tourism",
     "validate_tickets",
+    "sell_tickets",
   ],
   pengambil_kebijakan: [
     "view_data",
@@ -82,6 +86,7 @@ export const ROLE_PERMISSIONS: Record<TYPE_USER_ROLE, AppPermission[]> = {
     "upload_media",
     "export_data",
   ],
+  petugas_loket: ["sell_tickets", "validate_tickets"],
   pengunjung: ["book_tickets"],
 };
 
@@ -122,6 +127,7 @@ export const TYPE_ROLE_LABELS: Record<TYPE_USER_ROLE, string> = {
   peneliti_ekologi: "Peneliti Ekologi",
   administrator_sistem: "Administrator Sistem",
   pengambil_kebijakan: "Pengambil Kebijakan",
+  petugas_loket: "Petugas Loket",
   pengunjung: "Pengunjung",
 };
 
