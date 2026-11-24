@@ -35,23 +35,21 @@ const unauthorizedResult = (): BackendActionResult => ({
   errors: null,
 });
 
-const encodeBytesToBase64 = (bytes: Uint8Array): string => {
-  const chunkSize = 0x8000;
-  let encoded = "";
+// Base64 per potongan harus kelipatan 3 byte; dengan potongan 32 KB padding "=" muncul
+// di tengah string dan atob() di browser gagal untuk berkas > 32 KB. Buffer Node menangani semuanya.
+const encodeBytesToBase64 = (bytes: Uint8Array): string =>
+  Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
 
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    let binary = "";
-    const end = Math.min(offset + chunkSize, bytes.length);
-
-    for (let index = offset; index < end; index += 1) {
-      binary += String.fromCharCode(bytes[index]);
-    }
-
-    encoded += btoa(binary);
-  }
-
-  return encoded;
-};
+/** Respons berkas (media, ekspor CSV/GeoJSON) diteruskan sebagai base64, bukan JSON. */
+const BINARY_CONTENT_TYPES = [
+  "image/",
+  "video/",
+  "audio/",
+  "text/csv",
+  "application/geo+json",
+  "application/pdf",
+  "application/octet-stream",
+];
 
 export const loginAction = async (
   payload: TYPE_LOGIN_REQUEST,
@@ -176,10 +174,11 @@ export const forwardBackendAction = async (
     }
 
     const responseContentType = response.headers.get("content-type") ?? "";
+    const disposition = response.headers.get("content-disposition") ?? "";
     const isBinaryResponse =
       response.ok &&
-      (responseContentType.includes("image/") ||
-        responseContentType.includes("application/octet-stream"));
+      (BINARY_CONTENT_TYPES.some((type) => responseContentType.includes(type)) ||
+        disposition.includes("attachment"));
 
     if (isBinaryResponse) {
       const bytes = new Uint8Array(await response.arrayBuffer());
@@ -190,6 +189,7 @@ export const forwardBackendAction = async (
         body: undefined,
         base64: encodeBytesToBase64(bytes),
         contentType: responseContentType,
+        filename: /filename="?([^";]+)"?/i.exec(disposition)?.[1],
         meta: getPaginationMeta(response.headers),
       };
     }

@@ -67,7 +67,7 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
   }, [isMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b border-natural-muted bg-white px-3 sm:gap-3 sm:px-6">
+    <header className="sticky top-0 z-40 flex h-16 print:hidden shrink-0 items-center gap-2 border-b border-natural-muted bg-white px-3 sm:gap-3 sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           type="button"

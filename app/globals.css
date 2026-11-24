@@ -253,3 +253,21 @@
     color: var(--olive-dark) !important;
   }
 }
+
+/* Rekap Data AI: tombol "Unduh PDF" memakai cetak browser (A4). */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+
+  body {
+    background: white;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .recap {
+    font-size: 11pt;
+  }
+}

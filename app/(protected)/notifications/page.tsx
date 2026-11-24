@@ -3,10 +3,12 @@
 import {
   AlertTriangle,
   Bell,
+  CheckCheck,
   CheckCircle2,
   Info,
   RadioTower,
   Shield,
+  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useToast } from "@/components/toast";
@@ -15,10 +17,13 @@ import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/status";
 import {
+  useDeleteAllReadNotifications,
+  useMarkAllNotificationsAsRead,
   useNotifications,
   useMarkNotificationAsRead,
 } from "@/hooks/use-notifications";
-import { toApiErrorState } from "@/services/api";
+import { formatApiError, toApiErrorState } from "@/services/api";
+import { Button } from "@/components/button";
 import { formatDate } from "@/utils/format";
 import {
   NOTIFICATION_TYPE_LABELS,
@@ -95,6 +100,8 @@ export default function NotificationListPage() {
 
   const { data, isLoading, error, refetch } = useNotifications(load);
   const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
+  const deleteAllRead = useDeleteAllReadNotifications();
   const { showToast } = useToast();
 
   const notifications = (data?.data as NotificationItem[]) ?? [];
@@ -108,7 +115,39 @@ export default function NotificationListPage() {
       <PageHeader
         eyebrow="Pemantauan"
         title="Notifikasi"
-        description="Pantau peringatan risiko zona dan kondisi perangkat pelacak."
+        description="Peringatan zona risiko, kondisi perangkat, ancaman yang dideteksi AI, dan insiden baru."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              icon={<CheckCheck className="size-4" />}
+              loading={markAllAsRead.isPending}
+              onClick={() =>
+                markAllAsRead.mutate(undefined, {
+                  onSuccess: () => showToast("Semua notifikasi ditandai dibaca.", "success"),
+                  onError: (mutationError) =>
+                    showToast(formatApiError(mutationError, "Gagal menandai notifikasi."), "error"),
+                })
+              }
+            >
+              Tandai Semua Dibaca
+            </Button>
+            <Button
+              variant="outline"
+              icon={<Trash2 className="size-4" />}
+              loading={deleteAllRead.isPending}
+              onClick={() =>
+                deleteAllRead.mutate(undefined, {
+                  onSuccess: () => showToast("Notifikasi yang sudah dibaca dihapus.", "success"),
+                  onError: (mutationError) =>
+                    showToast(formatApiError(mutationError, "Gagal menghapus notifikasi."), "error"),
+                })
+              }
+            >
+              Hapus yang Sudah Dibaca
+            </Button>
+          </>
+        }
       />
 
       <section className="ui-panel p-5">

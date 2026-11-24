@@ -1,4 +1,8 @@
-import type { TYPE_USER_ROLE } from "@/types/auth.type";
+import {
+  roleHasPermission,
+  type AppPermission,
+  type TYPE_USER_ROLE,
+} from "@/types/auth.type";
 
 export type NavIcon =
   | "grid"
@@ -11,12 +15,27 @@ export type NavIcon =
   | "zone"
   | "chart"
   | "ai"
-  | "report";
+  | "report"
+  | "face"
+  | "threat"
+  | "recap"
+  | "media"
+  | "visit"
+  | "weather"
+  | "export"
+  | "users"
+  | "shield"
+  | "log"
+  | "profile"
+  | "check"
+  | "history";
 
 export type NavItem = {
   label: string;
   href: string;
   icon: NavIcon;
+  /** Izin backend (tabel role_permissions) yang dibutuhkan untuk membuka menu ini. */
+  permission: AppPermission;
 };
 
 export type NavSection = {
@@ -25,63 +44,85 @@ export type NavSection = {
 };
 
 export const COMMON_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: "grid" },
-  { label: "Live Map", href: "/tracking/live-map", icon: "map" },
-  { label: "Notifikasi", href: "/notifications", icon: "bell" },
-  { label: "AI Vision", href: "/ai/vision", icon: "ai" },
-  { label: "Laporan AI", href: "/ai/reports", icon: "report" },
+  { label: "Dashboard", href: "/dashboard", icon: "grid", permission: "view_data" },
+  { label: "Live Map", href: "/tracking/live-map", icon: "map", permission: "view_data" },
+  { label: "Notifikasi", href: "/notifications", icon: "bell", permission: "view_data" },
 ];
 
-const CONSERVATION_ITEMS: NavItem[] = [
-  { label: "Satwa", href: "/animals", icon: "paw" },
-  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
-  { label: "Insiden", href: "/incidents", icon: "alert" },
+const AI_ITEMS: NavItem[] = [
+  { label: "AI Vision", href: "/ai/vision", icon: "ai", permission: "upload_media" },
+  { label: "Riwayat Prediksi", href: "/ai/vision/history", icon: "history", permission: "view_data" },
+  { label: "Verifikasi AI", href: "/ai/vision/pending", icon: "check", permission: "verify_ai" },
+  { label: "Ancaman", href: "/ai/threats", icon: "threat", permission: "view_data" },
+  { label: "Rekap Data AI", href: "/ai/recap", icon: "recap", permission: "view_data" },
+  { label: "Laporan AI", href: "/ai/reports", icon: "report", permission: "view_data" },
+  { label: "Media Unggahan", href: "/ai/media", icon: "media", permission: "view_data" },
+  { label: "Wajah Staf", href: "/ai/staff-faces", icon: "face", permission: "manage_users" },
 ];
 
-const RESEARCH_ITEMS: NavItem[] = [
-  { label: "Satwa", href: "/animals", icon: "paw" },
-  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw" },
-  { label: "Spesies", href: "/species", icon: "species" },
-  { label: "Perangkat", href: "/devices", icon: "device" },
+const FIELD_ITEMS: NavItem[] = [
+  { label: "Satwa", href: "/animals", icon: "paw", permission: "view_data" },
+  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw", permission: "view_data" },
+  { label: "Insiden", href: "/incidents", icon: "alert", permission: "view_data" },
+  { label: "Kunjungan Zona", href: "/zone-visits", icon: "visit", permission: "view_data" },
+  { label: "Cuaca", href: "/weather", icon: "weather", permission: "view_data" },
 ];
 
-const ADMIN_ITEMS: NavItem[] = [
-  ...RESEARCH_ITEMS,
-  { label: "Zona Geografis", href: "/geo-zones", icon: "zone" },
+const MASTER_DATA_ITEMS: NavItem[] = [
+  { label: "Spesies", href: "/species", icon: "species", permission: "view_data" },
+  { label: "Perangkat", href: "/devices", icon: "device", permission: "view_data" },
+  { label: "Zona Geografis", href: "/geo-zones", icon: "zone", permission: "view_data" },
 ];
 
-const POLICY_ITEMS: NavItem[] = [
-  { label: "Statistik", href: "/statistics", icon: "chart" },
+const REPORT_ITEMS: NavItem[] = [
+  { label: "Statistik", href: "/statistics", icon: "chart", permission: "view_data" },
+  { label: "Laporan Agregat", href: "/reports", icon: "report", permission: "view_reports" },
+  { label: "Ekspor Data", href: "/exports", icon: "export", permission: "export_data" },
 ];
+
+const SYSTEM_ITEMS: NavItem[] = [
+  { label: "Pengguna", href: "/users", icon: "users", permission: "manage_users" },
+  { label: "Role & Izin", href: "/roles", icon: "shield", permission: "manage_roles" },
+  { label: "Log Aktivitas", href: "/activity-logs", icon: "log", permission: "manage_users" },
+];
+
+const ACCOUNT_ITEMS: NavItem[] = [
+  { label: "Profil Saya", href: "/profile", icon: "profile", permission: "view_data" },
+];
+
+const ALL_SECTIONS: NavSection[] = [
+  { title: "Umum", items: COMMON_ITEMS },
+  { title: "Analisis AI", items: AI_ITEMS },
+  { title: "Lapangan", items: FIELD_ITEMS },
+  { title: "Master Data", items: MASTER_DATA_ITEMS },
+  { title: "Laporan", items: REPORT_ITEMS },
+  { title: "Sistem", items: SYSTEM_ITEMS },
+  { title: "Akun", items: ACCOUNT_ITEMS },
+];
+
+const sectionsForRole = (role: TYPE_USER_ROLE): NavSection[] =>
+  ALL_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => roleHasPermission(role, item.permission)),
+  })).filter((section) => section.items.length > 0);
 
 export const NAV_SECTIONS: Record<TYPE_USER_ROLE, NavSection[]> = {
-  konservasionis_lapangan: [
-    { title: "Umum", items: COMMON_ITEMS },
-    { title: "Lapangan", items: CONSERVATION_ITEMS },
-  ],
-  peneliti_ekologi: [
-    { title: "Umum", items: COMMON_ITEMS },
-    {
-      title: "Penelitian",
-      items: [
-        ...RESEARCH_ITEMS,
-        {
-          label: "Verifikasi AI",
-          href: "/ai/vision/pending",
-          icon: "ai",
-        },
-      ],
-    },
-  ],
-  administrator_sistem: [
-    { title: "Umum", items: COMMON_ITEMS },
-    { title: "Master Data", items: ADMIN_ITEMS },
-  ],
-  pengambil_kebijakan: [
-    { title: "Umum", items: COMMON_ITEMS },
-    { title: "Kebijakan", items: POLICY_ITEMS },
-  ],
+  konservasionis_lapangan: sectionsForRole("konservasionis_lapangan"),
+  peneliti_ekologi: sectionsForRole("peneliti_ekologi"),
+  administrator_sistem: sectionsForRole("administrator_sistem"),
+  pengambil_kebijakan: sectionsForRole("pengambil_kebijakan"),
 };
+
+/** Halaman tambah/ubah memakai izin backend yang lebih ketat daripada menu daftarnya. */
+const WRITE_ROUTES: { pattern: RegExp; permission: AppPermission }[] = [
+  {
+    pattern: /^\/(animals|species|devices|geo-zones)\/(create|[^/]+\/(edit|update))$/,
+    permission: "manage_master_data",
+  },
+  { pattern: /^\/incidents\/create$/, permission: "create_data" },
+  { pattern: /^\/incidents\/[^/]+\/(edit|update)$/, permission: "update_data" },
+  { pattern: /^\/zone-visits\/create$/, permission: "create_data" },
+];
 
 export const DEFAULT_ROLE: TYPE_USER_ROLE = "konservasionis_lapangan";
 
@@ -91,19 +132,25 @@ export const getDefaultRouteForRole = (role: TYPE_USER_ROLE): string =>
 export const isRouteActive = (pathname: string, href: string): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);
 
-export const canAccessRoute = (role: TYPE_USER_ROLE, pathname: string): boolean =>
-  NAV_SECTIONS[role].some((section) =>
-    section.items.some(
-      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-    ),
+export const canAccessRoute = (role: TYPE_USER_ROLE, pathname: string): boolean => {
+  const writeRoute = WRITE_ROUTES.find((route) => route.pattern.test(pathname));
+
+  if (writeRoute && !roleHasPermission(role, writeRoute.permission)) return false;
+
+  return NAV_SECTIONS[role].some((section) =>
+    section.items.some((item) => isRouteActive(pathname, item.href)),
   );
+};
 
-export const findNavTitle = (role: TYPE_USER_ROLE, pathname: string): string => {
-  const items = NAV_SECTIONS[role].flatMap((section) => section.items);
-
-  const match = items
-    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+const findActiveItem = (role: TYPE_USER_ROLE, pathname: string): NavItem | undefined =>
+  NAV_SECTIONS[role]
+    .flatMap((section) => section.items)
+    .filter((item) => isRouteActive(pathname, item.href))
     .sort((left, right) => right.href.length - left.href.length)[0];
 
-  return match?.label ?? "Wildlife Monitoring System";
-};
+/** Menu paling spesifik untuk path ini (mis. /ai/vision/history, bukan /ai/vision). */
+export const findActiveHref = (role: TYPE_USER_ROLE, pathname: string): string | null =>
+  findActiveItem(role, pathname)?.href ?? null;
+
+export const findNavTitle = (role: TYPE_USER_ROLE, pathname: string): string =>
+  findActiveItem(role, pathname)?.label ?? "Wildlife Monitoring System";

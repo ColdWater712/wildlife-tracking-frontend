@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { AiPredictionResult } from "../ai-prediction-result";
@@ -15,11 +15,14 @@ import { formatDate } from "@/utils/format";
 
 type AiPredictionDetailViewProps = {
   canVerify: boolean;
+  canDelete?: boolean;
 };
 
 export default function AiPredictionDetailView({
   canVerify,
+  canDelete = false,
 }: AiPredictionDetailViewProps) {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const predictionId = Number(params.id);
 
@@ -66,7 +69,9 @@ export default function AiPredictionDetailView({
           <AiPredictionResult
             prediction={predictionQuery.data.data}
             canVerify={canVerify}
+            canDelete={canDelete}
             onVerified={() => void predictionQuery.refetch()}
+            onDeleted={() => router.push("/ai/vision/history")}
           />
 
           <section className="ui-panel p-5">

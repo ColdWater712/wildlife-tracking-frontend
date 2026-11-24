@@ -55,7 +55,7 @@ export function AppShell({ user, children }: AppShellProps) {
         Lewati ke konten
       </a>
 
-      <div className="hidden shrink-0 md:block">
+      <div className="hidden shrink-0 md:block print:hidden">
         <Sidebar user={user} onLogout={logout} />
       </div>
 
@@ -74,7 +74,7 @@ export function AppShell({ user, children }: AppShellProps) {
         />
         <main
           id="main-content"
-          className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
+          className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 print:p-0"
         >
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">{children}</div>
         </main>

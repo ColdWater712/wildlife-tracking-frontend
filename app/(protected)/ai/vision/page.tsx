@@ -9,6 +9,7 @@ export default async function AiVisionPage() {
   return (
     <AiVisionUploadPage
       canVerify={user ? roleHasPermission(user.role, "verify_ai") : false}
+      canDelete={user ? roleHasPermission(user.role, "delete_data") : false}
     />
   );
 }

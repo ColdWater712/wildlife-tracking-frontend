@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogOut, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { NavIconGlyph } from "@/components/navigation/main";
-import { NAV_SECTIONS, isRouteActive } from "@/lib/navigation";
+import { NAV_SECTIONS, findActiveHref } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session";
 import { TYPE_ROLE_LABELS } from "@/types/auth.type";
@@ -30,6 +30,7 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const sections = NAV_SECTIONS[user.role];
+  const activeHref = findActiveHref(user.role, pathname);
   const isMobile = variant === "mobile";
 
   const [hovered, setHovered] = useState(false);
@@ -181,7 +182,7 @@ export function Sidebar({
 
             <ul className="flex flex-col gap-1">
               {section.items.map((item) => {
-                const active = isRouteActive(pathname, item.href);
+                const active = item.href === activeHref;
 
                 return (
                   <li key={item.href}>

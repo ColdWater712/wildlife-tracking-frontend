@@ -21,11 +21,14 @@ import {
   FormGrid,
   FormSection,
   SelectInput,
+  TextInput,
   fieldDescribedBy,
 } from "@/components/form";
 import { PageHeader } from "@/components/ui/panel";
 import { useIncidentReports } from "@/hooks/use-incidents";
-import { useAiPredictionUpload } from "@/hooks/use-ai";
+import { useAiPrediction, useAiPredictionUpload } from "@/hooks/use-ai";
+import { useTrackingDevices } from "@/hooks/use-devices";
+import { useGeoZones } from "@/hooks/use-geo-zones";
 import {
   formatApiError,
   getApiFieldErrors,
@@ -34,7 +37,7 @@ import {
 import {
   AI_ACCEPTED_FILE_TYPES,
   AI_MAX_FILE_SIZE_BYTES,
-  type AiPrediction,
+  getAiMediaKind,
 } from "@/types/ai.type";
 import { formatDate } from "@/utils/format";
 
@@ -55,7 +58,8 @@ const ACCEPTED_FILE_ATTRIBUTE = [
 ].join(",");
 
 const validateFile = (file: File): string | null => {
-  if (!AI_ACCEPTED_FILE_TYPES.includes(file.type as (typeof AI_ACCEPTED_FILE_TYPES)[number])) {
+  // Cek ekstensi, bukan MIME: browser memberi MIME audio berbeda-beda (audio/x-wav, audio/x-m4a).
+  if (getAiMediaKind(file) === null) {
     return "Format file harus gambar, video, atau audio yang didukung.";
   }
   if (file.size > AI_MAX_FILE_SIZE_BYTES) {
@@ -64,14 +68,34 @@ const validateFile = (file: File): string | null => {
   return null;
 };
 
-export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }) {
+type AiVisionUploadPageProps = {
+  canVerify: boolean;
+  canDelete?: boolean;
+};
+
+export default function AiVisionUploadPage({
+  canVerify,
+  canDelete = false,
+}: AiVisionUploadPageProps) {
   const { showToast } = useToast();
   const incidentQuery = useIncidentReports();
   const uploadMutation = useAiPredictionUpload();
   const [file, setFile] = useState<File | null>(null);
   const [reportId, setReportId] = useState("");
   const [fileError, setFileError] = useState<string | undefined>(undefined);
-  const [result, setResult] = useState<AiPrediction | null>(null);
+  const [zoneId, setZoneId] = useState("");
+  const [deviceId, setDeviceId] = useState("");
+  const [capturedAt, setCapturedAt] = useState("");
+  const [predictionId, setPredictionId] = useState(0);
+  const zonesQuery = useGeoZones();
+  const devicesQuery = useTrackingDevices();
+  // Hasil diperbarui otomatis selama prediksi masih antre/diproses.
+  const predictionQuery = useAiPrediction(predictionId);
+  const result = predictionQuery.data?.data ?? null;
+  const zones = zonesQuery.data ?? [];
+  const mediaDevices = (devicesQuery.data?.data ?? []).filter(
+    (device) => device.device_type !== "gps",
+  );
 
   const incidents = incidentQuery.data?.data ?? [];
   const previewUrl = useMemo(
@@ -93,7 +117,6 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
     if (validationError) return;
 
     setFile(nextFile);
-    setResult(null);
   };
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -117,11 +140,14 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
       {
         file,
         report_id: reportId === "" ? null : Number(reportId),
+        zone_id: zoneId === "" ? null : Number(zoneId),
+        device_id: deviceId === "" ? null : Number(deviceId),
+        captured_at: capturedAt === "" ? null : capturedAt.replace("T", " "),
       },
       {
         onSuccess: (response) => {
-          showToast("Media berhasil dianalisis AI.", "success");
-          setResult(response.data.prediction);
+          showToast(response.message || "Media berhasil dikirim ke AI.", "success");
+          setPredictionId(response.data.prediction.prediction_id);
           setFile(null);
           setFileError(undefined);
         },
@@ -244,6 +270,55 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
 
           <div className="flex flex-col gap-4">
             <FormField
+              label="Zona"
+              htmlFor="ai-zone-id"
+              hint="Opsional. Orang tidak dikenal di koridor satwa dinilai sebagai ancaman."
+            >
+              <SelectInput
+                id="ai-zone-id"
+                value={zoneId}
+                disabled={isPending || zonesQuery.isLoading}
+                onChange={(event) => setZoneId(event.target.value)}
+              >
+                <option value="">Tanpa zona</option>
+                {zones.map((zone) => (
+                  <option key={zone.zone_id} value={zone.zone_id}>
+                    {zone.zone_name}
+                  </option>
+                ))}
+              </SelectInput>
+            </FormField>
+
+            <FormGrid columns={2}>
+              <FormField label="Perangkat Sumber" htmlFor="ai-device-id">
+                <SelectInput
+                  id="ai-device-id"
+                  value={deviceId}
+                  disabled={isPending || devicesQuery.isLoading}
+                  onChange={(event) => setDeviceId(event.target.value)}
+                >
+                  <option value="">Unggahan manual</option>
+                  {mediaDevices.map((device) => (
+                    <option key={device.device_id} value={device.device_id}>
+                      {device.model}
+                      {device.serial_number ? ` (${device.serial_number})` : ""}
+                    </option>
+                  ))}
+                </SelectInput>
+              </FormField>
+
+              <FormField label="Waktu Pengambilan" htmlFor="ai-captured-at">
+                <TextInput
+                  id="ai-captured-at"
+                  type="datetime-local"
+                  value={capturedAt}
+                  disabled={isPending}
+                  onChange={(event) => setCapturedAt(event.target.value)}
+                />
+              </FormField>
+            </FormGrid>
+
+            <FormField
               label="Laporan Insiden Terkait"
               htmlFor="ai-report-id"
               hint="Opsional. Hubungkan media dengan laporan insiden yang sudah ada."
@@ -314,6 +389,9 @@ export default function AiVisionUploadPage({ canVerify }: { canVerify: boolean }
         <AiPredictionResult
           prediction={result}
           canVerify={canVerify}
+          canDelete={canDelete}
+          onVerified={() => void predictionQuery.refetch()}
+          onDeleted={() => setPredictionId(0)}
           detailHref={`/ai/vision/${result.prediction_id}`}
         />
       ) : null}

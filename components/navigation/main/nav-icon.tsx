@@ -12,6 +12,19 @@ const ICON_PATHS: Record<NavIcon, string> = {
   chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   ai: "M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
   report: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+  face: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0",
+  threat: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3zM12 8v5M12 16.5v.5",
+  recap: "M4 4h16v16H4zM8 16v-4M12 16V8M16 16v-6",
+  media: "M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9h.01",
+  visit: "M12 21s-7-6-7-11a7 7 0 1 1 14 0c0 5-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  weather: "M7 18a4 4 0 0 1-.6-8 6 6 0 0 1 11.6 1.5A3.3 3.3 0 0 1 17.5 18H7z",
+  export: "M12 3v12M7 10l5 5 5-5M5 21h14",
+  users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 0 1 0 7M22 21c0-3-1.5-5-4-5.6",
+  shield: "M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3zM9 12l2 2 4-4",
+  log: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-6 8-6s8 2 8 6",
+  check: "M9 12l2 2 4-4M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z",
+  history: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 3",
 };
 
 export function NavIconGlyph({ icon, className }: { icon: NavIcon; className?: string }) {

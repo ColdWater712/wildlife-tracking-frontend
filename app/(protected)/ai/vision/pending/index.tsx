@@ -7,6 +7,7 @@ import { AiPredictionImage } from "../ai-prediction-image";
 import {
   AiConfidence,
   AiProcessingBadge,
+  AiThreatBadge,
   AiVerificationBadge,
 } from "../ai-status";
 import { AiPredictionVerification } from "../ai-prediction-verification";
@@ -14,7 +15,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/panel";
-import { StatusBadge } from "@/components/status";
 import { useAiPendingPredictions } from "@/hooks/use-ai";
 import { toApiErrorState } from "@/services/api";
 import { formatDate } from "@/utils/format";
@@ -51,20 +51,29 @@ export default function AiPendingVerificationView() {
           {predictions.map((prediction) => (
             <article key={prediction.prediction_id} className="ui-panel flex flex-col gap-4 p-4">
               <div className="flex items-start gap-3">
-                <AiPredictionImage
-                  mediaId={prediction.media_id}
-                  alt={`Gambar prediksi #${prediction.prediction_id}`}
-                  className="size-24 shrink-0"
-                  sizes="96px"
-                />
+                {prediction.media?.media_type === "image" || !prediction.media ? (
+                  <AiPredictionImage
+                    mediaId={prediction.media_id}
+                    alt={`Gambar prediksi #${prediction.prediction_id}`}
+                    className="size-24 shrink-0"
+                    sizes="96px"
+                  />
+                ) : (
+                  <span className="flex size-24 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-muted text-xs font-semibold text-muted">
+                    {prediction.media.media_type === "video" ? "Video" : "Audio"}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap gap-1.5">
                     <AiProcessingBadge status={prediction.processing_status} />
                     <AiVerificationBadge status={prediction.verification_status} />
-                    <StatusBadge label="Dihasilkan AI" variant="info" />
+                    {prediction.threat_level && prediction.threat_level !== "none" ? (
+                      <AiThreatBadge level={prediction.threat_level} />
+                    ) : null}
                   </div>
                   <p className="mt-2 text-sm font-semibold text-ink">
-                    {prediction.predictedSpecies?.common_name ??
+                    {(prediction.analysis_type === "audio" ? prediction.sound_label : null) ??
+                      prediction.predictedSpecies?.common_name ??
                       (prediction.predicted_species_id !== null
                         ? `Spesies #${prediction.predicted_species_id}`
                         : "Spesies tidak terdeteksi")}
@@ -90,6 +99,8 @@ export default function AiPendingVerificationView() {
               <AiPredictionVerification
                 predictionId={prediction.prediction_id}
                 defaultSpeciesId={prediction.predicted_species_id}
+                defaultAnimalId={prediction.predicted_animal_id ?? null}
+                requireSpecies={prediction.analysis_type !== "audio"}
                 onVerified={() => void pendingQuery.refetch()}
               />
             </article>

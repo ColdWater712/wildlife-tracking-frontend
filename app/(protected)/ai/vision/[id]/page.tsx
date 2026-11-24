@@ -22,6 +22,7 @@ export default async function AiPredictionDetailPage({ params }: PageProps) {
   return (
     <AiPredictionDetailContent
       canVerify={user ? roleHasPermission(user.role, "verify_ai") : false}
+      canDelete={user ? roleHasPermission(user.role, "delete_data") : false}
     />
   );
 }

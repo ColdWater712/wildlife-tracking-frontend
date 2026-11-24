@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 24 November 2026: semua endpoint backend](#pembaruan-24-november-2026-semua-endpoint-backend)
 - [1. Ringkasan aplikasi](#1-ringkasan-aplikasi)
 - [2. Status implementasi](#2-status-implementasi)
 - [3. Tumpukan teknologi](#3-tumpukan-teknologi)
@@ -20,6 +21,68 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [12. Referensi](#12-referensi)
 
 ---
+
+## Pembaruan 24 November 2026: semua endpoint backend
+
+Seluruh fitur backend (`wildlife-tracking-backend`) kini punya halaman, ditulis mengikuti struktur dan komponen repo ini:
+
+- **Halaman**: logika di `app/(protected)/<modul>/page.tsx`. Bila izin dicek di server, `page.tsx` membaca sesi lalu merender `index.tsx`. Kolom tabel di `column.tsx`, filter di `filter.tsx`, form bersama di `form.tsx`, komponen khusus halaman di folder yang sama.
+- **Komponen**: hanya dari barrel `@/components/button`, `/form`, `/data-table`, `/filter`, `/popup-confirmation`, `/status`, `/toast`, dan `@/components/ui/*`.
+- **Data**: `services/<domain>.service.ts` → `hooks/use-<domain>.ts` → `types/<domain>.type.ts`; modul baru memakai gaya `X_SERVICE.GET_ALL / CREATE / UPDATE / DELETE` dan `TYPE_X`.
+- **Menu**: `lib/navigation.ts` menyaring menu memakai `roleHasPermission` (tabel izin backend di `types/auth.type.ts`); halaman tambah/ubah memakai izin yang lebih ketat.
+
+### Halaman baru dan yang diperluas
+
+| Halaman | Endpoint backend | Izin |
+| --- | --- | --- |
+| `/ai/vision`: zona, perangkat, waktu pengambilan; hasil diperbarui otomatis saat antre; kotak deteksi, **wajah staf vs "Tidak dikenal"** (klik detik untuk lompat di video), **suara dalam video**, individu satwa, kondisi & perilaku, ancaman, analisis ulang, hapus | `POST /ai/upload`, `GET /ai-predictions/{id}`, `POST .../retry`, `DELETE /ai-predictions/{id}` | `upload_media`; hapus `delete_data` |
+| Verifikasi: spesies opsional saat menolak/audio, pilih individu satwa | `POST /ai-predictions/{id}/verify` | `verify_ai` |
+| Riwayat & antrean verifikasi: ikon video/audio, ancaman, filter ancaman & jenis | `GET /ai-predictions`, `/pending-verification` | `view_data` |
+| `/ai/threats` Ancaman | `GET /ai/threats` | `view_data` |
+| `/ai/recap` **Rekap Data AI** + Unduh PDF (cetak A4) | `GET /ai/recap` | `view_data` |
+| `/ai/media` Media unggahan | `GET/DELETE /media-uploads`, `POST /media-uploads/{id}/predictions` | lihat semua; hapus `delete_data` |
+| `/ai/staff-faces` Galeri wajah staf | `/staff-faces` | `manage_users` |
+| Detail satwa: foto referensi re-identifikasi, observasi AI, kunjungan zona, insiden | `/animals/{id}/reference-photos`, `/ai-observations`, `/zone-visits`, `/incidents` | tambah foto `manage_master_data` |
+| Detail perangkat: status, kondisi, telemetri, pasang/lepas kalung, titik GPS manual, rekaman kamera/perekam | `PATCH /devices/{id}/...`, `/devices/{id}/captures`, `POST /gps-readings` | `manage_master_data` / `create_data` |
+| Ubah insiden: lampiran (+ analisis AI), status sinkron | `/incidents/{id}/media`, `PATCH /incidents/{id}/sync-status` | `create_data`; sinkron `delete_data` |
+| Zona: cek koordinat, isi zona (satwa, perangkat, kunjungan) | `/geo-zones/locate`, `/geo-zones/{id}/animals`, `/devices`, `/visits` | `view_data` |
+| `/zone-visits` (+ `/create`) Kunjungan zona | `/animal-geo-zone-visits` | catat `create_data` |
+| `/weather` Cuaca + sinkron Open-Meteo | `/weather-data`, `POST /weather-data/sync` | sinkron `create_data` |
+| `/reports` Laporan agregat | `/aggregate-reports` | `view_reports`; hapus `delete_data` |
+| `/exports` Ekspor CSV/GeoJSON | `GET /export/*` | `export_data` |
+| `/users` (+ `create`, `[id]/edit`, `[id]/detail`) Pengguna, sesi, aktivitas | `/users`, `/users/{id}/status`, `/tokens`, `/activity` | `manage_users` |
+| `/roles` Matriks role × izin | `/roles`, `/permissions` | `manage_roles` |
+| `/activity-logs` Log aktivitas | `/activity-logs`, `/export/activity-logs/csv` | `manage_users` |
+| `/profile` Profil & ganti password | `/me`, `/me/password` | semua |
+| Notifikasi: tandai semua dibaca, hapus yang sudah dibaca | `PATCH /notifications/read-all`, `DELETE /notifications` | semua |
+
+### Perbaikan
+
+| Masalah | Perbaikan |
+| --- | --- |
+| Foto/video di atas 32 KB tidak pernah tampil (thumbnail riwayat kosong) | `services/backend-actions.ts`: base64 dikodekan sekali dengan `Buffer` (sebelumnya padding `=` muncul di tengah string) |
+| Upload di atas 1 MB ditolak (batas default server action) | `next.config.ts`: `experimental.serverActions.bodySizeLimit = "55mb"` |
+| Unduhan CSV/GeoJSON/video/audio dibaca sebagai JSON | Proxy meneruskan tipe biner + nama file dari `Content-Disposition` |
+| Audio `.wav`/`.m4a` ditolak di beberapa browser (MIME berbeda) | Validasi upload memakai ekstensi berkas |
+| Dua menu aktif sekaligus (mis. AI Vision dan Riwayat) | Sidebar menyorot menu paling spesifik |
+
+### Menghubungkan ke backend
+
+`.env.local` (tidak di-commit):
+
+```env
+API_URL=http://127.0.0.1:8000/api
+# atau server tim lewat Cloudflare Tunnel:
+# API_URL=https://<alamat-tunnel>.trycloudflare.com/api
+```
+
+Restart `npm run dev` setelah mengubahnya.
+
+### Masih dikembangkan
+
+- Tombol tambah/ubah di daftar master data masih tampil untuk role tanpa `manage_master_data` (halaman tujuannya menolak akses).
+- Video/audio diunduh utuh lewat server action; video besar di koneksi lambat terasa berat.
+- Endpoint yang dipanggil alat (`POST /gps-readings/bulk`, `POST /weather-data/ingest`) tidak punya halaman.
 
 ## 1. Ringkasan aplikasi
 
