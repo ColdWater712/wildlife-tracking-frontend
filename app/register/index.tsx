@@ -3,14 +3,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Compass, Eye, EyeOff, ShieldCheck, Ticket, Trees } from "lucide-react";
+import { Compass, Eye, EyeOff, RefreshCw, ShieldCheck, Ticket, Trees } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/button";
 import { FormAlert, FormField, TextInput, fieldDescribedBy } from "@/components/form";
 import { useRegister } from "@/hooks/use-register";
+import { registerChallengeAction } from "@/services/backend-actions";
+import type { TYPE_REGISTER_CHALLENGE } from "@/types/auth.type";
 
 const registerSchema = z
   .object({
@@ -35,6 +37,8 @@ const registerSchema = z
       .regex(/[0-9]/, "Kata sandi harus mengandung angka."),
     password_confirmation: z.string().min(1, "Ulangi kata sandi."),
     agree: z.boolean().refine((value) => value, "Setujui ketentuan kunjungan terlebih dahulu."),
+    captcha_answer: z.string().trim().regex(/^-?\d{1,3}$/, "Isi jawaban berupa angka."),
+    website: z.string(),
   })
   .refine((values) => values.password === values.password_confirmation, {
     path: ["password_confirmation"],
@@ -42,7 +46,7 @@ const registerSchema = z
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
-type FieldKey = Exclude<keyof RegisterFormValues, "agree">;
+type FieldKey = Exclude<keyof RegisterFormValues, "agree" | "website">;
 
 const PERKS = [
   { icon: Compass, title: "Pilih rute & jadwal", text: "Bukit Lawang, Tangkahan, Ketambe — lengkap dengan itinerary." },
@@ -53,11 +57,14 @@ const PERKS = [
 export default function RegisterForm() {
   const { submit, registerError, fieldErrors } = useRegister();
   const [showPassword, setShowPassword] = useState(false);
+  const [challenge, setChallenge] = useState<TYPE_REGISTER_CHALLENGE>(null);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -69,8 +76,23 @@ export default function RegisterForm() {
       password: "",
       password_confirmation: "",
       agree: false,
+      captcha_answer: "",
+      website: "",
     },
   });
+
+  // Soal keamanan sekali pakai; dimuat ulang setelah setiap percobaan yang gagal.
+  const loadChallenge = useCallback(async () => {
+    setChallengeError(null);
+    const result = await registerChallengeAction();
+    if (result.ok) setChallenge(result.challenge);
+    else setChallengeError(result.message);
+    setValue("captcha_answer", "");
+  }, [setValue]);
+
+  useEffect(() => {
+    queueMicrotask(() => void loadChallenge());
+  }, [loadChallenge]);
 
   // Galat validasi dari backend (mis. email sudah terdaftar) ditempel ke field terkait.
   useEffect(() => {
@@ -80,14 +102,18 @@ export default function RegisterForm() {
   }, [fieldErrors, setError]);
 
   const onSubmit = async (values: RegisterFormValues) => {
-    await submit({
+    const ok = await submit({
       full_name: values.full_name,
       username: values.username,
       email: values.email,
       phone: values.phone,
       password: values.password,
       password_confirmation: values.password_confirmation,
+      captcha_token: challenge?.challenge_token ?? "",
+      captcha_answer: values.captcha_answer,
+      website: values.website,
     });
+    if (!ok) void loadChallenge();
   };
 
   const textField = (
@@ -194,6 +220,33 @@ export default function RegisterForm() {
                 {showPassword ? <EyeOff aria-hidden="true" className="size-4" /> : <Eye aria-hidden="true" className="size-4" />}
                 {showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
               </button>
+
+              {challenge ? (
+                <FormField label={`Soal keamanan: ${challenge.question}`} htmlFor="captcha_answer" required error={errors.captcha_answer?.message}>
+                  <div className="flex gap-2">
+                    <TextInput
+                      id="captcha_answer"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="Jawaban"
+                      invalid={errors.captcha_answer !== undefined}
+                      className="max-w-40"
+                      {...register("captcha_answer")}
+                    />
+                    <button type="button" onClick={() => void loadChallenge()} className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 text-sm font-medium text-ink-soft hover:border-primary" aria-label="Ganti soal">
+                      <RefreshCw className="size-4" /> Ganti soal
+                    </button>
+                  </div>
+                </FormField>
+              ) : challengeError ? (
+                <FormAlert message={challengeError} />
+              ) : null}
+
+              {/* Honeypot anti-bot: tidak terlihat & tidak bisa difokus oleh manusia. */}
+              <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+                <label htmlFor="website">Website</label>
+                <input id="website" type="text" tabIndex={-1} autoComplete="off" {...register("website")} />
+              </div>
 
               <label className="flex cursor-pointer items-start gap-2.5 text-sm leading-6 text-ink-soft">
                 <input type="checkbox" {...register("agree")} className="mt-1 size-4 rounded border-line-strong accent-primary" />

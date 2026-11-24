@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+
 import {
   ApiError,
   createServerApiClient,
@@ -25,7 +27,7 @@ import type {
   LoginActionResult,
   LogoutActionResult,
 } from "@/types/backend-action.type";
-import type { TYPE_LOGIN_REQUEST, TYPE_REGISTER_REQUEST } from "@/types/auth.type";
+import type { TYPE_LOGIN_REQUEST, TYPE_REGISTER_CHALLENGE, TYPE_REGISTER_REQUEST } from "@/types/auth.type";
 
 const normalizePath = (path: string): string =>
   path.replace(/^\/api\/backend(?=\/|$)/, "") || "/";
@@ -54,6 +56,43 @@ const BINARY_CONTENT_TYPES = [
   "application/octet-stream",
 ];
 
+/**
+ * IP pengunjung asli diteruskan ke Laravel (X-Forwarded-For) agar rate limit login/daftar dihitung per pengunjung,
+ * bukan per server Next.js. Laravel hanya memercayainya bila IP server ini terdaftar di TRUSTED_PROXIES.
+ * Diambil entri paling kanan = alamat yang dilihat langsung oleh server ini (tidak bisa dipalsukan klien).
+ */
+const clientIpHeaders = async (): Promise<Record<string, string>> => {
+  try {
+    const incoming = await headers();
+    const forwarded = incoming.get("x-forwarded-for")?.split(",").pop()?.trim();
+    const ip = forwarded || incoming.get("x-real-ip")?.trim() || "";
+    return /^[0-9a-fA-F:.]{3,45}$/.test(ip) ? { "X-Forwarded-For": ip } : {};
+  } catch {
+    return {};
+  }
+};
+
+/** Soal keamanan pendaftaran (publik, tanpa token). */
+export const registerChallengeAction = async (): Promise<
+  { ok: true; challenge: TYPE_REGISTER_CHALLENGE } | { ok: false; message: string }
+> => {
+  try {
+    const serverApi = createServerApiClient(getLaravelApiBaseUrl());
+    const response = (await serverApi.get("/register/challenge", { headers: await clientIpHeaders() })) as {
+      data?: TYPE_REGISTER_CHALLENGE;
+    };
+    return { ok: true, challenge: response?.data ?? null };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof ApiError && error.status === 429
+          ? "Terlalu banyak permintaan. Tunggu sebentar."
+          : "Tidak dapat memuat soal keamanan. Pastikan server berjalan.",
+    };
+  }
+};
+
 export const loginAction = async (
   payload: TYPE_LOGIN_REQUEST,
 ): Promise<LoginActionResult> => {
@@ -73,7 +112,7 @@ export const loginAction = async (
   }
 
   try {
-    const result = await authenticateWithLaravel({ email, password });
+    const result = await authenticateWithLaravel({ email, password }, await clientIpHeaders());
 
     if (!result.ok) {
       return {
@@ -114,10 +153,13 @@ export const registerAction = async (
     phone: read(payload?.phone).trim(),
     password: read(payload?.password),
     password_confirmation: read(payload?.password_confirmation),
+    captcha_token: read(payload?.captcha_token),
+    captcha_answer: read(payload?.captcha_answer).trim(),
+    website: read(payload?.website),
   };
 
   try {
-    const result = await registerWithLaravel(clean);
+    const result = await registerWithLaravel(clean, await clientIpHeaders());
 
     if (!result.ok) {
       return {
@@ -187,8 +229,10 @@ export const forwardBackendAction = async (
   if (!token) return unauthorizedResult();
 
   const contentType = payload.headers?.["Content-Type"];
-  const headers: Record<string, string> =
-    typeof contentType === "string" ? { "Content-Type": contentType } : {};
+  const requestHeaders: Record<string, string> = {
+    ...(await clientIpHeaders()),
+    ...(typeof contentType === "string" ? { "Content-Type": contentType } : {}),
+  };
 
   try {
     const serverApi = createServerApiClient(getLaravelApiBaseUrl());
@@ -200,7 +244,7 @@ export const forwardBackendAction = async (
         body: payload.body,
         bodyText: payload.bodyText,
         formData: payload.formData,
-        headers,
+        headers: requestHeaders,
         token,
         timeoutMs: payload.timeoutMs,
       },
