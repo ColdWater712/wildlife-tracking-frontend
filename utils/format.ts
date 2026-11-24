@@ -7,6 +7,11 @@ const getValidDate = (value: DateValue) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const getIntlLocale = () =>
+  typeof document !== "undefined" && document.documentElement.lang === "en"
+    ? "en-US"
+    : "id-ID";
+
 export const formatDate = (value: DateValue) => {
   if (!value) return "-";
 
@@ -16,7 +21,7 @@ export const formatDate = (value: DateValue) => {
   const date = getValidDate(value);
   if (!date) return value;
 
-  return new Intl.DateTimeFormat("id-ID", {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -27,7 +32,7 @@ export const formatDateTime = (value: DateValue) => {
   const date = getValidDate(value);
   if (!date) return value ?? "-";
 
-  return new Intl.DateTimeFormat("id-ID", {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -67,12 +72,12 @@ export const formatRupiah = (value: number | string | null | undefined): string 
   return `${amount < 0 ? "−" : ""}Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Math.abs(amount))}`;
 };
 
-/** Tanggal panjang Indonesia, mis. "Senin, 24 November 2026". */
+/** Tanggal panjang sesuai bahasa aktif ("Senin, 24 November 2026" / "Monday, November 24, 2026"). */
 export const formatLongDate = (value: string | null | undefined): string => {
   if (!value) return "-";
   const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat(getIntlLocale(), { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
 };
 
 /** Tanggal lokal (bukan UTC) dalam format YYYY-MM-DD. */

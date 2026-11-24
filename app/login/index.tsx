@@ -5,12 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Eye, EyeOff, Leaf } from "lucide-react";
+import { Eye, EyeOff, Languages, Leaf } from "lucide-react";
 import { z } from "zod";
 
 import { useLogin } from "@/hooks/use-login";
 import { Button } from "@/components/button";
 import { FormAlert, FormField, TextInput, fieldDescribedBy } from "@/components/form";
+import { ThemeToggle } from "@/components/navigation/main/theme-toggle";
+import { usePreferences } from "@/components/providers/preferences-provider";
 
 const loginSchema = z.object({
   email: z
@@ -31,6 +33,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm({ notice }: { notice?: string }) {
   const { submit, loginError } = useLogin();
+  const { locale, toggleLocale, t } = usePreferences();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -100,7 +103,20 @@ export default function LoginForm({ notice }: { notice?: string }) {
           </div>
         </section>
 
-        <section className="flex items-center justify-center bg-surface px-5 py-8 sm:px-10 lg:px-12 xl:px-16">
+        <section className="relative flex items-center justify-center bg-surface px-5 py-8 sm:px-10 lg:px-12 xl:px-16">
+          <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6">
+            <button
+              type="button"
+              onClick={toggleLocale}
+              aria-label={t("switchLanguage")}
+              title={t("switchLanguage")}
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-xs font-bold uppercase tracking-wider text-ink-soft transition hover:border-primary hover:bg-surface-muted"
+            >
+              <Languages aria-hidden="true" className="size-4" />
+              <span>{locale.toUpperCase()}</span>
+            </button>
+            <ThemeToggle />
+          </div>
           <div className="w-full max-w-md">
             <div className="mb-9 flex items-center gap-3 lg:hidden">
               <div className="relative size-12 shrink-0 rounded-2xl bg-primary-soft p-1.5">

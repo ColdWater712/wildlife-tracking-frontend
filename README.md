@@ -32,7 +32,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 - **Notifikasi untuk seluruh 6 role (`lib/navigation.ts`, `app/(protected)/notifications/page.tsx`)**: menu Notifikasi dipindahkan ke bagian Akun agar semua role (`administrator_sistem`, `peneliti_ekologi`, `konservasionis_lapangan`, `pengambil_kebijakan`, `petugas_loket`, `pengunjung`) dapat mengaksesnya, sementara chip filter dan isi notifikasi dibatasi ketat sesuai role (pengunjung & petugas loket hanya melihat notifikasi `Sistem`; peringatan zona risiko dan perangkat tidak pernah tampil/no-show).
 - **Mode Gelap & Terang (`app/layout.tsx`, `app/globals.css`, `components/navigation/main/theme-toggle.tsx`)**: mendukung `color-scheme: light dark` dengan tombol pengubah di header yang menyimpan preferensi di `localStorage` tanpa FOUC dan otomatis kembali ke preferensi sistem bila disamakan.
-- **Pilihan Bahasa `ID` / `EN` (`lib/i18n.ts`, `components/providers/preferences-provider.tsx`)**: tombol pengubah bahasa di header menerjemahkan navigasi, role, breadcrumb, notifikasi, peta 3D, dan modal simulator pembayaran.
+- **Pilihan Bahasa `ID` / `EN` (`lib/i18n.ts`, `lib/auto-translate.ts`, `components/providers/preferences-provider.tsx`)**: tombol pengubah bahasa di header serta halaman login/register menerjemahkan navigasi, role, breadcrumb, label status, form, tabel, notifikasi, peta 3D, dan modal secara penuh saat mode `EN` aktif, dan mengembalikan teks asli Indonesia 100% saat mode `ID` aktif.
 - **Perbaikan basemap Peta Jalan (`components/tourism/route-map-3d.tsx`)**: default tab **Peta** diganti dari CARTO Voyager (yang mewajibkan API key) ke **Esri World Street Map** (gratis tanpa watermark).
 
 ---
