@@ -6,6 +6,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import type { GeoJSONSource, Map as MlMap, Marker, StyleSpecification } from "maplibre-gl";
 import { Compass, Layers, Mountain, Pause, Play, RotateCcw, Square, Tag } from "lucide-react";
 
+import { usePreferences } from "@/components/providers/preferences-provider";
 import { cn } from "@/lib/utils";
 
 export type Map3DRoute = {
@@ -42,7 +43,7 @@ const TOPO =
   "https://a.tile.opentopomap.org/{z}/{x}/{y}.png";
 const STREET =
   process.env.NEXT_PUBLIC_MAP_STREET_URL ||
-  "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png";
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{x}/{y}";
 const SATELLITE_ATTRIBUTION =
   process.env.NEXT_PUBLIC_MAP_SATELLITE_ATTRIBUTION || "Citra © Esri, Maxar, Earthstar Geographics";
 const DEFAULT_EXAGGERATION: ReliefScale = 1.8;
@@ -165,6 +166,7 @@ export const RouteMap3D = forwardRef<
   const lastTickRef = useRef(0);
 
   const [ready, setReady] = useState(false);
+  const { t } = usePreferences();
   const [failed, setFailed] = useState<string | null>(null);
   const [tilesWarning, setTilesWarning] = useState(false);
   const [basemap, setBasemap] = useState<Basemap>("hybrid");
@@ -522,12 +524,12 @@ export const RouteMap3D = forwardRef<
       <div ref={containerRef} className="h-full w-full" />
 
       <div className="absolute left-3 top-3 flex max-w-[calc(100%-4rem)] flex-wrap items-center gap-2">
-        <div className="flex overflow-hidden rounded-xl bg-white/95 text-xs font-semibold shadow backdrop-blur">
+        <div className="flex overflow-hidden rounded-xl bg-surface/95 text-xs font-semibold shadow backdrop-blur">
           {(
             [
-              { id: "hybrid", label: "Satelit" },
-              { id: "topo", label: "Topografi" },
-              { id: "street", label: "Peta" },
+              { id: "hybrid", label: t("mapSatellite") },
+              { id: "topo", label: t("mapTopo") },
+              { id: "street", label: t("mapStreet") },
             ] as const
           ).map(({ id, label }) => (
             <button
@@ -546,9 +548,9 @@ export const RouteMap3D = forwardRef<
             type="button"
             onClick={toggleLabels}
             aria-pressed={showLabels}
-            className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", showLabels ? "bg-primary text-white" : "bg-white/95 text-ink-soft")}
+            className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", showLabels ? "bg-primary text-white" : "bg-surface/95 text-ink-soft")}
           >
-            <Tag className="size-3.5" /> Label
+            <Tag className="size-3.5" /> {t("mapLabels")}
           </button>
         ) : null}
 
@@ -556,13 +558,13 @@ export const RouteMap3D = forwardRef<
           type="button"
           onClick={toggleTerrain}
           aria-pressed={terrainOn}
-          className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", terrainOn ? "bg-primary text-white" : "bg-white/95 text-ink-soft")}
+          className={cn("inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shadow backdrop-blur transition", terrainOn ? "bg-primary text-white" : "bg-surface/95 text-ink-soft")}
         >
-          <Mountain className="size-3.5" /> Relief 3D
+          <Mountain className="size-3.5" /> {t("mapRelief")}
         </button>
 
         {terrainOn ? (
-          <div className="flex overflow-hidden rounded-xl bg-white/95 text-[11px] font-semibold shadow backdrop-blur" aria-label="Skala relief">
+          <div className="flex overflow-hidden rounded-xl bg-surface/95 text-[11px] font-semibold shadow backdrop-blur" aria-label="Skala relief">
             {([1, 1.8, 2.5] as const).map((scale) => (
               <button
                 key={scale}
@@ -579,10 +581,10 @@ export const RouteMap3D = forwardRef<
         <button
           type="button"
           onClick={() => fitTo(selectedId, true)}
-          title="Reset tampilan kamera"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-white/95 px-3 py-2 text-xs font-semibold text-ink-soft shadow backdrop-blur hover:bg-white"
+          title={t("mapReset")}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-surface/95 px-3 py-2 text-xs font-semibold text-ink-soft shadow backdrop-blur hover:bg-surface"
         >
-          <RotateCcw className="size-3.5" /> Reset
+          <RotateCcw className="size-3.5" /> {t("mapReset")}
         </button>
       </div>
 
@@ -606,10 +608,10 @@ export const RouteMap3D = forwardRef<
               </button>
               <button type="button" onClick={togglePause} className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2 py-1 font-semibold hover:bg-white/25">
                 {flying.paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
-                {flying.paused ? "Lanjut" : "Jeda"}
+                {flying.paused ? t("mapResume") : t("mapPause")}
               </button>
               <button type="button" onClick={stop} className="inline-flex items-center gap-1 rounded-lg bg-danger/80 px-2 py-1 font-semibold hover:bg-danger">
-                <Square className="size-3" /> Stop
+                <Square className="size-3" /> {t("mapStop")}
               </button>
             </div>
           </div>
@@ -621,9 +623,9 @@ export const RouteMap3D = forwardRef<
         <button
           type="button"
           onClick={() => void flyThrough(selectedId)}
-          className="absolute bottom-10 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-primary-dark shadow-lg hover:bg-white/90"
+          className="absolute bottom-10 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm font-bold text-primary shadow-lg hover:bg-surface-muted"
         >
-          <Play className="size-4" /> Jelajahi jalur (fly-through)
+          <Play className="size-4" /> {t("mapFlyStart")}
         </button>
       ) : null}
 

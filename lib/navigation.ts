@@ -62,7 +62,6 @@ const ENCYCLOPEDIA_ITEMS: NavItem[] = [
 export const COMMON_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "grid", permission: "view_data" },
   { label: "Live Map", href: "/tracking/live-map", icon: "map", permission: "view_data" },
-  { label: "Notifikasi", href: "/notifications", icon: "bell", permission: "view_data" },
 ];
 
 const AI_ITEMS: NavItem[] = [
@@ -129,6 +128,7 @@ const TOURISM_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_ITEMS: NavItem[] = [
+  { label: "Notifikasi", href: "/notifications", icon: "bell", permission: ["view_data", "book_tickets", "sell_tickets"] },
   { label: "Profil Saya", href: "/profile", icon: "profile", permission: ["view_data", "book_tickets", "sell_tickets"] },
 ];
 

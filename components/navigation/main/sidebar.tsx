@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogOut, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { NavIconGlyph } from "@/components/navigation/main";
+import { usePreferences } from "@/components/providers/preferences-provider";
+import { getNavLabel, getRoleLabel, getSectionLabel } from "@/lib/i18n";
 import { NAV_SECTIONS, findActiveHref } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session";
-import { TYPE_ROLE_LABELS } from "@/types/auth.type";
 
 type SidebarProps = {
   user: SessionUser;
@@ -29,6 +30,7 @@ export function Sidebar({
   isHidden = false,
 }: SidebarProps) {
   const pathname = usePathname();
+  const { locale, t } = usePreferences();
   const sections = NAV_SECTIONS[user.role];
   const activeHref = findActiveHref(user.role, pathname);
   const isMobile = variant === "mobile";
@@ -115,10 +117,10 @@ export function Sidebar({
         {showLabels ? (
           <div className="min-w-0 flex-1">
             <p className="text-[0.65rem] font-semibold uppercase leading-tight tracking-[0.14em] text-sage-cream">
-              Taman Nasional
+              {t("nationalPark")}
             </p>
             <p className="text-sm font-bold uppercase leading-tight tracking-wide text-white">
-              Gunung Leuser
+              {t("gunungLeuser")}
             </p>
           </div>
         ) : null}
@@ -129,7 +131,7 @@ export function Sidebar({
             type="button"
             onClick={onClose}
             tabIndex={tabIndex}
-            aria-label="Tutup navigasi"
+            aria-label={t("closeNav")}
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-muted"
           >
             <X aria-hidden="true" className="size-5" />
@@ -140,8 +142,8 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => setIsCollapsed((current) => !current)}
-            aria-label={isCollapsed ? "Perluas navigasi" : "Perkecil navigasi"}
-            title={isCollapsed ? "Perluas navigasi" : "Perkecil navigasi"}
+            aria-label={isCollapsed ? t("expandNav") : t("collapseNav")}
+            title={isCollapsed ? t("expandNav") : t("collapseNav")}
             className={cn(
               "inline-flex shrink-0 items-center justify-center rounded-lg border border-white/20 text-white transition hover:border-natural-muted hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-muted",
               showLabels ? "size-9" : "size-7",
@@ -169,7 +171,7 @@ export function Sidebar({
               <div className="flex items-center gap-2 px-3 pb-2">
                 <span className="h-px flex-1 bg-white/15" aria-hidden="true" />
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-sage-cream">
-                  {section.title}
+                  {getSectionLabel(locale, section.title)}
                 </p>
                 <span className="h-px flex-1 bg-white/15" aria-hidden="true" />
               </div>
@@ -183,6 +185,7 @@ export function Sidebar({
             <ul className="flex flex-col gap-1">
               {section.items.map((item) => {
                 const active = item.href === activeHref;
+                const itemLabel = getNavLabel(locale, item.href, item.label);
 
                 return (
                   <li key={item.href}>
@@ -191,8 +194,8 @@ export function Sidebar({
                       onClick={onNavigate}
                       tabIndex={tabIndex}
                       aria-current={active ? "page" : undefined}
-                      aria-label={showLabels ? undefined : item.label}
-                      title={showLabels ? undefined : item.label}
+                      aria-label={showLabels ? undefined : itemLabel}
+                      title={showLabels ? undefined : itemLabel}
                       className={cn(
                         "group/item relative flex items-center rounded-lg text-sm font-medium transition-colors duration-150",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-muted focus-visible:ring-offset-1 focus-visible:ring-offset-forest-dark",
@@ -221,7 +224,7 @@ export function Sidebar({
                       )}
                       <NavIconGlyph icon={item.icon} className="size-5 shrink-0" />
                       {showLabels ? (
-                        <span className="min-w-0 truncate">{item.label}</span>
+                        <span className="min-w-0 truncate">{itemLabel}</span>
                       ) : null}
                     </Link>
                   </li>
@@ -256,7 +259,7 @@ export function Sidebar({
                 {user.name}
               </p>
               <p className="truncate text-xs text-sage-cream">
-                {TYPE_ROLE_LABELS[user.role]}
+                {getRoleLabel(locale, user.role)}
               </p>
             </div>
           ) : null}
@@ -266,8 +269,8 @@ export function Sidebar({
           type="button"
           onClick={onLogout}
           tabIndex={tabIndex}
-          aria-label={showLabels ? undefined : "Keluar"}
-          title={showLabels ? undefined : "Keluar"}
+          aria-label={showLabels ? undefined : t("logout")}
+          title={showLabels ? undefined : t("logout")}
           className={cn(
             "mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 font-semibold text-white transition",
             "hover:border-natural-muted hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-muted focus-visible:ring-offset-2 focus-visible:ring-offset-forest-dark",
@@ -278,7 +281,7 @@ export function Sidebar({
             aria-hidden="true"
             className={cn("shrink-0", showLabels ? "size-4" : "size-5")}
           />
-          {showLabels ? "Keluar" : null}
+          {showLabels ? t("logout") : null}
         </button>
       </div>
     </aside>

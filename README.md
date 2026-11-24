@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 26 November 2026 (lanjutan 3): notifikasi semua role (no-show), dark/light mode & bahasa ID/EN](#pembaruan-26-november-2026-lanjutan-3-notifikasi-semua-role-no-show-darklight-mode--bahasa-iden)
 - [Pembaruan 26 November 2026 (lanjutan 2): peta 3D kualitas tinggi & simulator pembayaran otomatis](#pembaruan-26-november-2026-lanjutan-2-peta-3d-kualitas-tinggi--simulator-pembayaran-otomatis)
 - [Pembaruan 26 November 2026 (lanjutan): perbaikan pesan error login & audit](#pembaruan-26-november-2026-lanjutan-perbaikan-pesan-error-login--audit)
 - [Pembaruan 26 November 2026: satwa 3D, perbaikan bug & risiko](#pembaruan-26-november-2026-satwa-3d-perbaikan-bug--risiko)
@@ -24,6 +25,15 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 26 November 2026 (lanjutan 3): notifikasi semua role (no-show), dark/light mode & bahasa ID/EN
+
+- **Notifikasi untuk seluruh 6 role (`lib/navigation.ts`, `app/(protected)/notifications/page.tsx`)**: menu Notifikasi dipindahkan ke bagian Akun agar semua role (`administrator_sistem`, `peneliti_ekologi`, `konservasionis_lapangan`, `pengambil_kebijakan`, `petugas_loket`, `pengunjung`) dapat mengaksesnya, sementara chip filter dan isi notifikasi dibatasi ketat sesuai role (pengunjung & petugas loket hanya melihat notifikasi `Sistem`; peringatan zona risiko dan perangkat tidak pernah tampil/no-show).
+- **Mode Gelap & Terang (`app/layout.tsx`, `app/globals.css`, `components/navigation/main/theme-toggle.tsx`)**: mendukung `color-scheme: light dark` dengan tombol pengubah di header yang menyimpan preferensi di `localStorage` tanpa FOUC dan otomatis kembali ke preferensi sistem bila disamakan.
+- **Pilihan Bahasa `ID` / `EN` (`lib/i18n.ts`, `components/providers/preferences-provider.tsx`)**: tombol pengubah bahasa di header menerjemahkan navigasi, role, breadcrumb, notifikasi, peta 3D, dan modal simulator pembayaran.
+- **Perbaikan basemap Peta Jalan (`components/tourism/route-map-3d.tsx`)**: default tab **Peta** diganti dari CARTO Voyager (yang mewajibkan API key) ke **Esri World Street Map** (gratis tanpa watermark).
 
 ---
 

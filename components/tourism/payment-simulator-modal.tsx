@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Check, Copy, QrCode, ShieldCheck, Smartphone, Wallet } from "lucide-react";
 
 import { Button } from "@/components/button";
+import { usePreferences } from "@/components/providers/preferences-provider";
 import { Modal } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { TYPE_SIMULATE_PAYMENT_CHANNEL } from "@/types/tourism.type";
@@ -56,6 +57,7 @@ export function PaymentSimulatorModal({
   pending: boolean;
   onSimulate: (channel: TYPE_SIMULATE_PAYMENT_CHANNEL, outcome: "paid" | "failed") => Promise<void>;
 }) {
+  const { t } = usePreferences();
   const [tab, setTab] = useState<TabMode>("qris");
   const [vaChannel, setVaChannel] = useState<TYPE_SIMULATE_PAYMENT_CHANNEL>("va_bca");
   const [walletChannel, setWalletChannel] = useState<TYPE_SIMULATE_PAYMENT_CHANNEL>("gopay");
@@ -94,7 +96,7 @@ export function PaymentSimulatorModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Gateway Pembayaran Instan" size="md">
+    <Modal open={open} onClose={onClose} title={t("payModalTitle")} size="md">
       <div className="flex flex-col gap-4 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface-muted p-4">
           <div>
@@ -105,16 +107,16 @@ export function PaymentSimulatorModal({
             <p className="mt-1 text-xl font-bold text-primary">{formatRupiah(amount)}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-dark">
-            <ShieldCheck className="size-3.5" /> Mode Simulasi Otomatis
+            <ShieldCheck className="size-3.5" /> {t("payModalBadge")}
           </span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 rounded-xl bg-surface-muted p-1">
           {(
             [
-              { id: "qris", label: "QRIS Instan", icon: QrCode },
-              { id: "va", label: "Virtual Account", icon: Building2 },
-              { id: "ewallet", label: "E-Wallet", icon: Wallet },
+              { id: "qris", label: t("payTabQris"), icon: QrCode },
+              { id: "va", label: t("payTabVa"), icon: Building2 },
+              { id: "ewallet", label: t("payTabWallet"), icon: Wallet },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
             <button
@@ -206,18 +208,18 @@ export function PaymentSimulatorModal({
             disabled={pending}
             onClick={() => void onSimulate(selectedChannel, "failed")}
           >
-            Simulasikan Gagal
+            {t("payFailBtn")}
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" disabled={pending} onClick={onClose}>
-              Tutup
+              {t("payCloseBtn")}
             </Button>
             <Button
               loading={pending}
               icon={<ShieldCheck className="size-4" />}
               onClick={() => void onSimulate(selectedChannel, "paid")}
             >
-              {pending ? "Memverifikasi..." : "Bayar Sekarang (Otomatis Lunas)"}
+              {pending ? t("payVerifying") : t("payConfirmBtn")}
             </Button>
           </div>
         </div>
