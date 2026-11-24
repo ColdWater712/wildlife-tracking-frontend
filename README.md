@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 26 November 2026 (lanjutan): perbaikan pesan error login & audit](#pembaruan-26-november-2026-lanjutan-perbaikan-pesan-error-login--audit)
 - [Pembaruan 26 November 2026: satwa 3D, perbaikan bug & risiko](#pembaruan-26-november-2026-satwa-3d-perbaikan-bug--risiko)
 - [Pembaruan 25 November 2026: POS loket & peta 3D](#pembaruan-25-november-2026-pos-loket--peta-3d)
 - [Pembaruan 24 November 2026: modul wisata & role pengunjung](#pembaruan-24-november-2026-modul-wisata--role-pengunjung)
@@ -22,6 +23,17 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 26 November 2026 (lanjutan): perbaikan pesan error login & audit
+
+- **Perbaikan pesan error login (`hooks/use-login.ts`)**: menghapus penggabungan `formatApiMessage` yang membuat pesan error login tertulis ganda (`"...salah. email: Email atau password salah."`). Sekarang hanya pesan utama (atau error field pertama bila pesan utama kosong) yang ditampilkan di form dan toast.
+- **Hasil uji & audit**:
+  - `npx tsc --noEmit`: 0 error.
+  - `npm run lint`: 0 error, 1 peringatan bawaan TanStack Table di `components/data-table/data-table.tsx` (React Compiler, bukan bug).
+  - `npm run build`: lulus (56 halaman statis + seluruh rute dinamis).
+  - `npm audit --omit=dev`: 3 kerentanan (1 high pada `zod`, 2 critical pada `maplibre-gl` dan `next` yang membutuhkan pembaruan versi mayor/minor terencana; tidak dilakukan upgrade otomatis agar tidak memecah kompatibilitas).
 
 ---
 
