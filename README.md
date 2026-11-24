@@ -6,6 +6,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 ## Daftar isi
 
+- [Pembaruan 26 November 2026: satwa 3D, perbaikan bug & risiko](#pembaruan-26-november-2026-satwa-3d-perbaikan-bug--risiko)
 - [Pembaruan 25 November 2026: POS loket & peta 3D](#pembaruan-25-november-2026-pos-loket--peta-3d)
 - [Pembaruan 24 November 2026: modul wisata & role pengunjung](#pembaruan-24-november-2026-modul-wisata--role-pengunjung)
 - [Pembaruan 24 November 2026: semua endpoint backend](#pembaruan-24-november-2026-semua-endpoint-backend)
@@ -21,6 +22,82 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 - [10. Pemeliharaan dan konvensi](#10-pemeliharaan-dan-konvensi)
 - [11. Keterbatasan dan pekerjaan berikutnya](#11-keterbatasan-dan-pekerjaan-berikutnya)
 - [12. Referensi](#12-referensi)
+
+---
+
+## Pembaruan 26 November 2026: satwa 3D, perbaikan bug & risiko
+
+### Penting setelah `git pull`
+
+Jalankan `npm install` setiap kali ada paket baru. Paket baru rilis ini: `@google/model-viewer` dan `three`; rilis sebelumnya: `qrcode` dan `maplibre-gl`.
+
+Mulai rilis ini, `npm run dev` dan `npm run build` otomatis menjalankan `scripts/check-deps.mjs`. Bila paket belum terpasang atau versinya tidak cocok dengan `package-lock.json`, muncul pesan "Jalankan: npm install". Sebelumnya yang muncul error "Module not found: Can't resolve 'qrcode'".
+
+### Ensiklopedia satwa 3D (`/wildlife-3d`)
+
+Menu "Satwa 3D" terlihat oleh peneliti, konservasionis, pengambil kebijakan, admin, pengunjung, dan petugas loket.
+
+- **Daftar**: kartu tiap satwa dengan pratinjau 3D, status IUCN (CR/EN/VU…), dan taksonomi. Bisa dicari berdasarkan nama, nama ilmiah, atau nama daerah, dan disaring per kelompok (mamalia/burung/…).
+- **Detail** (`/wildlife-3d/[id]`):
+  - Model 3D bisa diputar (seret), diperbesar (scroll/cubit), digeser, diputar otomatis, dan dibuka layar penuh. Ada tombol AR di ponsel yang mendukung WebXR.
+  - **Titik keterangan bernomor** di tubuh satwa; klik untuk mengarahkan kamera ke ciri tersebut.
+  - Ukuran, umur, pola aktivitas, populasi, dan status perlindungan.
+  - Bagian ciri-ciri, perilaku, makanan, habitat & sebaran, ancaman, dan fakta menarik.
+- **Kelola** (khusus `manage_master_data`: peneliti & admin):
+  - Unggah/ganti model `.glb` (hasil pemindaian atau model berlisensi) beserta kreditnya.
+  - Tambah titik keterangan dengan **mengklik langsung bagian tubuh pada model**.
+  - Ubah seluruh profil, dan sembunyikan satwa dari publik bila perlu.
+- **Model bawaan**: 8 model **ilustratif** (low-poly) yang dibuat sistem, bukan hasil pemindaian, dan diberi label begitu di halaman. Ganti dengan model asli bila ada.
+- **Keamanan**:
+  - Lokasi individu satwa tidak pernah ditampilkan (risiko perburuan).
+  - Model dimuat lewat proxy sebagai blob.
+  - Backend menolak GLB yang merujuk URL eksternal.
+- **File**: `components/wildlife/*` (viewer `<model-viewer>`, badge IUCN), `services/wildlife.service.ts`, `hooks/use-wildlife.ts`, `types/wildlife.type.ts`, `types/model-viewer.d.ts`.
+
+### Bug yang ditemukan & diperbaiki
+
+Seluruh 69 halaman di-crawl otomatis untuk keenam role.
+
+| Bug | Perbaikan |
+|---|---|
+| Halaman **Riwayat Sesi Kas** (`/pos/sessions`) crash: "Cannot read properties of undefined (reading 'transactions')" | Backend mengirim `summary` di daftar sesi |
+| Breadcrumb di halaman detail/edit menautkan ke `/species/1`, `/users/3`, dst. yang tidak ada (prefetch 404; diklik → halaman 404) | Segmen ID tidak lagi menjadi tautan |
+| Sesi habis (idle 2 jam) membuat semua halaman menampilkan error 401 tanpa jalan keluar | `QueryProvider` menangani 401 secara global: hapus sesi, lalu ke `/login?reason=expired` |
+| Error 4xx (validasi/izin/404) ikut dicoba ulang | Hanya error jaringan/5xx yang dicoba ulang |
+| Status insiden bisa diisi teks bebas | Pilihan baku: Menunggu, Diselidiki, Selesai, Ditolak (divalidasi backend) |
+| Petugas loket tidak punya menu Profil (tidak bisa ganti password) | Ditambahkan |
+| `useMemo` di halaman satwa, perangkat, insiden, dan peta live dihitung ulang setiap render | Data dibungkus `useMemo`; ref cleanup peta diperbaiki |
+
+### Risiko yang ditutup
+
+- **Pendaftaran**:
+  - Soal keamanan (CAPTCHA hitungan dari server, sekali pakai) dengan tombol "Ganti soal".
+  - Field honeypot tersembunyi.
+  - Soal baru otomatis setelah gagal.
+- **Rate limit per pengunjung**: server action meneruskan IP pengunjung (`X-Forwarded-For`). Backend hanya memercayainya bila `TRUSTED_PROXIES` diisi IP server FE.
+- **Pembayaran online Midtrans**: tombol "Bayar online sekarang" di halaman pesanan. Tombol hanya muncul bila backend mengisi `MIDTRANS_SERVER_KEY`, dan hanya mengarahkan ke domain `*.midtrans.com`.
+- **Token perangkat** di detail perangkat (`/devices/[id]/detail`, khusus `manage_master_data`):
+  - Buat, salin (sekali tampil), dan cabut token untuk kamera jebak/perekam/kalung GPS.
+  - Token tidak kedaluwarsa karena idle dan hanya bisa mengirim data perangkat itu.
+- **Tile peta 3D bisa diganti lewat env**: `NEXT_PUBLIC_MAP_SATELLITE_URL`, `NEXT_PUBLIC_MAP_SATELLITE_ATTRIBUTION`, `NEXT_PUBLIC_MAP_STREET_URL`, `NEXT_PUBLIC_MAP_TERRAIN_URL`. Isi dengan URL penyedia berlisensi (mis. MapTiler/Stadia dengan key) untuk trafik publik besar.
+
+### Hasil uji
+
+- `tsc` dan `next build` lulus.
+- `eslint`: 0 error. Sisa 1 peringatan berasal dari library TanStack Table yang tidak kompatibel dengan React Compiler (bukan bug).
+- Backend: 130/130 test.
+- Uji browser:
+  - **Daftar akun**: CAPTCHA salah ditolak, soal berganti, lalu berhasil daftar.
+  - **Ensiklopedia sebagai pengunjung**: 8 satwa tampil, ke detail, klik titik keterangan; panel kelola tidak terlihat.
+  - **Peneliti**: unggah GLB, lalu klik pada model menghasilkan titik dan tersimpan.
+  - **Konservasionis**: hanya bisa melihat.
+  - **Token dicabut**: halaman berikutnya langsung diarahkan ke login.
+
+### Masih di luar jangkauan kode
+
+- **Model 3D asli**: perlu hasil pemindaian (fotogrametri) atau model berlisensi; sumber model terbuka untuk satwa Sumatra tidak tersedia.
+- **POS offline & printer ESC/POS** butuh perangkat keras dan desain sinkronisasi kuota. Untuk saat ini cetak lewat browser; Chrome `--kiosk-printing` membuat struk tercetak dengan satu klik.
+- **Midtrans**: kode sudah siap, tetapi butuh akun merchant dan uji sandbox dengan kunci asli.
 
 ---
 
