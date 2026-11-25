@@ -300,6 +300,7 @@ export const RouteMap3D = forwardRef<
     let cancelled = false;
     (async () => {
       const maplibregl = await import("maplibre-gl");
+      maplibregl.setWorkerUrl("/maplibre-gl-worker.js");
       if (cancelled || !containerRef.current) return;
       let map: MlMap;
       try {

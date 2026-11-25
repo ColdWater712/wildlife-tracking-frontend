@@ -6,6 +6,10 @@ export const DEFAULT_LOCALE: AppLocale = "id";
 
 export const SECTION_LABELS: Record<AppLocale, Record<string, string>> = {
   id: {
+    Utama: "Utama",
+    Operasional: "Operasional",
+    "Wisata & Loket": "Wisata & Loket",
+    "Akun & Sistem": "Akun & Sistem",
     Umum: "Umum",
     "Analisis AI": "Analisis AI",
     Lapangan: "Lapangan",
@@ -13,12 +17,17 @@ export const SECTION_LABELS: Record<AppLocale, Record<string, string>> = {
     Laporan: "Laporan",
     Sistem: "Sistem",
     Wisata: "Wisata",
+    "Jelajah Tur": "Jelajah Tur",
+    "Kasir (POS)": "Kasir (POS)",
     Loket: "Loket",
     "Kelola Wisata": "Kelola Wisata",
-    Ensiklopedia: "Ensiklopedia",
     Akun: "Akun",
   },
   en: {
+    Utama: "Main",
+    Operasional: "Operations",
+    "Wisata & Loket": "Tourism & Counter",
+    "Akun & Sistem": "System & Account",
     Umum: "General",
     "Analisis AI": "AI Analysis",
     Lapangan: "Field Operations",
@@ -26,9 +35,10 @@ export const SECTION_LABELS: Record<AppLocale, Record<string, string>> = {
     Laporan: "Reports",
     Sistem: "System",
     Wisata: "Tourism",
+    "Jelajah Tur": "Explore Tours",
+    "Kasir (POS)": "Ticket POS",
     Loket: "Ticket Counter",
     "Kelola Wisata": "Tourism Admin",
-    Ensiklopedia: "Encyclopedia",
     Akun: "Account",
   },
 };

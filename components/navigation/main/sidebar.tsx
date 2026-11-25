@@ -185,7 +185,10 @@ export function Sidebar({
             <ul className="flex flex-col gap-1">
               {section.items.map((item) => {
                 const active = item.href === activeHref;
-                const itemLabel = getNavLabel(locale, item.href, item.label);
+                const itemLabel =
+                  item.subItems && item.subItems.length > 1
+                    ? getSectionLabel(locale, item.label)
+                    : getNavLabel(locale, item.href, item.label);
 
                 return (
                   <li key={item.href}>
