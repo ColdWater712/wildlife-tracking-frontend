@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapPin, Mic, MicOff, PhoneCall, PhoneOff, Radio, Volume2, VolumeX } from "lucide-react";
+import { MapPin, Mic, MicOff, PhoneCall, PhoneOff, Radio, Volume2, VolumeX, X } from "lucide-react";
 
 import type { TYPE_EMERGENCY_CONTACT } from "@/types/tourism.type";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ export function EmergencyCallModal({
   const [sharedCoords, setSharedCoords] = useState<string | null>(null);
 
   const speakerMutedRef = useRef(speakerMuted);
-  const closeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     speakerMutedRef.current = speakerMuted;
@@ -77,13 +76,22 @@ export function EmergencyCallModal({
   }, []);
 
   const handleEndCall = useCallback(() => {
-    if (status === "ended") return;
+    if (status === "ended") {
+      onClose();
+      return;
+    }
     setStatus("ended");
     playTone(320, null, 220);
-    closeTimerRef.current = window.setTimeout(() => {
-      onClose();
-    }, 950);
   }, [onClose, playTone, status]);
+
+  // Auto-close modal 800ms after call ends
+  useEffect(() => {
+    if (status !== "ended") return;
+    const timer = window.setTimeout(() => {
+      onClose();
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [onClose, status]);
 
   // Ringing tone + auto-connect after 2.4s
   useEffect(() => {
@@ -126,9 +134,6 @@ export function EmergencyCallModal({
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      if (closeTimerRef.current !== null) {
-        window.clearTimeout(closeTimerRef.current);
-      }
     };
   }, [contact, handleEndCall]);
 
@@ -156,11 +161,16 @@ export function EmergencyCallModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Panggilan Darurat ke ${contact.name}`}
+      onClick={(e) => {
+        if (status === "ended" && e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
     >
       <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-emerald-500/30 bg-[#0b1914] p-6 text-white shadow-2xl">
-        {/* Status Pill */}
-        <div className="flex items-center justify-between text-xs">
+        {/* Status Pill & Close Button */}
+        <div className="flex items-center justify-between gap-2 text-xs">
           <span
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono font-bold uppercase tracking-wider",
@@ -188,7 +198,17 @@ export function EmergencyCallModal({
                 : "Panggilan Diakhiri"}
           </span>
 
-          <span className="font-mono text-[11px] text-white/60">{contact.available}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] text-white/60">{contact.available}</span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup panggilan"
+              className="inline-flex size-7 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/75 transition hover:bg-white/15 hover:text-white"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         {/* Contact Avatar & Identity */}
@@ -280,11 +300,10 @@ export function EmergencyCallModal({
           <button
             type="button"
             onClick={handleEndCall}
-            disabled={status === "ended"}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-bold text-white shadow-lg transition hover:bg-rose-500 disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 text-sm font-bold text-white shadow-lg transition hover:bg-rose-500"
           >
             <PhoneOff className="size-5" />
-            <span>{status === "ended" ? "Menutup..." : "Akhiri Panggilan (End Call)"}</span>
+            <span>{status === "ended" ? "Tutup Panggilan" : "Akhiri Panggilan (End Call)"}</span>
           </button>
 
           <a
