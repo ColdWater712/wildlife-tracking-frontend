@@ -28,6 +28,11 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     keywords: ["notifikasi", "pemberitahuan", "notif", "notifications", "alerts"],
   },
   {
+    href: "/emergency-contacts",
+    label: { id: "Kontak Darurat", en: "Emergency Contacts" },
+    keywords: ["kontak darurat", "darurat", "sos", "emergency", "emergency contacts", "posko"],
+  },
+  {
     href: "/wildlife-3d",
     label: { id: "Ensiklopedia Satwa 3D", en: "3D Wildlife Encyclopedia" },
     keywords: ["satwa 3d", "ensiklopedia", "3d wildlife", "model 3d", "wildlife 3d"],

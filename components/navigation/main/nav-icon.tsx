@@ -37,6 +37,7 @@ const ICON_PATHS: Record<NavIcon, string> = {
   cashier: "M4 10h16v10H4zM7 10V6h10v4M9 4h6M8 14h2M14 14h2M8 17h8",
   globe: "M3 20l6-12 4 6 3-4 5 10H3zM14 5.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0",
   book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z",
+  phone: "M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z",
 };
 
 export function NavIconGlyph({ icon, className }: { icon: NavIcon; className?: string }) {

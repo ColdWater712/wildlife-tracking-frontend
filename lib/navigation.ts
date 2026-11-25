@@ -40,7 +40,8 @@ export type NavIcon =
   | "cashier"
   | "species3d"
   | "globe"
-  | "book";
+  | "book"
+  | "phone";
 
 export type NavItem = {
   label: string;
@@ -130,6 +131,7 @@ const TOURISM_ITEMS: NavItem[] = [
 
 const ACCOUNT_ITEMS: NavItem[] = [
   { label: "Notifikasi", href: "/notifications", icon: "bell", permission: ["view_data", "book_tickets", "sell_tickets"] },
+  { label: "Kontak Darurat", href: "/emergency-contacts", icon: "phone", permission: ["view_data", "book_tickets", "sell_tickets"] },
   { label: "Panduan Pengguna", href: "/manual", icon: "book", permission: ["view_data", "book_tickets", "sell_tickets"] },
   { label: "Profil Saya", href: "/profile", icon: "profile", permission: ["view_data", "book_tickets", "sell_tickets"] },
 ];
