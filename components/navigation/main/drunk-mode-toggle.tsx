@@ -32,18 +32,24 @@ export function DrunkModeToggle() {
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "relative inline-flex size-10 items-center justify-center rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         isTx
           ? "cursor-not-allowed border-line bg-surface-muted text-muted opacity-50"
           : isActive
-            ? "border-fuchsia-400 bg-gradient-to-br from-fuchsia-500 via-amber-400 to-cyan-400 text-slate-950 shadow-md ring-2 ring-fuchsia-400/50"
+            ? "border-amber-600/60 bg-amber-500/15 text-amber-800 shadow-sm dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-300"
             : "border-line bg-surface text-ink-soft hover:border-primary hover:bg-surface-muted",
       )}
     >
       <Wine
         aria-hidden="true"
-        className={cn("size-[1.15rem] transition-transform", isActive && "rotate-12 scale-110")}
+        className={cn("size-[1.15rem] transition-transform", isActive && "-rotate-12")}
       />
+      {isActive ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-amber-600 dark:bg-amber-400"
+        />
+      ) : null}
     </button>
   );
 }
