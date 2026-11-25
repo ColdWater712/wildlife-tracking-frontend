@@ -225,7 +225,7 @@ export const RouteMap3D = forwardRef<
       if (!map || !route || route.waypoints.length < 2) return;
       stop();
 
-      const maplibregl = (await import("maplibre-gl")).default;
+      const maplibregl = await import("maplibre-gl");
       const points = route.waypoints;
       const cumulative = [0];
       for (let i = 1; i < points.length; i++) {
@@ -299,7 +299,7 @@ export const RouteMap3D = forwardRef<
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const maplibregl = (await import("maplibre-gl")).default;
+      const maplibregl = await import("maplibre-gl");
       if (cancelled || !containerRef.current) return;
       let map: MlMap;
       try {
@@ -398,7 +398,7 @@ export const RouteMap3D = forwardRef<
     (map.getSource("routes") as GeoJSONSource | undefined)?.setData(routesGeoJson(routes));
 
     let active = true;
-    void import("maplibre-gl").then(({ default: maplibregl }) => {
+    void import("maplibre-gl").then((maplibregl) => {
       if (!active) return;
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = routes
@@ -437,7 +437,7 @@ export const RouteMap3D = forwardRef<
       const selectedRoute = routes.find((r) => r.id === selectedId);
       if (selectedRoute && selectedRoute.waypoints.length >= 2) {
         let active = true;
-        void import("maplibre-gl").then(({ default: maplibregl }) => {
+        void import("maplibre-gl").then((maplibregl) => {
           if (!active) return;
           const startWp = selectedRoute.waypoints[0];
           const peakWp = selectedRoute.waypoints.reduce((best, cur) => (cur[2] > best[2] ? cur : best), selectedRoute.waypoints[0]);

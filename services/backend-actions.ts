@@ -32,6 +32,23 @@ import type { TYPE_LOGIN_REQUEST, TYPE_REGISTER_CHALLENGE, TYPE_REGISTER_REQUEST
 const normalizePath = (path: string): string =>
   path.replace(/^\/api\/backend(?=\/|$)/, "") || "/";
 
+const isSafeApiPath = (path: string): boolean => {
+  if (!path.startsWith("/")) return false;
+  if (
+    path.includes("..") ||
+    path.includes("//") ||
+    path.includes("\\") ||
+    path.includes("://") ||
+    path.includes("@") ||
+    path.includes("?") ||
+    path.includes("#")
+  ) {
+    return false;
+  }
+  if (/[\x00-\x1f\x7f]/.test(path)) return false;
+  return /^\/[A-Za-z0-9/_.-]*$/.test(path);
+};
+
 const unauthorizedResult = (): BackendActionResult => ({
   ok: false,
   status: 401,
@@ -229,6 +246,17 @@ export const forwardBackendAction = async (
 
   if (!token) return unauthorizedResult();
 
+  const safePath = normalizePath(payload.path);
+  if (!isSafeApiPath(safePath)) {
+    return {
+      ok: false,
+      status: 400,
+      kind: resolveErrorKind(400),
+      message: "Path permintaan tidak valid.",
+      errors: null,
+    };
+  }
+
   const contentType = payload.headers?.["Content-Type"];
   const requestHeaders: Record<string, string> = {
     ...(await clientIpHeaders()),
@@ -239,7 +267,7 @@ export const forwardBackendAction = async (
     const serverApi = createServerApiClient(getLaravelApiBaseUrl());
     const response = await serverApi.requestRaw(
       payload.method,
-      normalizePath(payload.path),
+      safePath,
       {
         params: payload.params,
         body: payload.body,
