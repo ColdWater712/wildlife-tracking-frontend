@@ -568,3 +568,34 @@
     text-shadow 1.2s ease-out,
     box-shadow 1.2s ease-out;
 }
+
+/* ==========================================================================
+   Accessibility Visual Aids (jatimbissa.id-inspired): font scaling,
+   high-contrast mode, and readable letter/line spacing.
+   ========================================================================== */
+html[data-a11y-font="lg"] {
+  font-size: 112%;
+}
+
+html[data-a11y-font="xl"] {
+  font-size: 124%;
+}
+
+html[data-a11y-contrast="high"] {
+  --border: #0f1f17;
+  --line: #0f1f17;
+  --line-strong: #000000;
+  --ink: #000000;
+  --ink-soft: #0f1f17;
+}
+
+html[data-a11y-contrast="high"] :focus-visible {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 2px;
+}
+
+html[data-a11y-readable="true"] body {
+  letter-spacing: 0.04em;
+  word-spacing: 0.12em;
+  line-height: 1.75;
+}

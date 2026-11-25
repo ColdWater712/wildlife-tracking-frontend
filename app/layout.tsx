@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/toast";
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body className="min-h-full bg-background text-foreground">
         <PreferencesProvider>
           <QueryProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              {children}
+              <VoiceA11yWidget />
+            </ToastProvider>
           </QueryProvider>
         </PreferencesProvider>
       </body>

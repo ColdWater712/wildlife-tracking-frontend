@@ -180,6 +180,10 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         id: "Tombol Mode Mabuk (ikon gelas di samping Night Mode) menyediakan efek optik 3D dengan level Tipsy/Drunk/Heavy serta siraman air dingin (Sadar Sekarang), dan otomatis dijeda di seluruh modul transaksi.",
         en: "The Drunk Mode toggle (wine icon beside Night Mode) offers Tipsy/Drunk/Heavy 3D optical effects with a cold-water splash Sober Up sequence, and pauses automatically on all transaction modules.",
       },
+      {
+        id: "Simbol Aksesibilitas & Asisten Suara AI di pojok kiri bawah (Alt+A / Alt+V) membantu pengguna tunanetra bernavigasi, membacakan layar, dan menjalankan perintah suara dengan pilihan model suara serta kecepatan bicara.",
+        en: "The Accessibility & Voice AI symbol at the bottom-left (Alt+A / Alt+V) helps visually impaired users navigate, hear page summaries, and run voice commands with selectable voice models and speech speed.",
+      },
     ],
     links: [
       { href: "/notifications", label: { id: "Buka Notifikasi", en: "Open Notifications" } },
