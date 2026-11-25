@@ -470,6 +470,11 @@ export type VoiceAction =
   | { type: "access_denied"; href: string; label: string }
   | { type: "auth_required"; label: string }
   | { type: "logout" }
+  | {
+      type: "emergency_distress";
+      emergencyType: "cedera" | "kebakaran" | "satwa_agresif" | "tersesat" | "pemburu" | "lainnya";
+      transcript: string;
+    }
   | { type: "history"; direction: "back" | "forward" }
   | { type: "read_page" }
   | { type: "list_commands" }
@@ -487,6 +492,68 @@ export type VoiceAction =
   | { type: "fill_input"; field: string; value: string }
   | { type: "unknown"; transcript: string };
 
+export function interpretConfirmation(raw: string): "yes" | "no" | "unknown" {
+  const text = raw.trim().toLowerCase();
+  if (!text) return "unknown";
+  if (
+    /\b(ya|iya|yes|yeah|yep|ok|oke|okay|betul|benar|setuju|tolong|panggil|hubungi|telepon|call|confirm|konfirmasi|lanjut|cepat)\b/.test(
+      text,
+    )
+  ) {
+    return "yes";
+  }
+  if (/\b(tidak|nggak|enggak|gak|bukan|jangan|no|nope|cancel|batal|batalkan|stop)\b/.test(text)) {
+    return "no";
+  }
+  return "unknown";
+}
+
+function detectEmergencyDistress(
+  text: string,
+): "cedera" | "kebakaran" | "satwa_agresif" | "tersesat" | "pemburu" | "lainnya" | null {
+  // Do not hijack explicit page-navigation requests such as "buka halaman kontak darurat"
+  if (
+    /^(?:tolong\s+)?(?:buka|lihat|tampilkan|arahkan\s+ke|pergi\s+ke|open|show|go\s+to)\s+(?:halaman\s+|menu\s+)?(?:kontak\s+darurat|emergency\s+contacts|ancaman|ai\s+threats)/.test(
+      text,
+    )
+  ) {
+    return null;
+  }
+
+  if (/(ada\s+pemburu|\bpemburu\b|\bpoacher\b|pembalak|suara\s+tembakan|orang\s+bersenjata)/.test(text)) {
+    return "pemburu";
+  }
+  if (/(ada\s+kebakaran|\bkebakaran\b|\bterbakar\b|hutan\s+terbakar|api\s+besar|\bwildfire\b|\bfire\b)/.test(text)) {
+    return "kebakaran";
+  }
+  if (
+    /(terluka|\bluka\b|patah\s+tulang|pingsan|berdarah|cedera|sakit\s+parah|sesak\s+napas|\binjured\b|\bbleeding\b|\bhurt\b|kecelakaan)/.test(
+      text,
+    )
+  ) {
+    return "cedera";
+  }
+  if (/(tersesat|nyasar|hilang\s+arah|tidak\s+tahu\s+jalan|got\s+lost|\bi\s+am\s+lost\b)/.test(text)) {
+    return "tersesat";
+  }
+  if (
+    /(diserang\s+satwa|dikejar\s+(?:harimau|beruang|gajah|badak)|satwa\s+agresif|animal\s+attack|wild\s+animal)/.test(
+      text,
+    )
+  ) {
+    return "satwa_agresif";
+  }
+  if (
+    /(tolong\s+saya|selamatkan\s+saya|butuh\s+pertolongan|butuh\s+bantuan\s+(?:segera|darurat|medis|evakuasi)|keadaan\s+darurat|kondisi\s+darurat|\bhelp\s+me\b|\bsave\s+me\b|\bemergency\b|\bsos\b)/.test(
+      text,
+    )
+  ) {
+    return "lainnya";
+  }
+
+  return null;
+}
+
 export function interpretVoiceCommand(
   raw: string,
   locale: AppLocale,
@@ -500,7 +567,13 @@ export function interpretVoiceCommand(
     return { type: "stop_speech" };
   }
 
-  // 2. Logout / Sign out (supports ID, EN, and mixed phrases)
+  // 2. Emergency distress detection (prioritized BEFORE generic "bantuan" / help!)
+  const emergencyType = detectEmergencyDistress(text);
+  if (emergencyType) {
+    return { type: "emergency_distress", emergencyType, transcript: raw };
+  }
+
+  // 3. Logout / Sign out (supports ID, EN, and mixed phrases)
   if (
     /(logout|log out|sign out|signout|keluar akun|keluar dari akun|mau keluar|ingin keluar|tolong keluar|cabut sesi|\bkeluar\b)/.test(
       text,
@@ -509,14 +582,14 @@ export function interpretVoiceCommand(
     return { type: "logout" };
   }
 
-  // 3. Help / command list
+  // 4. Help / command list
   if (/(bantuan|perintah|menu apa saja|bisa apa|akses apa|help|commands|what can you do)/.test(text)) {
     return { type: "list_commands" };
   }
 
-  // 4. Read page content thoroughly (ID, EN, and mixed phrases)
+  // 5. Read / explain page content thoroughly (ID, EN, and mixed phrases)
   if (
-    /(bacakan|baca\s+(?:isi|semua|halaman|layar|konten|apa)|jelaskan isi|ceritakan halaman|di mana saya|ini halaman apa|sedang di mana|read\s+(?:this\s+)?(?:page|screen|content|all|everything)|what\s+is\s+on\s+this\s+page|where\s+am\s+i|summarize)/.test(
+    /(bacakan|baca\s+(?:isi|semua|halaman|layar|konten|apa)|jelaskan|terangkan|deskripsikan|ceritakan|rangkum|ringkas|di mana saya|ini halaman apa|sedang di mana|read\s+(?:this\s+)?(?:page|screen|content|all|everything)|explain|describe|what\s+is\s+on\s+this\s+page|where\s+am\s+i|summarize)/.test(
       text,
     ) ||
     /^(baca|read)$/.test(text)

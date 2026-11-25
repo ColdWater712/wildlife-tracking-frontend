@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { usePreferences } from "@/components/providers/preferences-provider";
+import { EmergencyCallModal } from "@/components/tourism/emergency-call-modal";
 import { useLogout } from "@/hooks/use-logout";
 import { DRUNK_SOBER_EVENT } from "@/lib/drunk-mode";
 import { getRoleLabel } from "@/lib/i18n";
@@ -23,10 +24,22 @@ import {
   clickMatchingElement,
   extractPageSummary,
   fillMatchingInput,
+  interpretConfirmation,
   interpretVoiceCommand,
   summarizeAllowedRoutesForRole,
 } from "@/lib/voice-assistant";
 import { cn } from "@/lib/utils";
+import type { TYPE_EMERGENCY_CONTACT } from "@/types/tourism.type";
+
+const PRIMARY_EMERGENCY_CONTACT: TYPE_EMERGENCY_CONTACT = {
+  name: "Posko Komando BBTNGL Bukit Lawang",
+  role: "Koordinator Resort & Ranger Lapangan",
+  phone: "+62-61-8821-0112",
+  radio_channel: "VHF 156.800 MHz (Ch. 16)",
+  available: "24 hours",
+  location: "Gerbang Utama Bukit Lawang, Langkat",
+  notes: "Pusat koordinasi evakuasi jalur & laporan darurat satwa liar.",
+};
 
 const STORAGE_VOICE = "app-a11y-voice";
 const STORAGE_RATE = "app-a11y-rate";
@@ -157,14 +170,33 @@ export function VoiceA11yWidget() {
   const [textCommand, setTextCommand] = useState("");
   const [speechSupported, setSpeechSupported] = useState(true);
 
+  const [activeEmergencyCall, setActiveEmergencyCall] = useState<TYPE_EMERGENCY_CONTACT | null>(null);
+
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const rateRef = useRef(rate);
   const voiceUriRef = useRef(selectedVoiceURI);
   const autoReadRef = useRef(autoRead);
   const wantListeningRef = useRef(false);
+  const conversationActiveRef = useRef(false);
+  const pendingEmergencyRef = useRef<{ emergencyType: string; transcript: string } | null>(null);
+  const startListeningRef = useRef<() => void>(() => undefined);
+  const activeEmergencyCallRef = useRef<TYPE_EMERGENCY_CONTACT | null>(null);
   const fatalErrorRef = useRef(false);
   const latestTranscriptRef = useRef("");
   const restartTimerRef = useRef<number | null>(null);
+  const resumeListenTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeEmergencyCallRef.current = activeEmergencyCall;
+  }, [activeEmergencyCall]);
+
+  useEffect(() => {
+    return () => {
+      if (resumeListenTimerRef.current !== null) {
+        window.clearTimeout(resumeListenTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     rateRef.current = rate;
@@ -258,6 +290,10 @@ export function VoiceA11yWidget() {
   }, [fontScale, highContrast, readableSpacing]);
 
   const stopSpeaking = useCallback(() => {
+    if (resumeListenTimerRef.current !== null) {
+      window.clearTimeout(resumeListenTimerRef.current);
+      resumeListenTimerRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
@@ -265,9 +301,32 @@ export function VoiceA11yWidget() {
   }, []);
 
   const speak = useCallback(
-    (message: string, overrideRate?: number) => {
+    (message: string, overrideRate?: number, options?: { resumeAfter?: boolean }) => {
+      if (resumeListenTimerRef.current !== null) {
+        window.clearTimeout(resumeListenTimerRef.current);
+        resumeListenTimerRef.current = null;
+      }
       setFeedback(message);
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+      const scheduleResumeAfterSpeech = () => {
+        if (
+          conversationActiveRef.current &&
+          options?.resumeAfter !== false &&
+          !activeEmergencyCallRef.current
+        ) {
+          resumeListenTimerRef.current = window.setTimeout(() => {
+            resumeListenTimerRef.current = null;
+            if (conversationActiveRef.current && !activeEmergencyCallRef.current) {
+              startListeningRef.current();
+            }
+          }, 280);
+        }
+      };
+
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        scheduleResumeAfterSpeech();
+        return;
+      }
 
       try {
         window.speechSynthesis.cancel();
@@ -292,13 +351,20 @@ export function VoiceA11yWidget() {
             utterance.onstart = () => setSpeaking(true);
           }
           if (index === chunks.length - 1) {
-            utterance.onend = () => setSpeaking(false);
-            utterance.onerror = () => setSpeaking(false);
+            utterance.onend = () => {
+              setSpeaking(false);
+              scheduleResumeAfterSpeech();
+            };
+            utterance.onerror = () => {
+              setSpeaking(false);
+              scheduleResumeAfterSpeech();
+            };
           }
           window.speechSynthesis.speak(utterance);
         });
       } catch {
         setSpeaking(false);
+        scheduleResumeAfterSpeech();
       }
     },
     [locale],
@@ -368,12 +434,59 @@ export function VoiceA11yWidget() {
 
   const executeCommand = useCallback(
     (rawText: string) => {
+      if (pendingEmergencyRef.current) {
+        const confirmation = interpretConfirmation(rawText);
+        if (confirmation === "yes") {
+          pendingEmergencyRef.current = null;
+          conversationActiveRef.current = false;
+          setActiveEmergencyCall(PRIMARY_EMERGENCY_CONTACT);
+          speak(
+            locale === "en"
+              ? "Calling BBTNGL Emergency Command Post now. Help is being connected."
+              : "Menghubungkan panggilan darurat ke Posko Komando BBTNGL sekarang.",
+            undefined,
+            { resumeAfter: false },
+          );
+          return;
+        }
+        if (confirmation === "no") {
+          pendingEmergencyRef.current = null;
+          speak(
+            locale === "en"
+              ? "Emergency call cancelled. I am still listening if you need anything else."
+              : "Panggilan darurat dibatalkan. Saya masih mendengarkan jika Anda membutuhkan hal lain.",
+          );
+          return;
+        }
+        speak(
+          locale === "en"
+            ? "Please say yes to call emergency services now, or say cancel to abort."
+            : "Mohon ucapkan ya untuk menghubungi posko darurat sekarang, atau ucapkan batal untuk membatalkan.",
+        );
+        return;
+      }
+
       const action = interpretVoiceCommand(rawText, locale, userRole);
       switch (action.type) {
         case "stop_speech":
+          conversationActiveRef.current = false;
+          pendingEmergencyRef.current = null;
           stopSpeaking();
           setFeedback(locale === "en" ? "Speech stopped." : "Suara dihentikan.");
           return;
+        case "emergency_distress": {
+          conversationActiveRef.current = true;
+          pendingEmergencyRef.current = {
+            emergencyType: action.emergencyType,
+            transcript: action.transcript,
+          };
+          speak(
+            locale === "en"
+              ? "Emergency detected! Do you want me to call the BBTNGL Emergency Command Post right now? Please say yes or cancel."
+              : "Keadaan darurat terdeteksi! Apakah Anda ingin saya langsung menelepon Posko Komando Darurat BBTNGL sekarang? Ucapkan ya atau batal.",
+          );
+          return;
+        }
         case "list_commands":
           speak(summarizeAllowedRoutesForRole(userRole, locale));
           return;
@@ -393,13 +506,14 @@ export function VoiceA11yWidget() {
           return;
         case "logout":
           if (!userRole) {
-            speak(locale === "en" ? "You are not signed in." : "Anda belum masuk akun.");
+            speak(locale === "en" ? "You are not signed in yet." : "Anda belum masuk ke akun mana pun.");
             return;
           }
+          conversationActiveRef.current = false;
           speak(
-            locale === "en"
-              ? "Signing you out now."
-              : "Baik, keluar dari akun Anda sekarang.",
+            locale === "en" ? "Signing you out now." : "Mengeluarkan Anda dari akun sekarang.",
+            undefined,
+            { resumeAfter: false },
           );
           void logout();
           return;
@@ -578,10 +692,16 @@ export function VoiceA11yWidget() {
   );
 
   const stopListening = useCallback(() => {
+    conversationActiveRef.current = false;
+    pendingEmergencyRef.current = null;
     wantListeningRef.current = false;
     if (restartTimerRef.current !== null) {
       window.clearTimeout(restartTimerRef.current);
       restartTimerRef.current = null;
+    }
+    if (resumeListenTimerRef.current !== null) {
+      window.clearTimeout(resumeListenTimerRef.current);
+      resumeListenTimerRef.current = null;
     }
     const current = recognitionRef.current;
     recognitionRef.current = null;
@@ -605,6 +725,7 @@ export function VoiceA11yWidget() {
   }, [executeCommand]);
 
   const startListening = useCallback(() => {
+    conversationActiveRef.current = true;
     const win = window as SpeechWindow;
     const Ctor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
     if (!Ctor) {
@@ -763,6 +884,10 @@ export function VoiceA11yWidget() {
       setListening(false);
     }
   }, [executeCommand, locale, speak, stopSpeaking]);
+
+  useEffect(() => {
+    startListeningRef.current = startListening;
+  }, [startListening]);
 
   const toggleListening = useCallback(() => {
     if (listening) {
@@ -1174,6 +1299,12 @@ export function VoiceA11yWidget() {
           </div>
         </section>
       ) : null}
+
+      <EmergencyCallModal
+        key={activeEmergencyCall ? activeEmergencyCall.phone : "closed"}
+        contact={activeEmergencyCall}
+        onClose={() => setActiveEmergencyCall(null)}
+      />
     </>
   );
 }
