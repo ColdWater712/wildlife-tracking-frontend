@@ -168,21 +168,17 @@ export function Sidebar({
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
             {showLabels ? (
-              <div className="flex items-center gap-2 px-3 pb-2">
-                <span className="h-px flex-1 bg-white/15" aria-hidden="true" />
-                <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-sage-cream">
-                  {getSectionLabel(locale, section.title)}
-                </p>
-                <span className="h-px flex-1 bg-white/15" aria-hidden="true" />
-              </div>
+              <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-white/45">
+                {getSectionLabel(locale, section.title)}
+              </p>
             ) : (
               <div
                 aria-hidden="true"
-                className="mx-auto mb-3 h-px w-8 rounded-full bg-white/15"
+                className="mx-auto mb-2.5 h-px w-6 bg-white/12"
               />
             )}
 
-            <ul className="flex flex-col gap-1">
+            <ul className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const active = item.href === activeHref;
                 const itemLabel =
@@ -200,32 +196,27 @@ export function Sidebar({
                       aria-label={showLabels ? undefined : itemLabel}
                       title={showLabels ? undefined : itemLabel}
                       className={cn(
-                        "group/item relative flex items-center rounded-lg text-sm font-medium transition-colors duration-150",
+                        "group/item relative flex items-center rounded-md text-[13.5px] font-medium transition-colors duration-150",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-natural-muted focus-visible:ring-offset-1 focus-visible:ring-offset-forest-dark",
-                        showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-3",
+                        showLabels ? "gap-2.5 px-3 py-2" : "justify-center px-2 py-2.5",
                         active
-                          ? "bg-forest-muted text-white"
-                          : "text-sage-cream/80 hover:bg-forest-muted/70 hover:text-white",
+                          ? "bg-white/[0.12] text-white"
+                          : "text-white/70 hover:bg-white/[0.06] hover:text-white",
                       )}
                     >
                       {active ? (
                         <span
                           aria-hidden="true"
-                          className={cn(
-                            "absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-natural-muted",
-                            !showLabels && "h-5 w-0.5",
-                          )}
+                          className="absolute left-0 top-1/2 h-4 w-[2.5px] -translate-y-1/2 rounded-r bg-natural-muted"
                         />
-                      ) : (
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "absolute left-0 top-1/2 h-0 w-1 -translate-y-1/2 rounded-r-full bg-natural-muted transition-all duration-150 group-hover/item:h-5",
-                            !showLabels && "group-hover/item:h-4",
-                          )}
-                        />
-                      )}
-                      <NavIconGlyph icon={item.icon} className="size-5 shrink-0" />
+                      ) : null}
+                      <NavIconGlyph
+                        icon={item.icon}
+                        className={cn(
+                          "size-[17px] shrink-0 transition-opacity",
+                          active ? "opacity-100" : "opacity-75 group-hover/item:opacity-100",
+                        )}
+                      />
                       {showLabels ? (
                         <span className="min-w-0 truncate">{itemLabel}</span>
                       ) : null}

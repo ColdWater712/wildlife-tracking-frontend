@@ -81,9 +81,6 @@ const QUICK_LINKS = [
   },
 ];
 
-const LINK_CLASS =
-  "group flex min-w-0 items-center gap-3 rounded-card border border-line bg-surface p-4 transition hover:border-primary/40 hover:bg-primary-soft/50";
-
 const deviceVariant = (condition: string): BadgeVariant => {
   if (condition === "damaged") return "danger";
   if (condition === "lost") return "neutral";
@@ -134,33 +131,32 @@ export default function DashboardPage() {
     summary.totalDevices === 0;
 
   return (
-    <div className="flex flex-col gap-6 pb-6">
-      <section className="relative overflow-hidden rounded-card border border-natural-muted bg-white p-6 shadow-card sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full border border-natural-muted/70" />
-        <div className="pointer-events-none absolute -bottom-24 right-16 size-72 rounded-full border border-natural-muted/70" />
-        <div className="relative z-10 max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Wildlife Monitoring System · BTNGL
-          </p>
-          <h2 className="text-2xl font-bold tracking-tight text-forest-black sm:text-3xl">
-            Dashboard Pemantauan Satwa
+    <div className="flex flex-col gap-8 pb-8">
+      <header className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-primary">
+              BTNGL · Gunung Leuser
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{ROLE_LABELS[role]}</span>
+          </div>
+          <h2 className="font-serif text-3xl font-medium tracking-[-0.025em] text-ink sm:text-[2.15rem] sm:leading-tight">
+            Pemantauan Satwa &amp; Lapangan
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-sage">
-            Pantau aktivitas satwa liar, kondisi perangkat GPS, dan laporan
-            lapangan dalam satu tempat.
+          <p className="mt-2 max-w-xl text-[13.5px] leading-6 text-muted">
+            Ringkasan pergerakan satwa liar, status perangkat pelacak GPS, serta laporan aktivitas lapangan terkini.
           </p>
-          <p className="mt-4 text-sm font-semibold text-olive-dark">
-            Masuk sebagai {ROLE_LABELS[role]}
-          </p>
-          <Link
-            href="/tracking/live-map"
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-dark"
-          >
-            Lihat Peta Pelacakan
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
         </div>
-      </section>
+
+        <Link
+          href="/tracking/live-map"
+          className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md bg-primary px-4 text-[13.5px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition-colors hover:bg-primary-dark"
+        >
+          <span>Buka Live Map &amp; 3D</span>
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </Link>
+      </header>
 
       <section>
         <SectionHeader
@@ -205,25 +201,29 @@ export default function DashboardPage() {
       <section>
         <SectionHeader
           title="Akses Cepat"
-          description="Buka fitur pemantauan yang sering digunakan."
+          description="Pintasan langsung ke modul pemantauan utama."
         />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
           {QUICK_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className={LINK_CLASS}>
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+            <Link
+              key={link.href}
+              href={link.href}
+              className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+            >
+              <span className="shrink-0 text-primary/80 transition-colors group-hover:text-primary">
                 {link.icon}
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-ink">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-semibold text-ink">
                   {link.title}
                 </span>
-                <span className="mt-0.5 block text-xs leading-5 text-muted">
+                <span className="mt-0.5 block truncate text-xs text-muted">
                   {link.description}
                 </span>
               </span>
               <ArrowRight
                 aria-hidden="true"
-                className="ml-auto size-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-primary"
+                className="size-3.5 shrink-0 text-muted/70 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
               />
             </Link>
           ))}

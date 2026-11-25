@@ -92,7 +92,7 @@ export function AppShell({ user, children }: AppShellProps) {
               {moduleSubItems.length > 0 ? (
                 <nav
                   aria-label={locale === "en" ? "Module pages" : "Sub-halaman modul"}
-                  className="mb-4 flex items-center gap-1.5 overflow-x-auto pb-1 print:hidden"
+                  className="mb-6 flex items-center gap-5 overflow-x-auto border-b border-line print:hidden"
                 >
                   {moduleSubItems.map((sub) => {
                     const isActive = sub.href === activeSubHref;
@@ -102,10 +102,10 @@ export function AppShell({ user, children }: AppShellProps) {
                         href={sub.href}
                         aria-current={isActive ? "page" : undefined}
                         className={cn(
-                          "shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                          "-mb-px shrink-0 border-b-2 pb-2.5 pt-1 text-[13px] font-medium transition-colors",
                           isActive
-                            ? "border-primary bg-primary text-white shadow-sm"
-                            : "border-line bg-surface text-ink-soft hover:border-primary hover:text-primary",
+                            ? "border-primary text-ink"
+                            : "border-transparent text-muted hover:border-line-strong/40 hover:text-ink",
                         )}
                       >
                         {getNavLabel(locale, sub.href, sub.label)}
