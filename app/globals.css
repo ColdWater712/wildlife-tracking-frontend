@@ -540,3 +540,31 @@
   animation: none !important;
   transform: none !important;
 }
+
+/* Gradual cinematic sobering transitions during cold-water splash */
+[data-drunk-active="true"][data-drunk-sobering="true"] [data-drunk-stage="true"] {
+  animation: none;
+  filter: none;
+  transition: filter 1.8s ease-out;
+}
+
+[data-drunk-active="true"][data-drunk-sobering="true"] #main-content {
+  animation: none;
+  filter: blur(0px);
+  transition: filter 1.2s ease-out;
+}
+
+[data-drunk-active="true"][data-drunk-sobering="true"] #main-content h1,
+[data-drunk-active="true"][data-drunk-sobering="true"] #main-content h2,
+[data-drunk-active="true"][data-drunk-sobering="true"] #main-content .ui-panel,
+[data-drunk-active="true"][data-drunk-sobering="true"] [data-drunk-header="true"],
+[data-drunk-active="true"][data-drunk-sobering="true"] [data-drunk-3d-item="true"] {
+  animation: none;
+  transform: none;
+  text-shadow: none;
+  box-shadow: none;
+  transition:
+    transform 1.4s cubic-bezier(0.22, 1, 0.36, 1),
+    text-shadow 1.2s ease-out,
+    box-shadow 1.2s ease-out;
+}

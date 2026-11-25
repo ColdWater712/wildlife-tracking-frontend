@@ -1,5 +1,6 @@
 export const DRUNK_STORAGE_KEY = "app-drunk-mode";
 export const DRUNK_EVENT = "app-drunk-mode-change";
+export const DRUNK_SOBER_EVENT = "app-drunk-sober-splash";
 
 const TRANSACTION_PREFIXES = [
   "/pos",

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { Wine } from "lucide-react";
 
 import { usePreferences } from "@/components/providers/preferences-provider";
-import { isTransactionRoute } from "@/lib/drunk-mode";
+import { DRUNK_SOBER_EVENT, isTransactionRoute } from "@/lib/drunk-mode";
 import { cn } from "@/lib/utils";
 
 export function DrunkModeToggle() {
@@ -24,7 +24,12 @@ export function DrunkModeToggle() {
       type="button"
       data-drunk-immune="true"
       onClick={() => {
-        if (!isTx) toggleDrunkMode();
+        if (isTx) return;
+        if (isActive) {
+          window.dispatchEvent(new Event(DRUNK_SOBER_EVENT));
+          return;
+        }
+        toggleDrunkMode();
       }}
       disabled={isTx}
       aria-disabled={isTx}
