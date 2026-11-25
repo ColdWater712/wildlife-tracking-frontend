@@ -26,6 +26,67 @@ export type TYPE_PAYMENT_STATUS =
 
 export type TYPE_ITINERARY_ITEM = { time: string; title: string; description?: string | null };
 
+export type TYPE_EMERGENCY_CONTACT = {
+  name: string;
+  role: string;
+  phone: string;
+  radio_channel?: string | null;
+  available: string;
+  location: string;
+  notes?: string | null;
+};
+
+export type TYPE_TRAIL_POST = {
+  code: string;
+  name: string;
+  elevation_m: number;
+  distance_km: number;
+  water_source: string;
+  signal: string;
+  capacity: string;
+  facilities: string[];
+  notes?: string | null;
+};
+
+export type TYPE_AI_TRAIL_ALERT = {
+  prediction_id: number;
+  threat_level: "none" | "low" | "medium" | "high" | "critical";
+  label: string;
+  confidence: number | null;
+  summary: string;
+  detected_at: string | null;
+};
+
+export type TYPE_ROUTE_SAFETY = {
+  route_id: number;
+  slug: string;
+  name: string;
+  trail_status: "aman" | "waspada" | "darurat";
+  porter_fee_per_day: number;
+  emergency_contacts: TYPE_EMERGENCY_CONTACT[];
+  post_details: TYPE_TRAIL_POST[];
+  ai_emergencies: TYPE_AI_TRAIL_ALERT[];
+};
+
+export type TYPE_EMERGENCY_ALERT_PAYLOAD = {
+  pos_code: string;
+  emergency_type: "cedera" | "tersesat" | "satwa_agresif" | "cuaca_ekstrem" | "kebakaran" | "lainnya";
+  description: string;
+  latitude?: number | null;
+  longitude?: number | null;
+};
+
+export type TYPE_EMERGENCY_ALERT_RESPONSE = {
+  alert_code: string;
+  route: string;
+  pos_code: string;
+  emergency_type: string;
+  trail_status: "darurat";
+  notified_rangers: number;
+  nearest_contact: TYPE_EMERGENCY_CONTACT | null;
+  sent_at: string;
+};
+
 export type TYPE_TOUR_ROUTE = {
   route_id: number;
   code: string;
@@ -45,12 +106,15 @@ export type TYPE_TOUR_ROUTE = {
   meeting_lon: number | string | null;
   start_time: string;
   guide_fee_per_person: number;
+  porter_fee_per_day?: number;
   itinerary: TYPE_ITINERARY_ITEM[];
   includes: string[];
   bring_list: string[];
   rules: string[];
   wildlife: string[];
   waypoints: [number, number, number][] | null;
+  emergency_contacts?: TYPE_EMERGENCY_CONTACT[] | null;
+  post_details?: TYPE_TRAIL_POST[] | null;
   zone_id: number | null;
   is_active: boolean;
   reviews_avg_route_rating?: number | string | null;
@@ -179,6 +243,7 @@ export type TYPE_QUOTE_PAYLOAD = {
   wna_count: number;
   student_count: number;
   drone_count: number;
+  porter_count?: number;
 };
 
 export type TYPE_PAYMENT_INFO = {
@@ -278,6 +343,7 @@ export type TYPE_BOOKING = {
   day_type: TYPE_DAY_TYPE;
   wni_count: number;
   wna_count: number;
+  porter_count?: number;
   student_count: number;
   drone_count: number;
   participant_count: number;
@@ -306,6 +372,7 @@ export type TYPE_BOOKING_PAYLOAD = {
   shift_id: number;
   wni_count: number;
   wna_count: number;
+  porter_count?: number;
   student_count: number;
   drone_count: number;
   contact_name: string;

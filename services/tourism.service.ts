@@ -5,6 +5,8 @@ import type {
   TYPE_ADMIN_BOOKING_PARAMS,
   TYPE_BOOKING,
   TYPE_BOOKING_PAYLOAD,
+  TYPE_EMERGENCY_ALERT_PAYLOAD,
+  TYPE_EMERGENCY_ALERT_RESPONSE,
   TYPE_GUIDE_DETAIL,
   TYPE_GUIDE_SHIFT,
   TYPE_GUIDE_SHIFT_PAYLOAD,
@@ -16,6 +18,7 @@ import type {
   TYPE_QUOTE_PAYLOAD,
   TYPE_REVIEW_PAYLOAD,
   TYPE_ROUTE_DETAIL,
+  TYPE_ROUTE_SAFETY,
   TYPE_SCHEDULE_PARAMS,
   TYPE_SIMULATE_PAYMENT_PAYLOAD,
   TYPE_SIMULATE_PAYMENT_RESPONSE,
@@ -37,6 +40,17 @@ export const TOURISM_CATALOG_SERVICE = {
 
   GET_ROUTE: async (slug: string): Promise<ApiResponse<TYPE_ROUTE_DETAIL>> =>
     api.get<ApiResponse<TYPE_ROUTE_DETAIL>>(`/tourism/routes/${enc(slug)}`),
+
+  GET_ROUTE_SAFETY: async (slug: string): Promise<ApiResponse<TYPE_ROUTE_SAFETY>> =>
+    api.get<ApiResponse<TYPE_ROUTE_SAFETY>>(`/tourism/routes/${enc(slug)}/safety`),
+
+  SEND_EMERGENCY_ALERT: async (
+    slug: string,
+    payload: TYPE_EMERGENCY_ALERT_PAYLOAD,
+  ): Promise<ApiResponse<TYPE_EMERGENCY_ALERT_RESPONSE>> =>
+    api.post<ApiResponse<TYPE_EMERGENCY_ALERT_RESPONSE>>(`/tourism/routes/${enc(slug)}/emergency-alert`, {
+      body: payload,
+    }),
 
   GET_GUIDES: async (): Promise<ApiResponse<TYPE_TOUR_GUIDE[]>> =>
     api.get<ApiResponse<TYPE_TOUR_GUIDE[]>>("/tourism/guides"),

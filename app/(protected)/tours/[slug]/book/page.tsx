@@ -25,13 +25,14 @@ import {
 } from "@/types/tourism.type";
 import { formatLongDate, formatRupiah } from "@/utils/format";
 
-type Counts = { wni: number; wna: number; pelajar: number; drone: number };
+type Counts = { wni: number; wna: number; pelajar: number; drone: number; porter: number };
 
 const COUNTERS: { key: keyof Counts; label: string; hint: string; max: number }[] = [
   { key: "wni", label: "WNI", hint: "Wisatawan nusantara", max: 50 },
   { key: "pelajar", label: "Pelajar/Mahasiswa", hint: "Rombongan min. 5 orang, bawa kartu pelajar", max: 50 },
   { key: "wna", label: "WNA", hint: "Wisatawan mancanegara", max: 50 },
   { key: "drone", label: "Drone", hint: "Izin kamera drone per unit per hari", max: 5 },
+  { key: "porter", label: "Jasa Porter (Add-on)", hint: "Tambahan porter logistik per hari (maks 20 kg/porter)", max: 20 },
 ];
 
 const bookingSchema = z.object({
@@ -69,7 +70,7 @@ function TourBookContent() {
   const createMutation = useBookingCreate();
 
   const [shiftId, setShiftId] = useState<number>(Number(searchParams.get("shift") ?? 0));
-  const [counts, setCounts] = useState<Counts>({ wni: 1, wna: 0, pelajar: 0, drone: 0 });
+  const [counts, setCounts] = useState<Counts>({ wni: 1, wna: 0, pelajar: 0, drone: 0, porter: 0 });
   const [participants, setParticipants] = useState<TYPE_PARTICIPANT[]>([{ full_name: "", visitor_type: "wni", age: null }]);
   const [contact, setContact] = useState({ contact_name: "", contact_phone: "", emergency_contact: "", notes: "" });
   const [method, setMethod] = useState<TYPE_BOOKING_PAYLOAD["payment_method"]>("bank_transfer");
@@ -92,6 +93,7 @@ function TourBookContent() {
           wna_count: counts.wna,
           student_count: counts.pelajar,
           drone_count: counts.drone,
+          porter_count: counts.porter,
         })
       : "";
   const debouncedQuoteKey = useDebounce(quoteKey, 350);
@@ -131,6 +133,7 @@ function TourBookContent() {
         wna_count: counts.wna,
         student_count: counts.pelajar,
         drone_count: counts.drone,
+        porter_count: counts.porter,
         contact_name: contact.contact_name.trim(),
         contact_phone: contact.contact_phone.trim(),
         emergency_contact: contact.emergency_contact.trim(),
@@ -203,7 +206,11 @@ function TourBookContent() {
                 <div key={counter.key} className="flex items-center justify-between gap-3 rounded-2xl border border-line p-3">
                   <div>
                     <p className="text-sm font-semibold text-ink">{counter.label}</p>
-                    <p className="text-xs text-muted">{counter.hint}</p>
+                    <p className="text-xs text-muted">
+                      {counter.key === "porter"
+                        ? `${formatRupiah(route.porter_fee_per_day ?? 150000)}/hari · ${counter.hint}`
+                        : counter.hint}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" aria-label={`Kurangi ${counter.label}`} onClick={() => setCount(counter.key, -1)} className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:border-primary"><Minus className="size-4" /></button>

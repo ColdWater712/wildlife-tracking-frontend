@@ -11,6 +11,7 @@ import {
 import type {
   TYPE_ADMIN_BOOKING_PARAMS,
   TYPE_BOOKING_PAYLOAD,
+  TYPE_EMERGENCY_ALERT_PAYLOAD,
   TYPE_GUIDE_SHIFT_PAYLOAD,
   TYPE_QUOTE_PAYLOAD,
   TYPE_REVIEW_PAYLOAD,
@@ -45,6 +46,25 @@ export const useTourRoute = (slug: string) =>
     select: (response) => response.data,
     enabled: slug !== "",
   });
+
+export const useRouteSafety = (slug: string) =>
+  useQuery({
+    queryKey: [...TOURISM_KEY, "route-safety", slug],
+    queryFn: () => TOURISM_CATALOG_SERVICE.GET_ROUTE_SAFETY(slug),
+    select: (response) => response.data,
+    enabled: slug !== "",
+  });
+
+export const useSendEmergencyAlert = (slug: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: TYPE_EMERGENCY_ALERT_PAYLOAD) =>
+      TOURISM_CATALOG_SERVICE.SEND_EMERGENCY_ALERT(slug, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [...TOURISM_KEY, "route-safety", slug] });
+    },
+  });
+};
 
 export const useTourGuides = () =>
   useQuery({

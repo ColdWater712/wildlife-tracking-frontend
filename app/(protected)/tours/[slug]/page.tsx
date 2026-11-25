@@ -20,6 +20,7 @@ import {
 
 import { EmptyState, ErrorState, Loading } from "@/components/ui";
 import { ElevationProfile, GuideAvatar, RatingStars, RouteMap, routeColor } from "@/components/tourism";
+import { TrailSafetyPanel } from "@/components/tourism/trail-safety-panel";
 import { useTourRoute } from "@/hooks/use-tourism";
 import { toApiErrorState } from "@/services/api";
 import { DIFFICULTY_LABELS, SHIFT_LABELS, type TYPE_PUBLIC_SHIFT } from "@/types/tourism.type";
@@ -243,6 +244,8 @@ export default function TourDetailPage() {
           <ListCard title="Aturan kawasan" icon={<ShieldAlert className="size-4 text-primary" />} items={route.rules} />
         </aside>
       </div>
+
+      <TrailSafetyPanel slug={route.slug} />
 
       <section className="ui-panel p-5">
         <h2 className="mb-4 text-base font-bold text-ink">Ulasan pengunjung</h2>
