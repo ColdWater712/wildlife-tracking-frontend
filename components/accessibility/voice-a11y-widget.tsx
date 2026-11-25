@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 
 import { usePreferences } from "@/components/providers/preferences-provider";
+import { getRoleLabel } from "@/lib/i18n";
 import {
   clickMatchingElement,
   extractPageSummary,
   fillMatchingInput,
   interpretVoiceCommand,
+  summarizeAllowedRoutesForRole,
 } from "@/lib/voice-assistant";
 import { cn } from "@/lib/utils";
 
@@ -135,7 +137,7 @@ function VoiceA11yEmblem({ listening, className }: { listening: boolean; classNa
 export function VoiceA11yWidget() {
   const router = useRouter();
   const pathname = usePathname();
-  const { locale, setLocale, t } = usePreferences();
+  const { locale, setLocale, userRole, t } = usePreferences();
 
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
@@ -352,17 +354,27 @@ export function VoiceA11yWidget() {
 
   const executeCommand = useCallback(
     (rawText: string) => {
-      const action = interpretVoiceCommand(rawText, locale);
+      const action = interpretVoiceCommand(rawText, locale, userRole);
       switch (action.type) {
         case "stop_speech":
           stopSpeaking();
           setFeedback(locale === "en" ? "Speech stopped." : "Suara dihentikan.");
           return;
         case "list_commands":
+          speak(summarizeAllowedRoutesForRole(userRole, locale));
+          return;
+        case "auth_required":
           speak(
             locale === "en"
-              ? "You can say: go to dashboard, open user manual, read this page, scroll down, dark mode, high contrast, larger text, speak faster, click followed by a button name, or fill email with your address."
-              : "Anda dapat mengucapkan: buka panduan pengguna, ke dashboard, bacakan halaman ini, gulir ke bawah, mode gelap, kontras tinggi, perbesar tulisan, lebih cepat, klik diikuti nama tombol, atau isi email dengan alamat Anda.",
+              ? `Please sign in first before opening ${action.label}.`
+              : `Silakan login terlebih dahulu untuk membuka halaman ${action.label}.`,
+          );
+          return;
+        case "access_denied":
+          speak(
+            locale === "en"
+              ? `Sorry, your role${userRole ? ` (${getRoleLabel("en", userRole)})` : ""} does not have access to ${action.label}.`
+              : `Maaf, role Anda${userRole ? ` (${getRoleLabel("id", userRole)})` : ""} tidak memiliki izin untuk membuka halaman ${action.label}.`,
           );
           return;
         case "read_page": {
@@ -522,6 +534,7 @@ export function VoiceA11yWidget() {
       updateContrast,
       updateFontScale,
       updateRate,
+      userRole,
     ],
   );
 

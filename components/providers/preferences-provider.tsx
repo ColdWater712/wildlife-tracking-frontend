@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -25,6 +26,8 @@ type PreferencesContextValue = {
   drunkMode: boolean;
   setDrunkMode: (next: boolean) => void;
   toggleDrunkMode: () => void;
+  userRole: TYPE_USER_ROLE | null;
+  setUserRole: (role: TYPE_USER_ROLE | null) => void;
   t: (key: MessageKey) => string;
 };
 
@@ -35,6 +38,8 @@ const PreferencesContext = createContext<PreferencesContextValue>({
   drunkMode: false,
   setDrunkMode: () => undefined,
   toggleDrunkMode: () => undefined,
+  userRole: null,
+  setUserRole: () => undefined,
   t: (key) => MESSAGES[DEFAULT_LOCALE][key],
 });
 
@@ -252,6 +257,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     readStoredDrunkMode,
     () => false,
   );
+  const [userRole, setUserRole] = useState<TYPE_USER_ROLE | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -298,9 +304,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       drunkMode,
       setDrunkMode,
       toggleDrunkMode,
+      userRole,
+      setUserRole,
       t,
     }),
-    [locale, setLocale, toggleLocale, drunkMode, setDrunkMode, toggleDrunkMode, t],
+    [locale, setLocale, toggleLocale, drunkMode, setDrunkMode, toggleDrunkMode, userRole, t],
   );
 
   return (
@@ -316,6 +324,13 @@ export const usePreferences = () => useContext(PreferencesContext);
 const UserRoleContext = createContext<TYPE_USER_ROLE | null>(null);
 
 export function UserRoleProvider({ role, children }: { role: TYPE_USER_ROLE; children: ReactNode }) {
+  const { setUserRole } = usePreferences();
+
+  useEffect(() => {
+    setUserRole(role);
+    return () => setUserRole(null);
+  }, [role, setUserRole]);
+
   return <UserRoleContext.Provider value={role}>{children}</UserRoleContext.Provider>;
 }
 
