@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Accessibility,
   BookOpen,
   Contrast,
   Mic,
@@ -89,6 +88,48 @@ function sortVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
     const diff = score(a.lang) - score(b.lang);
     return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
+}
+
+function VoiceA11yEmblem({ listening, className }: { listening: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden="true"
+      className={cn("size-6", className)}
+    >
+      {/* Head */}
+      <circle cx="11.5" cy="7.5" r="2.7" fill="currentColor" />
+      {/* Open arms & torso (universal accessibility posture) */}
+      <path
+        d="M4.5 13.2C7.2 11.9 15.8 11.9 18.5 13.2"
+        stroke="currentColor"
+        strokeWidth="2.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.5 12.6V19.6M11.5 19.6L8 26.8M11.5 19.6L15 26.8"
+        stroke="currentColor"
+        strokeWidth="2.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Acoustic voice-wave arcs */}
+      <path
+        d="M21.2 11.8C23.1 13.9 23.1 18.1 21.2 20.2"
+        stroke={listening ? "#fda4af" : "#fbbf24"}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M24.6 8.8C27.8 12.6 27.8 19.4 24.6 23.2"
+        stroke={listening ? "#fda4af" : "#fbbf24"}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        className={listening ? "animate-pulse" : undefined}
+      />
+    </svg>
+  );
 }
 
 export function VoiceA11yWidget() {
@@ -600,7 +641,7 @@ export function VoiceA11yWidget() {
 
   return (
     <>
-      {/* Floating Accessibility Symbol Button */}
+      {/* Unique Right-Edge Docked Accessibility & Voice AI Tab */}
       <button
         type="button"
         data-drunk-immune="true"
@@ -610,11 +651,23 @@ export function VoiceA11yWidget() {
         aria-label={toggleBtnLabel}
         title={toggleBtnLabel}
         className={cn(
-          "fixed bottom-20 left-5 z-50 flex size-13 items-center justify-center rounded-full border-2 border-white/80 bg-primary text-white shadow-xl transition hover:scale-105 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/40",
-          listening && "ring-4 ring-rose-500/70 animate-pulse",
+          "group fixed right-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-2xl rounded-r-none border-y border-l border-r-0 bg-primary py-2.5 pl-2.5 pr-2 text-white shadow-2xl transition-all duration-200 hover:pl-3.5 hover:pr-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/50",
+          listening
+            ? "border-rose-400 ring-4 ring-rose-500/40"
+            : "border-amber-400/55 hover:bg-primary-dark",
         )}
       >
-        <Accessibility aria-hidden="true" className="size-7" />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-y-2.5 left-1 w-1 rounded-full transition-colors",
+            listening ? "bg-rose-400 animate-pulse" : "bg-amber-400",
+          )}
+        />
+        <VoiceA11yEmblem listening={listening} className="ml-1.5" />
+        <span className="ml-1.5 font-mono text-[9px] font-bold tracking-widest text-amber-200">
+          {locale === "en" ? "VOICE" : "SUARA"}
+        </span>
       </button>
 
       {/* Accessible Voice & Visual Aids Panel */}
@@ -629,13 +682,13 @@ export function VoiceA11yWidget() {
               : "Aksesibilitas & Asisten Suara AI"
           }
           data-drunk-immune="true"
-          className="fixed bottom-36 left-5 z-50 flex max-h-[calc(100dvh-10.5rem)] w-[min(23rem,calc(100vw-2.5rem))] flex-col gap-3 overflow-y-auto rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl"
+          className="fixed right-14 top-1/2 z-50 flex max-h-[calc(100dvh-2.5rem)] w-[min(23rem,calc(100vw-4.5rem))] -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl sm:right-16"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5">
             <div className="flex items-center gap-2">
               <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                <Accessibility aria-hidden="true" className="size-5" />
+                <VoiceA11yEmblem listening={listening} className="size-5" />
               </span>
               <div>
                 <h2 className="text-sm font-bold text-ink">
