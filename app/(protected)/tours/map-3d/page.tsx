@@ -17,7 +17,7 @@ import { formatRupiah } from "@/utils/format";
 // MapLibre (WebGL) hanya di browser.
 const RouteMap3D = dynamic(() => import("@/components/tourism/route-map-3d").then((module) => module.RouteMap3D), {
   ssr: false,
-  loading: () => <div className="h-full min-h-[520px] animate-pulse rounded-2xl bg-surface-muted" />,
+  loading: () => <div className="h-full min-h-[360px] animate-pulse rounded-2xl bg-surface-muted sm:min-h-[520px]" />,
 });
 
 export default function Map3DPage() {
@@ -60,7 +60,7 @@ export default function Map3DPage() {
         <Loading label="Memuat rute..." />
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-          <RouteMap3D ref={mapRef} routes={mapRoutes} selectedId={selectedId} onSelect={setSelectedId} className="h-[62vh] min-h-[520px]" />
+          <RouteMap3D ref={mapRef} routes={mapRoutes} selectedId={selectedId} onSelect={setSelectedId} className="h-[62dvh] min-h-[360px] sm:min-h-[520px]" />
 
           <aside className="flex flex-col gap-3">
             <ul className="flex flex-col gap-2" aria-label="Daftar rute">

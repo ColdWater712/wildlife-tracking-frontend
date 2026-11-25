@@ -54,8 +54,8 @@ export default function LoginForm({ notice }: { notice?: string }) {
   };
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-background">
-      <div className="grid min-h-screen w-full lg:grid-cols-2">
+    <main className="min-h-dvh w-full overflow-x-clip bg-background">
+      <div className="grid min-h-dvh w-full lg:grid-cols-2">
         <section className="relative hidden overflow-hidden bg-primary-dark lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12">
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -103,7 +103,7 @@ export default function LoginForm({ notice }: { notice?: string }) {
           </div>
         </section>
 
-        <section className="relative flex items-center justify-center bg-surface px-5 py-8 sm:px-10 lg:px-12 xl:px-16">
+        <section className="relative flex items-center justify-center bg-surface px-5 pb-8 pt-20 sm:px-10 sm:py-8 lg:px-12 xl:px-16">
           <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6">
             <button
               type="button"

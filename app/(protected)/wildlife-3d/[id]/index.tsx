@@ -83,7 +83,7 @@ export default function SpeciesDetailContent({ canManage }: { canManage: boolean
               onHotspotClick={setActive}
               picking={picking}
               onPick={(point) => pickHandler?.(point)}
-              className="h-[460px] sm:h-[560px]"
+              className="h-[min(460px,65dvh)] min-h-[300px] sm:h-[560px]"
             />
             </div>
           ) : (

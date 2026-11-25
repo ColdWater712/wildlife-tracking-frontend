@@ -437,7 +437,7 @@ export function SolarSystemCanvas({
 
   if (webglError) {
     return (
-      <div className="flex h-[520px] items-center justify-center rounded-2xl border border-sky-500/20 bg-slate-950/80 p-6 text-center text-sm text-slate-300">
+      <div className="flex h-[min(520px,70dvh)] min-h-[340px] items-center justify-center rounded-2xl border border-sky-500/20 bg-slate-950/80 p-6 text-center text-sm text-slate-300">
         {locale === 'en'
           ? 'WebGL is unavailable in this browser. Use the planet cards below to read each sub-chapter.'
           : 'WebGL tidak tersedia di browser ini. Gunakan kartu planet di bawah untuk membaca setiap sub-bab.'}
@@ -446,7 +446,7 @@ export function SolarSystemCanvas({
   }
 
   return (
-    <div className="relative h-[520px] w-full overflow-hidden rounded-2xl border border-sky-500/25 bg-slate-950 shadow-inner">
+    <div className="relative h-[min(520px,70dvh)] min-h-[340px] w-full overflow-hidden rounded-2xl border border-sky-500/25 bg-slate-950 shadow-inner">
       <div
         ref={mountRef}
         className="h-full w-full cursor-grab active:cursor-grabbing"

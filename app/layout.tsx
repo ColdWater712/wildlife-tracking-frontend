@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   title: "Wildlife Monitoring System - BTNGL",
   description:
     "Sistem pelacakan pergerakan satwa liar untuk Balai Taman Nasional Gunung Leuser.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#1e3a2e" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1410" },
+  ],
 };
 
 type RootLayoutProps = {

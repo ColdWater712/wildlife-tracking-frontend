@@ -166,9 +166,9 @@ export function EmergencyCallModal({
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-2 backdrop-blur-sm sm:p-4"
     >
-      <div className="w-full max-w-sm overflow-hidden rounded-3xl border border-emerald-500/30 bg-[#0b1914] p-6 text-white shadow-2xl">
+      <div className="max-h-[calc(100dvh-1rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl border border-emerald-500/30 bg-[#0b1914] p-5 text-white shadow-2xl sm:p-6">
         {/* Status Pill & Close Button */}
         <div className="flex items-center justify-between gap-2 text-xs">
           <span

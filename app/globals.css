@@ -187,16 +187,56 @@
 }
 
 @layer base {
-  html,
-  body {
-    max-width: 100%;
-    overflow-x: clip;
+  html {
+    /* Keep focused elements clear of the sticky 4rem app header */
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
+    max-width: 100%;
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+    overflow-wrap: break-word;
+  }
+
+  /* Media never overflows its column on any device */
+  img,
+  video,
+  canvas,
+  svg {
+    max-inline-size: 100%;
+  }
+
+  img,
+  video {
+    block-size: auto;
+  }
+
+  /* Long URLs / codes wrap instead of widening the page */
+  :where(a, code) {
+    overflow-wrap: anywhere;
+  }
+
+  :where(h1, h2, h3) {
+    text-wrap: balance;
+  }
+
+  :where(p, li) {
+    text-wrap: pretty;
+  }
+
+  /* Touch screens: fingertip-sized targets (WCAG 2.5.5) */
+  @media (pointer: coarse) {
+    :where(button, select, [role="button"], input:not([type="checkbox"], [type="radio"], [type="range"])) {
+      min-block-size: 44px;
+    }
+
+    :where(button, [role="button"]) {
+      min-inline-size: 44px;
+    }
   }
 
   input,
@@ -259,6 +299,13 @@
       border-color 150ms ease,
       box-shadow 150ms ease,
       background-color 150ms ease;
+  }
+
+  /* iOS Safari zooms into inputs with font-size < 16px; prevent that on touch devices */
+  @media (pointer: coarse) {
+    .ui-input {
+      font-size: 1rem;
+    }
   }
 
   .ui-input::placeholder {
@@ -354,6 +401,76 @@
 
   .leaflet-popup-close-button {
     color: var(--ink-soft) !important;
+  }
+}
+
+/* ==========================================================================
+   Responsive data table: stacks into labelled cards when its own container
+   is narrow (phones, split-screen, narrow dashboard columns).
+   ========================================================================== */
+.responsive-table {
+  container-type: inline-size;
+}
+
+@container (width < 40rem) {
+  .responsive-table table {
+    display: block;
+    min-width: 0;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td {
+    display: block;
+  }
+
+  .responsive-table tbody {
+    padding: 0.5rem;
+  }
+
+  .responsive-table tbody > tr {
+    margin-block-end: 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    padding-block: 0.375rem;
+  }
+
+  .responsive-table tbody > tr:last-child {
+    margin-block-end: 0;
+  }
+
+  .responsive-table td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    text-align: end;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-inline-size: 45%;
+    color: var(--ink-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: start;
+    text-transform: uppercase;
+  }
+
+  .responsive-table td[data-label=""] {
+    justify-content: flex-end;
+  }
+
+  .responsive-table td[data-label=""]::before {
+    content: none;
   }
 }
 

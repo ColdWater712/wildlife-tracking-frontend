@@ -106,19 +106,22 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <button
-          type="button"
-          onClick={toggleLocale}
-          aria-label={t("switchLanguage")}
-          title={t("switchLanguage")}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-xs font-bold uppercase tracking-wider text-ink-soft transition hover:border-primary hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <Languages aria-hidden="true" className="size-4" />
-          <span>{locale.toUpperCase()}</span>
-        </button>
+        {/* Language / theme / drunk toggles live in the mobile drawer on small phones */}
+        <div className="hidden items-center gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={toggleLocale}
+            aria-label={t("switchLanguage")}
+            title={t("switchLanguage")}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-xs font-bold uppercase tracking-wider text-ink-soft transition hover:border-primary hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Languages aria-hidden="true" className="size-4" />
+            <span>{locale.toUpperCase()}</span>
+          </button>
 
-        <ThemeToggle />
-        <DrunkModeToggle />
+          <ThemeToggle />
+          <DrunkModeToggle />
+        </div>
 
         <Link
           href="/notifications"

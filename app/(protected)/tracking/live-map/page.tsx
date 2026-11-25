@@ -375,7 +375,7 @@ function RealMap({
   }, [selectedAnimalId, animals, mapReady]);
 
   return (
-    <div className="relative h-[520px] w-full overflow-hidden rounded-xl">
+    <div className="relative h-[min(520px,70dvh)] min-h-[320px] w-full overflow-hidden rounded-xl">
       <div
         ref={containerRef}
         className="h-full w-full"

@@ -934,7 +934,7 @@ export function VoiceA11yWidget() {
         aria-label={toggleBtnLabel}
         title={toggleBtnLabel}
         className={cn(
-          "group fixed right-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-2xl rounded-r-none border-y border-l border-r-0 bg-primary py-2.5 pl-2.5 pr-2 text-white shadow-2xl transition-all duration-200 hover:pl-3.5 hover:pr-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/50",
+          "group fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] right-0 z-50 flex flex-col items-center gap-1 rounded-l-2xl rounded-r-none border-y border-l border-r-0 bg-primary py-2.5 pl-2.5 pr-2 text-white shadow-2xl transition-all duration-200 hover:pl-3.5 hover:pr-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/50 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2",
           listening
             ? "border-rose-400 ring-4 ring-rose-500/40"
             : "border-amber-400/55 hover:bg-primary-dark",
@@ -965,7 +965,7 @@ export function VoiceA11yWidget() {
               : "Aksesibilitas & Asisten Suara AI"
           }
           data-drunk-immune="true"
-          className="fixed right-14 top-1/2 z-50 flex max-h-[calc(100dvh-2.5rem)] w-[min(23rem,calc(100vw-4.5rem))] -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl sm:right-16"
+          className="fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-50 flex max-h-[min(85dvh,calc(100dvh-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl sm:inset-x-auto sm:bottom-auto sm:right-16 sm:top-1/2 sm:max-h-[calc(100dvh-2.5rem)] sm:w-[min(23rem,calc(100vw-4.5rem))] sm:-translate-y-1/2"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 border-b border-line pb-2.5">
