@@ -166,7 +166,7 @@ function Observations({ animalId }: { animalId: number }) {
       {rows.map((row) => (
         <li key={row.prediction_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0">
-            <Link href={`/ai/vision/${row.prediction_id}`} className="text-sm font-semibold text-primary underline-offset-2 hover:underline">
+            <Link href={`/ai/vision/${row.prediction_id}/detail`} className="text-sm font-semibold text-primary underline-offset-2 hover:underline">
               {formatDateTime(row.media?.captured_at ?? row.processed_at)}
             </Link>
             <p className="text-xs text-muted">

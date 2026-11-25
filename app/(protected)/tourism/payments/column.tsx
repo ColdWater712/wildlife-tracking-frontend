@@ -13,7 +13,7 @@ export const getPaymentColumns = ({ onReview }: { onReview: (payment: TYPE_PAYME
     header: "Pemesanan",
     cell: ({ row }) =>
       row.original.booking ? (
-        <Link href={`/tourism/bookings/${row.original.booking.booking_code}`} className="flex flex-col text-sm">
+        <Link href={`/tourism/bookings/${row.original.booking.booking_code}/detail`} className="flex flex-col text-sm">
           <span className="font-mono text-xs font-bold text-primary hover:underline">{row.original.booking.booking_code}</span>
           <span className="text-xs text-muted">{row.original.booking.contact_name} · {formatDate(row.original.booking.visit_date)}</span>
         </Link>

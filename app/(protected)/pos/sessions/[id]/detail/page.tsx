@@ -16,7 +16,7 @@ import type { TYPE_POS_SALE } from "@/types/pos.type";
 import { PAYMENT_METHOD_LABELS } from "@/types/tourism.type";
 import { formatDateTime, formatRupiah } from "@/utils/format";
 
-import { ReceiptModal } from "../../receipt-modal";
+import { ReceiptModal } from "../../../receipt-modal";
 
 export default function PosSessionDetailPage() {
   const params = useParams<{ id: string }>();

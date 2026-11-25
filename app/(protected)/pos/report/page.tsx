@@ -93,7 +93,7 @@ export default function PosDailyReportPage() {
               <tbody className="divide-y divide-line">
                 {(report?.sessions ?? []).map((session) => (
                   <tr key={session.session_id}>
-                    <td className="py-2"><Link href={`/pos/sessions/${session.session_id}`} className="font-semibold text-primary hover:underline">#{session.session_id} {session.counter_name}</Link></td>
+                    <td className="py-2"><Link href={`/pos/sessions/${session.session_id}/detail`} className="font-semibold text-primary hover:underline">#{session.session_id} {session.counter_name}</Link></td>
                     <td className="py-2">{session.cashier?.full_name}</td>
                     <td className="py-2 text-xs">{formatDateTime(session.opened_at)} – {session.closed_at ? formatDateTime(session.closed_at) : "masih buka"}</td>
                     <td className="py-2 text-right">{formatRupiah(session.summary.gross)}</td>

@@ -389,7 +389,7 @@ export default function AiVisionUploadPage() {
           canDelete={canDelete}
           onVerified={() => void predictionQuery.refetch()}
           onDeleted={() => setPredictionId(0)}
-          detailHref={`/ai/vision/${result.prediction_id}`}
+          detailHref={`/ai/vision/${result.prediction_id}/detail`}
         />
       ) : null}
     </div>

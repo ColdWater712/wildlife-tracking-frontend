@@ -22,7 +22,7 @@ const nextDays = (count: number) =>
 
 function GuideCard({ guide }: { guide: TYPE_TOUR_GUIDE }) {
   return (
-    <Link href={`/guides/${guide.guide_id}`} className="group flex flex-col gap-4 rounded-card border border-line bg-surface p-5 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card">
+    <Link href={`/guides/${guide.guide_id}/detail`} className="group flex flex-col gap-4 rounded-card border border-line bg-surface p-5 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card">
       <div className="flex items-center gap-3">
         <GuideAvatar guideId={guide.guide_id} name={guide.display_name} hasPhoto={guide.has_photo} />
         <div className="min-w-0">
@@ -55,11 +55,11 @@ function ShiftCell({ shift }: { shift: TYPE_PUBLIC_SHIFT }) {
     <div className={`flex flex-col gap-1 rounded-xl border p-3 text-xs ${full ? "border-line bg-surface-muted opacity-70" : "border-line bg-surface"}`}>
       <span className="flex items-center gap-1.5 font-semibold text-ink"><Icon className="size-3.5 text-primary" />{SHIFT_LABELS[shift.shift_type]} {shift.start_time}–{shift.end_time}</span>
       {shift.route ? (
-        <Link href={`/tours/${shift.route.slug}`} className="text-primary hover:underline">{shift.route.name}</Link>
+        <Link href={`/tours/${shift.route.slug}/detail`} className="text-primary hover:underline">{shift.route.name}</Link>
       ) : null}
       <span className={full ? "font-semibold text-danger" : "text-muted"}>{full ? "Kuota penuh" : `Sisa kuota ${shift.remaining}/${shift.capacity}`}</span>
       {!full && shift.route ? (
-        <Link href={`/tours/${shift.route.slug}/book?shift=${shift.shift_id}`} className="mt-1 w-fit rounded-lg bg-primary px-2.5 py-1 font-semibold text-white hover:bg-primary-dark">Pesan</Link>
+        <Link href={`/tours/${shift.route.slug}/create?shift=${shift.shift_id}`} className="mt-1 w-fit rounded-lg bg-primary px-2.5 py-1 font-semibold text-white hover:bg-primary-dark">Pesan</Link>
       ) : null}
     </div>
   );
@@ -143,7 +143,7 @@ export default function GuidesPage() {
                 .filter((guide) => shiftsByGuide.has(guide.guide_id))
                 .map((guide) => (
                   <li key={guide.guide_id} className="grid gap-3 py-4 md:grid-cols-[240px_1fr]">
-                    <Link href={`/guides/${guide.guide_id}`} className="flex items-center gap-3">
+                    <Link href={`/guides/${guide.guide_id}/detail`} className="flex items-center gap-3">
                       <GuideAvatar guideId={guide.guide_id} name={guide.display_name} hasPhoto={guide.has_photo} size="sm" />
                       <span>
                         <span className="block text-sm font-semibold text-ink hover:text-primary">{guide.display_name}</span>

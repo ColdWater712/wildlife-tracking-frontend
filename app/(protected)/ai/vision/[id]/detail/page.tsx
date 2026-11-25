@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-import { AiPredictionResult } from "../ai-prediction-result";
+import { AiPredictionResult } from "../../ai-prediction-result";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Loading } from "@/components/ui/loading";

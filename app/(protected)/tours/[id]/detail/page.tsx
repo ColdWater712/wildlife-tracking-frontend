@@ -61,7 +61,7 @@ function ShiftRow({ shift, slug }: { shift: TYPE_PUBLIC_SHIFT; slug: string }) {
         </p>
         <p className="text-xs text-muted">
           {shift.guide ? (
-            <Link href={`/guides/${shift.guide.guide_id}`} className="font-medium text-primary hover:underline">
+            <Link href={`/guides/${shift.guide.guide_id}/detail`} className="font-medium text-primary hover:underline">
               {shift.guide.display_name}
             </Link>
           ) : "Pemandu"}
@@ -73,7 +73,7 @@ function ShiftRow({ shift, slug }: { shift: TYPE_PUBLIC_SHIFT; slug: string }) {
       </span>
       {full ? null : (
         <Link
-          href={`/tours/${slug}/book?shift=${shift.shift_id}`}
+          href={`/tours/${slug}/create?shift=${shift.shift_id}`}
           className="inline-flex h-9 items-center rounded-lg bg-primary px-3 text-xs font-semibold text-white hover:bg-primary-dark"
         >
           Pilih
@@ -84,7 +84,7 @@ function ShiftRow({ shift, slug }: { shift: TYPE_PUBLIC_SHIFT; slug: string }) {
 }
 
 export default function TourDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { id: slug } = useParams<{ id: string }>();
   const routeQuery = useTourRoute(slug ?? "");
   const detail = routeQuery.data;
   const route = detail?.route;
@@ -145,7 +145,7 @@ export default function TourDetailPage() {
             <p className="text-2xl font-bold">{formatRupiah(route.guide_fee_per_person)}<span className="text-sm font-normal text-white/70"> /orang</span></p>
             <p className="mt-1 text-xs text-white/70">+ tiket masuk PNBP sesuai kategori & hari</p>
             <Link
-              href={`/tours/${route.slug}/book`}
+              href={`/tours/${route.slug}/create`}
               className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-bold text-primary-dark hover:bg-white/90"
             >
               <Ticket className="size-4" /> Pesan Tiket

@@ -78,7 +78,7 @@ export const getThreatColumns = (): ColumnDef<AiPrediction>[] => [
     header: "Aksi",
     cell: ({ row }) => (
       <Link
-        href={`/ai/vision/${row.original.prediction_id}`}
+        href={`/ai/vision/${row.original.prediction_id}/detail`}
         className="inline-flex items-center gap-2 rounded-lg border border-natural-muted px-3 py-2 text-sm font-medium text-forest-deep transition hover:bg-natural-muted/30"
       >
         <Eye size={15} />

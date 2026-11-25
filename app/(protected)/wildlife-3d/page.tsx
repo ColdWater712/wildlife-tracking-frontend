@@ -25,7 +25,7 @@ function SpeciesCard({ species }: { species: TYPE_SPECIES_PROFILE }) {
   const model = useSpeciesModelUrl(species.species_id, species.has_model, species.model_credit ?? "");
   return (
     <Link
-      href={`/wildlife-3d/${species.species_id}`}
+      href={`/wildlife-3d/${species.species_id}/detail`}
       className="group flex flex-col overflow-hidden rounded-card border border-line bg-surface transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card"
     >
       {species.has_model ? (

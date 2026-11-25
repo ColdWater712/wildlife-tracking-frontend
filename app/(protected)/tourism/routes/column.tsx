@@ -13,7 +13,7 @@ export const getRouteColumns = ({ onDelete }: { onDelete: (route: TYPE_TOUR_ROUT
     header: "Rute",
     cell: ({ row }) => (
       <span className="flex flex-col">
-        <Link href={`/tours/${row.original.slug}`} className="font-medium text-primary hover:underline">{row.original.name}</Link>
+        <Link href={`/tours/${row.original.slug}/detail`} className="font-medium text-primary hover:underline">{row.original.name}</Link>
         <span className="text-xs text-muted">{row.original.entry_point}</span>
       </span>
     ),

@@ -10,7 +10,7 @@ export const getSessionColumns = (): ColumnDef<TYPE_POS_SESSION>[] => [
     accessorKey: "session_id",
     header: "Sesi",
     cell: ({ row }) => (
-      <Link href={`/pos/sessions/${row.original.session_id}`} className="font-semibold text-primary hover:underline">
+      <Link href={`/pos/sessions/${row.original.session_id}/detail`} className="font-semibold text-primary hover:underline">
         #{row.original.session_id} · {row.original.counter_name}
       </Link>
     ),

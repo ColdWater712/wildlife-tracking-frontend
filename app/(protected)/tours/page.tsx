@@ -23,7 +23,7 @@ const durationLabel = (route: TYPE_TOUR_ROUTE) =>
 function RouteCard({ route }: { route: TYPE_TOUR_ROUTE }) {
   return (
     <Link
-      href={`/tours/${route.slug}`}
+      href={`/tours/${route.slug}/detail`}
       className="group flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card"
     >
       <div className="relative bg-primary-dark px-5 pb-5 pt-6 text-white">

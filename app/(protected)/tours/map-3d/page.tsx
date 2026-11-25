@@ -101,7 +101,7 @@ export default function Map3DPage() {
                   <button type="button" onClick={() => mapRef.current?.flyThrough(selected.route_id)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-dark">
                     <Play className="size-4" /> Fly-through
                   </button>
-                  <Link href={`/tours/${selected.slug}`} className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong px-4 text-sm font-semibold text-ink-soft hover:border-primary">
+                  <Link href={`/tours/${selected.slug}/detail`} className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong px-4 text-sm font-semibold text-ink-soft hover:border-primary">
                     <Ticket className="size-4" /> Detail & pesan ({formatRupiah(selected.guide_fee_per_person)})
                   </Link>
                 </div>

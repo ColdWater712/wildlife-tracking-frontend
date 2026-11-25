@@ -89,7 +89,7 @@ export const getMediaColumns = ({
             <AiThreatBadge level={latest.threat_level} />
           ) : null}
           <Link
-            href={`/ai/vision/${latest.prediction_id}`}
+            href={`/ai/vision/${latest.prediction_id}/detail`}
             className="text-xs font-semibold text-forest-primary underline-offset-2 hover:underline"
           >
             #{latest.prediction_id}

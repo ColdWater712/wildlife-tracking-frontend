@@ -236,7 +236,7 @@ const WRITE_ROUTES: { pattern: RegExp; permission: AppPermission }[] = [
   { pattern: /^\/incidents\/create$/, permission: "create_data" },
   { pattern: /^\/incidents\/[^/]+\/(edit|update)$/, permission: "update_data" },
   { pattern: /^\/zone-visits\/create$/, permission: "create_data" },
-  { pattern: /^\/tours\/[^/]+\/book$/, permission: "book_tickets" },
+  { pattern: /^\/tours\/[^/]+\/create$/, permission: "book_tickets" },
   { pattern: /^\/pos\/report/, permission: "manage_tourism" },
 ];
 

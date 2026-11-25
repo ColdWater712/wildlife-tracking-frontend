@@ -15,7 +15,7 @@ import { PAYMENT_METHOD_LABELS, SHIFT_LABELS, VISITOR_TYPE_LABELS } from "@/type
 import { formatDateTime, formatLongDate, formatRupiah } from "@/utils/format";
 
 export default function AdminBookingDetailPage() {
-  const { code = "" } = useParams<{ code: string }>();
+  const { id: code = "" } = useParams<{ id: string }>();
   const { showToast } = useToast();
   const bookingQuery = useAdminBooking(code);
   const cancelMutation = useAdminBookingCancel();

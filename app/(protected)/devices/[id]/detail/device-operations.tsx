@@ -412,7 +412,7 @@ function CapturePanel({ device, canWrite }: Pick<DeviceOperationsProps, "device"
                       <AiThreatBadge level={latest.threat_level} />
                     ) : null}
                     <Link
-                      href={`/ai/vision/${latest.prediction_id}`}
+                      href={`/ai/vision/${latest.prediction_id}/detail`}
                       className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
                     >
                       {latest.sound_label ?? latest.predictedSpecies?.common_name ?? `Prediksi #${latest.prediction_id}`}

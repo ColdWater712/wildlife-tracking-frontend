@@ -39,7 +39,7 @@ export default function MyBookingsPage() {
         <ul className="grid gap-4 md:grid-cols-2">
           {bookings.map((booking) => (
             <li key={booking.booking_id}>
-              <Link href={`/bookings/${booking.booking_code}`} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5 transition hover:border-primary hover:shadow-card">
+              <Link href={`/bookings/${booking.booking_code}/detail`} className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5 transition hover:border-primary hover:shadow-card">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-mono text-xs font-bold tracking-wider text-primary">{booking.booking_code}</p>

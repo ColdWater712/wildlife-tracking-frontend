@@ -62,7 +62,7 @@ const buildParticipants = (counts: Counts, previous: TYPE_PARTICIPANT[]): TYPE_P
 };
 
 function TourBookContent() {
-  const { slug } = useParams<{ slug: string }>();
+  const { id: slug } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
@@ -146,7 +146,7 @@ function TourBookContent() {
         })),
       });
       showToast("Pemesanan dibuat. Selesaikan pembayaran sebelum batas waktu.", "success");
-      router.push(`/bookings/${response.data.booking_code}`);
+      router.push(`/bookings/${response.data.booking_code}/detail`);
     } catch (submitError) {
       setFieldErrors(getApiFieldErrors(submitError));
       setError(formatApiError(submitError, "Pemesanan gagal."));
@@ -169,7 +169,7 @@ function TourBookContent() {
         description="Harga dihitung oleh server sesuai kategori pengunjung dan hari kunjungan (Minggu/libur nasional memakai tarif libur)."
         className="mb-0"
         actions={
-          <Link href={`/tours/${route.slug}`} className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft hover:border-primary hover:text-primary">
+          <Link href={`/tours/${route.slug}/detail`} className="inline-flex h-10 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-semibold text-ink-soft hover:border-primary hover:text-primary">
             <ArrowLeft className="size-4" /> Detail rute
           </Link>
         }

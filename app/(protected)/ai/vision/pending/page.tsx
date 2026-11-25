@@ -88,7 +88,7 @@ export default function AiPendingVerificationView() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
                 <Link
-                  href={`/ai/vision/${prediction.prediction_id}`}
+                  href={`/ai/vision/${prediction.prediction_id}/detail`}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-2 hover:underline"
                 >
                   <Eye aria-hidden="true" className="size-3.5" />

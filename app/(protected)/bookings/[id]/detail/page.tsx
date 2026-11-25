@@ -36,7 +36,7 @@ const PROOF_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 
 export default function BookingDetailPage() {
-  const { code = "" } = useParams<{ code: string }>();
+  const { id: code = "" } = useParams<{ id: string }>();
   const { showToast } = useToast();
   const bookingQuery = useMyBooking(code);
   const booking = bookingQuery.data;

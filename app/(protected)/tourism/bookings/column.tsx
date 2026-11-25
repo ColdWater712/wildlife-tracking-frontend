@@ -10,7 +10,7 @@ export const getAdminBookingColumns = (): ColumnDef<TYPE_BOOKING>[] => [
     accessorKey: "booking_code",
     header: "Kode",
     cell: ({ row }) => (
-      <Link href={`/tourism/bookings/${row.original.booking_code}`} className="font-mono text-xs font-bold text-primary hover:underline">
+      <Link href={`/tourism/bookings/${row.original.booking_code}/detail`} className="font-mono text-xs font-bold text-primary hover:underline">
         {row.original.booking_code}
       </Link>
     ),

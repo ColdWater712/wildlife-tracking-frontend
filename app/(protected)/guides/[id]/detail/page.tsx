@@ -81,12 +81,12 @@ export default function GuideDetailPage() {
               <li key={shift.shift_id} className="flex flex-wrap items-center gap-3 py-3 text-sm">
                 <span className="min-w-56 font-semibold text-ink">{formatLongDate(shift.shift_date)}</span>
                 <span className="text-muted">{SHIFT_LABELS[shift.shift_type]} {shift.start_time}–{shift.end_time}</span>
-                {shift.route ? <Link href={`/tours/${shift.route.slug}`} className="text-primary hover:underline">{shift.route.name}</Link> : null}
+                {shift.route ? <Link href={`/tours/${shift.route.slug}/detail`} className="text-primary hover:underline">{shift.route.name}</Link> : null}
                 <span className={`ml-auto text-xs font-semibold ${shift.remaining > 0 ? "text-forest-primary" : "text-danger"}`}>
                   {shift.remaining > 0 ? `Sisa ${shift.remaining}` : "Penuh"}
                 </span>
                 {shift.remaining > 0 && shift.route ? (
-                  <Link href={`/tours/${shift.route.slug}/book?shift=${shift.shift_id}`} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark">Pesan</Link>
+                  <Link href={`/tours/${shift.route.slug}/create?shift=${shift.shift_id}`} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark">Pesan</Link>
                 ) : null}
               </li>
             ))}

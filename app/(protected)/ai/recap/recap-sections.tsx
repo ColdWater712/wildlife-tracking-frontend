@@ -98,7 +98,7 @@ export function RecapDocument({ recap }: { recap: AiRecap }) {
         <Table
           head={["Waktu", "Ancaman", "Temuan", "Zona", "Media", "Verifikasi"]}
           rows={recap.threats.recent.map((item) => [
-            <Link key="t" href={`/ai/vision/${item.prediction_id}`} className="text-primary underline-offset-2 hover:underline">
+            <Link key="t" href={`/ai/vision/${item.prediction_id}/detail`} className="text-primary underline-offset-2 hover:underline">
               {formatDateTime(item.time)}
             </Link>,
             <AiThreatBadge key="b" level={item.threat_level} />,
