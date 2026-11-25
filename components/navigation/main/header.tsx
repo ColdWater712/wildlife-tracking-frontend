@@ -9,6 +9,7 @@ import {
   Breadcrumb,
   buildPathBreadcrumbs,
 } from "@/components/breadcrumb";
+import { DrunkModeToggle } from "@/components/navigation/main/drunk-mode-toggle";
 import { ThemeToggle } from "@/components/navigation/main/theme-toggle";
 import { usePreferences } from "@/components/providers/preferences-provider";
 import { getNavLabel, getRoleLabel } from "@/lib/i18n";
@@ -77,7 +78,10 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
   }, [isMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 print:hidden shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-6">
+    <header
+      data-drunk-header="true"
+      className="sticky top-0 z-40 flex h-16 print:hidden shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-6"
+    >
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <button
           type="button"
@@ -88,7 +92,7 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
           <Menu aria-hidden="true" className="size-5" />
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div data-drunk-3d-item="true" className="min-w-0 flex-1">
           <div className="hidden sm:block">
             <Breadcrumb items={breadcrumbItems} />
           </div>
@@ -114,9 +118,11 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
         </button>
 
         <ThemeToggle />
+        <DrunkModeToggle />
 
         <Link
           href="/notifications"
+          data-drunk-3d-item="true"
           aria-label={
             unreadCount > 0
               ? `${t("notifications")}, ${unreadCount} ${t("unreadCountLabel")}`
@@ -135,7 +141,7 @@ export function Header({ user, onLogout, onMenuOpen }: HeaderProps) {
           ) : null}
         </Link>
 
-        <div className="relative" ref={menuRef}>
+        <div className="relative" ref={menuRef} data-drunk-3d-item="true">
           <button
             type="button"
             onClick={() =>

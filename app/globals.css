@@ -406,3 +406,162 @@
     font-size: 11pt;
   }
 }
+
+/* ==========================================================================
+   Drunk Mode ("Mode Mabuk"): 3D swaying page, 3D extruded header & items,
+   continuous color cycling, spinning headings, and dizzy double-vision.
+   Sidebar ([data-drunk-immune="true"]) stays 100% flat & clickable.
+   ========================================================================== */
+@keyframes drunk-page-sway {
+  0% {
+    transform: rotateX(calc(var(--drunk-tilt-x, 0deg) + 1.5deg))
+      rotateY(calc(var(--drunk-tilt-y, 0deg) - 2.2deg))
+      rotateZ(-0.9deg)
+      scale(0.99);
+  }
+  25% {
+    transform: rotateX(calc(var(--drunk-tilt-x, 0deg) - 2.2deg))
+      rotateY(calc(var(--drunk-tilt-y, 0deg) + 2.6deg))
+      rotateZ(1.1deg)
+      scale(1.01);
+  }
+  50% {
+    transform: rotateX(calc(var(--drunk-tilt-x, 0deg) + 2deg))
+      rotateY(calc(var(--drunk-tilt-y, 0deg) + 1.4deg))
+      rotateZ(-1.2deg)
+      scale(0.985);
+  }
+  75% {
+    transform: rotateX(calc(var(--drunk-tilt-x, 0deg) - 1.6deg))
+      rotateY(calc(var(--drunk-tilt-y, 0deg) - 2.5deg))
+      rotateZ(0.8deg)
+      scale(1.012);
+  }
+  100% {
+    transform: rotateX(calc(var(--drunk-tilt-x, 0deg) + 1.5deg))
+      rotateY(calc(var(--drunk-tilt-y, 0deg) - 2.2deg))
+      rotateZ(-0.9deg)
+      scale(0.99);
+  }
+}
+
+@keyframes drunk-hue-cycle {
+  0% {
+    filter: hue-rotate(0deg) saturate(1.25);
+  }
+  50% {
+    filter: hue-rotate(180deg) saturate(1.45);
+  }
+  100% {
+    filter: hue-rotate(360deg) saturate(1.25);
+  }
+}
+
+@keyframes drunk-item-bob {
+  0%,
+  100% {
+    transform: translateZ(34px) rotateX(4deg) rotateY(-4deg);
+  }
+  50% {
+    transform: translateZ(48px) rotateX(-5deg) rotateY(5deg) translateY(-2px);
+  }
+}
+
+@keyframes drunk-spin-3d {
+  0% {
+    transform: perspective(600px) rotateY(0deg) rotateX(0deg);
+  }
+  50% {
+    transform: perspective(600px) rotateY(180deg) rotateX(8deg);
+  }
+  100% {
+    transform: perspective(600px) rotateY(360deg) rotateX(0deg);
+  }
+}
+
+@keyframes drunk-panel-float {
+  0%,
+  100% {
+    transform: perspective(850px) rotateX(1.6deg) rotateY(-1.6deg) translateZ(8px);
+  }
+  50% {
+    transform: perspective(850px) rotateX(-1.8deg) rotateY(1.8deg) translateZ(16px);
+  }
+}
+
+@keyframes drunk-float-bubble {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-55vh) translateX(28px) scale(1.15);
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-115vh) translateX(-22px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+[data-drunk-active="true"] [data-drunk-perspective="true"] {
+  perspective: 1150px;
+}
+
+[data-drunk-active="true"] [data-drunk-stage="true"] {
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  animation:
+    drunk-page-sway 9s ease-in-out infinite,
+    drunk-hue-cycle 12s linear infinite;
+}
+
+[data-drunk-active="true"] [data-drunk-header="true"] {
+  transform-style: preserve-3d;
+  transform: translateZ(26px) rotateX(4deg);
+  box-shadow:
+    0 18px 36px -10px rgba(168, 85, 247, 0.35),
+    0 4px 0 rgba(56, 189, 248, 0.45);
+}
+
+[data-drunk-active="true"] [data-drunk-3d-item="true"] {
+  transform-style: preserve-3d;
+  text-shadow:
+    -2px 0 rgba(255, 0, 128, 0.55),
+    2px 0 rgba(0, 229, 255, 0.55);
+  animation: drunk-item-bob 4.5s ease-in-out infinite;
+}
+
+[data-drunk-active="true"] #main-content h1,
+[data-drunk-active="true"] #main-content h2 {
+  display: inline-block;
+  transform-style: preserve-3d;
+  animation: drunk-spin-3d 8s linear infinite;
+}
+
+[data-drunk-active="true"] #main-content p,
+[data-drunk-active="true"] #main-content h3,
+[data-drunk-active="true"] #main-content h4 {
+  text-shadow:
+    -1.5px 0 rgba(236, 72, 153, 0.45),
+    1.5px 0 rgba(34, 211, 238, 0.45);
+}
+
+[data-drunk-active="true"] #main-content .ui-panel {
+  transform-style: preserve-3d;
+  animation: drunk-panel-float 7s ease-in-out infinite;
+  box-shadow:
+    0 14px 32px -12px rgba(217, 70, 239, 0.28),
+    0 0 0 1px rgba(34, 211, 238, 0.28);
+}
+
+[data-drunk-active="true"] [data-drunk-immune="true"] {
+  filter: none !important;
+  animation: none !important;
+  transform: none !important;
+}
