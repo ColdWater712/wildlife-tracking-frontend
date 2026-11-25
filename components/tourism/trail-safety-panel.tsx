@@ -16,11 +16,13 @@ import {
 } from "lucide-react";
 
 import { useToast } from "@/components/toast";
+import { EmergencyCallModal } from "@/components/tourism/emergency-call-modal";
 import { useRouteSafety, useSendEmergencyAlert } from "@/hooks/use-tourism";
 import { formatApiError } from "@/services/api";
 import type {
   TYPE_EMERGENCY_ALERT_PAYLOAD,
   TYPE_EMERGENCY_ALERT_RESPONSE,
+  TYPE_EMERGENCY_CONTACT,
 } from "@/types/tourism.type";
 import { formatDateTime } from "@/utils/format";
 
@@ -51,6 +53,7 @@ export function TrailSafetyPanel({ slug }: { slug: string }) {
   const [description, setDescription] = useState("");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [lastSos, setLastSos] = useState<TYPE_EMERGENCY_ALERT_RESPONSE | null>(null);
+  const [activeCall, setActiveCall] = useState<TYPE_EMERGENCY_CONTACT | null>(null);
 
   const safety = safetyQuery.data;
   if (safetyQuery.isLoading || !safety) {
@@ -355,17 +358,24 @@ export function TrailSafetyPanel({ slug }: { slug: string }) {
                 {contact.notes ? <p className="mt-1.5 text-xs text-muted">{contact.notes}</p> : null}
               </div>
 
-              <a
-                href={`tel:${contact.phone.replace(/[^0-9+]/g, "")}`}
+              <button
+                type="button"
+                onClick={() => setActiveCall(contact)}
                 className="mt-3 inline-flex h-9 w-fit items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-soft px-3 text-xs font-bold text-primary-dark transition hover:bg-primary hover:text-white"
               >
                 <PhoneCall className="size-3.5" />
                 <span>Hubungi {contact.phone}</span>
-              </a>
+              </button>
             </article>
           ))}
         </div>
       </section>
+
+      <EmergencyCallModal
+        key={activeCall ? `${activeCall.name}-${activeCall.phone}` : "closed"}
+        contact={activeCall}
+        onClose={() => setActiveCall(null)}
+      />
     </div>
   );
 }
