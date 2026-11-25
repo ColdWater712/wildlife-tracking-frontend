@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 
 import { usePreferences } from "@/components/providers/preferences-provider";
+import { useLogout } from "@/hooks/use-logout";
+import { DRUNK_SOBER_EVENT } from "@/lib/drunk-mode";
 import { getRoleLabel } from "@/lib/i18n";
 import {
   clickMatchingElement,
@@ -137,7 +139,8 @@ function VoiceA11yEmblem({ listening, className }: { listening: boolean; classNa
 export function VoiceA11yWidget() {
   const router = useRouter();
   const pathname = usePathname();
-  const { locale, setLocale, userRole, t } = usePreferences();
+  const { locale, setLocale, setDrunkMode, userRole, t } = usePreferences();
+  const logout = useLogout();
 
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
@@ -268,21 +271,32 @@ export function VoiceA11yWidget() {
 
       try {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.lang = locale === "en" ? "en-US" : "id-ID";
-        utterance.rate = overrideRate ?? rateRef.current;
-
         const allVoices = window.speechSynthesis.getVoices();
         const chosen = allVoices.find((v) => v.voiceURI === voiceUriRef.current);
-        if (chosen) {
-          utterance.voice = chosen;
-          utterance.lang = chosen.lang;
-        }
 
-        utterance.onstart = () => setSpeaking(true);
-        utterance.onend = () => setSpeaking(false);
-        utterance.onerror = () => setSpeaking(false);
-        window.speechSynthesis.speak(utterance);
+        // Split long text (e.g. full page readouts) into ~180-char chunks so browsers never silently drop them
+        const sentences = message
+          .split(/(?<=[.!?])\s+/)
+          .flatMap((part) => (part.length > 180 ? part.match(/.{1,180}(?:\s|$)/g) ?? [part] : [part]))
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const chunks = sentences.length > 0 ? sentences : [message];
+        chunks.forEach((chunk, index) => {
+          const utterance = new SpeechSynthesisUtterance(chunk);
+          utterance.lang = chosen ? chosen.lang : locale === "en" ? "en-US" : "id-ID";
+          utterance.rate = overrideRate ?? rateRef.current;
+          if (chosen) utterance.voice = chosen;
+
+          if (index === 0) {
+            utterance.onstart = () => setSpeaking(true);
+          }
+          if (index === chunks.length - 1) {
+            utterance.onend = () => setSpeaking(false);
+            utterance.onerror = () => setSpeaking(false);
+          }
+          window.speechSynthesis.speak(utterance);
+        });
       } catch {
         setSpeaking(false);
       }
@@ -377,6 +391,18 @@ export function VoiceA11yWidget() {
               : `Maaf, role Anda${userRole ? ` (${getRoleLabel("id", userRole)})` : ""} tidak memiliki izin untuk membuka halaman ${action.label}.`,
           );
           return;
+        case "logout":
+          if (!userRole) {
+            speak(locale === "en" ? "You are not signed in." : "Anda belum masuk akun.");
+            return;
+          }
+          speak(
+            locale === "en"
+              ? "Signing you out now."
+              : "Baik, keluar dari akun Anda sekarang.",
+          );
+          void logout();
+          return;
         case "read_page": {
           const summary = extractPageSummary(locale);
           speak(
@@ -408,6 +434,9 @@ export function VoiceA11yWidget() {
           if (action.direction === "top") {
             window.scrollTo({ top: 0, behavior: "smooth" });
             speak(locale === "en" ? "Scrolled to top." : "Digulir ke paling atas.");
+          } else if (action.direction === "bottom") {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+            speak(locale === "en" ? "Scrolled to bottom." : "Digulir ke paling bawah.");
           } else {
             window.scrollBy({
               top: action.direction === "down" ? 420 : -420,
@@ -490,6 +519,14 @@ export function VoiceA11yWidget() {
               : "Pengaturan tampilan aksesibilitas direset.",
           );
           return;
+        case "toggle_drunk":
+          setDrunkMode(true);
+          speak(locale === "en" ? "Drunk mode enabled." : "Mode mabuk diaktifkan.");
+          return;
+        case "sober_up":
+          window.dispatchEvent(new Event(DRUNK_SOBER_EVENT));
+          speak(locale === "en" ? "Sobering up now." : "Menyiram air dingin sekarang.");
+          return;
         case "click_element": {
           const clicked = clickMatchingElement(action.query);
           speak(
@@ -526,8 +563,10 @@ export function VoiceA11yWidget() {
     },
     [
       locale,
+      logout,
       resetAllA11y,
       router,
+      setDrunkMode,
       setLocale,
       speak,
       stopSpeaking,

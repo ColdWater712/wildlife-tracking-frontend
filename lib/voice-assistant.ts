@@ -28,7 +28,7 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/ai/vision",
     label: { id: "AI Vision", en: "AI Vision" },
-    keywords: ["ai vision", "unggah media", "deteksi ai", "analisis ai", "unggah foto ai", "unggah audio"],
+    keywords: ["ai vision", "unggah media", "deteksi ai", "analisis ai", "unggah foto ai", "unggah audio", "upload media"],
   },
   {
     href: "/ai/vision/history",
@@ -233,13 +233,13 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/login",
     label: { id: "Halaman Masuk", en: "Login Page" },
-    keywords: ["login", "masuk", "halaman masuk"],
+    keywords: ["login", "masuk", "halaman masuk", "sign in"],
     isPublic: true,
   },
   {
     href: "/register",
     label: { id: "Pendaftaran", en: "Registration" },
-    keywords: ["daftar", "register", "registrasi", "buat akun"],
+    keywords: ["daftar", "register", "registrasi", "buat akun", "sign up"],
     isPublic: true,
   },
 ];
@@ -250,35 +250,115 @@ const FILLER_WORDS = new Set([
   "tunjukkan", "cari", "carikan", "halaman", "menu", "bagian", "fitur", "data", "daftar",
   "yang", "di", "dan", "atau", "untuk", "ini", "itu", "ya", "dong", "please", "i", "want",
   "to", "see", "open", "go", "show", "me", "the", "page", "view", "navigate", "take",
+  "can", "you", "my", "check", "open", "look", "at", "about", "of", "in", "on",
 ]);
 
 const SYNONYM_MAP: Record<string, string[]> = {
-  muka: ["wajah", "face"],
+  // Indonesian <-> English bidirectional pairs for mixed Indoglish speech
+  staff: ["staf", "pegawai", "karyawan"],
+  staf: ["staff", "pegawai", "karyawan"],
   pegawai: ["staf", "staff"],
   karyawan: ["staf", "staff"],
-  petugas: ["staf", "loket", "pemandu"],
-  biometrik: ["wajah", "staf"],
+  face: ["wajah", "muka"],
+  faces: ["wajah", "muka"],
+  wajah: ["face", "faces", "muka"],
+  muka: ["wajah", "face"],
+  biometrik: ["wajah", "staf", "face"],
+  animal: ["satwa", "hewan"],
+  animals: ["satwa", "hewan"],
+  wildlife: ["satwa", "hewan"],
+  satwa: ["animal", "animals", "wildlife"],
   hewan: ["satwa", "animal"],
   binatang: ["satwa", "animal"],
+  user: ["pengguna", "users"],
+  users: ["pengguna", "user"],
+  pengguna: ["user", "users"],
+  threat: ["ancaman", "threats"],
+  threats: ["ancaman", "threat"],
+  ancaman: ["threat", "threats"],
+  bahaya: ["ancaman", "darurat", "threat"],
+  notification: ["notifikasi", "notifications"],
+  notifications: ["notifikasi", "notification"],
+  notifikasi: ["notification", "notifications", "alerts"],
+  alerts: ["notifikasi", "ancaman"],
+  emergency: ["darurat", "sos", "kontak"],
+  darurat: ["emergency", "sos", "posko", "kontak"],
+  telepon: ["kontak", "darurat", "phone"],
+  hubungi: ["kontak", "darurat"],
+  manual: ["panduan", "guide"],
+  panduan: ["manual"],
+  tour: ["tur", "wisata", "tours"],
+  tours: ["tur", "wisata", "tour"],
+  wisata: ["tour", "tours"],
+  booking: ["pesanan", "bookings"],
+  bookings: ["pesanan", "booking"],
+  pesanan: ["booking", "bookings"],
+  tiket: ["pesanan", "check-in", "wisata", "ticket"],
+  ticket: ["pesanan", "tiket", "check-in"],
+  payment: ["pembayaran", "payments"],
+  payments: ["pembayaran", "payment"],
+  pembayaran: ["payment", "payments"],
   bayar: ["pembayaran", "payment", "kasir"],
   transfer: ["pembayaran", "verifikasi"],
   bukti: ["pembayaran", "verifikasi"],
+  cashier: ["kasir", "pos"],
+  kasir: ["cashier", "pos"],
+  device: ["perangkat", "devices"],
+  devices: ["perangkat", "device"],
+  perangkat: ["device", "devices", "sensor"],
+  zone: ["zona", "zones"],
+  zones: ["zona", "zone"],
+  zona: ["zone", "zones"],
+  incident: ["insiden", "incidents"],
+  incidents: ["insiden", "incident"],
+  insiden: ["incident", "incidents"],
+  weather: ["cuaca"],
+  cuaca: ["weather"],
+  species: ["spesies"],
+  spesies: ["species"],
+  profile: ["profil", "akun"],
+  profil: ["profile", "akun"],
+  akun: ["profil", "profile", "pengguna"],
+  sandi: ["password", "profil"],
+  activity: ["aktivitas", "log"],
+  aktivitas: ["activity", "log"],
+  role: ["peran", "roles", "izin"],
+  roles: ["role", "izin"],
+  permission: ["izin", "roles"],
+  permissions: ["izin", "roles"],
+  price: ["tarif", "harga", "prices"],
+  prices: ["tarif", "harga", "price"],
   harga: ["tarif", "price"],
-  biaya: ["tarif", "price"],
-  tiket: ["pesanan", "check-in", "wisata"],
+  review: ["ulasan", "reviews"],
+  reviews: ["ulasan", "review"],
+  ulasan: ["review", "reviews"],
+  shift: ["jadwal", "shifts"],
+  shifts: ["jadwal", "shift"],
+  schedule: ["jadwal"],
+  jadwal: ["schedule", "shift"],
+  map: ["peta", "3d"],
+  peta: ["map", "3d", "zona"],
+  history: ["riwayat"],
+  riwayat: ["history"],
+  verify: ["verifikasi", "pending"],
+  pending: ["verifikasi", "antrean"],
+  verifikasi: ["verify", "pending"],
+  recap: ["rekap", "rekapan"],
+  rekap: ["recap", "ringkasan"],
   rekapan: ["rekap", "recap"],
-  ringkasan: ["rekap", "laporan"],
-  kesalahan: ["insiden", "log"],
-  bahaya: ["ancaman", "darurat"],
-  darurat: ["sos", "posko", "kontak"],
-  telepon: ["kontak", "darurat"],
-  hubungi: ["kontak", "darurat"],
+  ringkasan: ["rekap", "laporan", "summary"],
+  export: ["ekspor", "unduh", "download"],
+  ekspor: ["export", "unduh"],
+  download: ["ekspor", "export"],
+  report: ["laporan", "reports"],
+  reports: ["laporan", "report"],
+  laporan: ["report", "reports"],
+  statistic: ["statistik", "statistics"],
+  statistics: ["statistik", "statistic"],
+  statistik: ["statistics", "statistic"],
   kamera: ["media", "vision", "perangkat"],
   foto: ["media", "wajah", "vision"],
   audio: ["suara", "vision"],
-  peta: ["map", "3d", "zona"],
-  sandi: ["password", "profil"],
-  akun: ["profil", "pengguna"],
 };
 
 function tokenize(input: string): string[] {
@@ -356,14 +436,44 @@ function scoreRoute(
   return score;
 }
 
+function findClickableMatch(query: string): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  const target = query.trim().toLowerCase();
+  if (!target) return null;
+
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>("button, a[href], [role='button'], [role='menuitem']"),
+  );
+
+  for (const el of candidates) {
+    if (el.closest("#a11y-voice-dialog")) continue;
+    if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") continue;
+
+    const label = (
+      el.getAttribute("aria-label") ||
+      el.getAttribute("title") ||
+      el.textContent ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (label && (label === target || label.includes(target))) {
+      return el;
+    }
+  }
+  return null;
+}
+
 export type VoiceAction =
   | { type: "navigate"; href: string; label: string }
   | { type: "access_denied"; href: string; label: string }
   | { type: "auth_required"; label: string }
+  | { type: "logout" }
   | { type: "history"; direction: "back" | "forward" }
   | { type: "read_page" }
   | { type: "list_commands" }
-  | { type: "scroll"; direction: "up" | "down" | "top" }
+  | { type: "scroll"; direction: "up" | "down" | "top" | "bottom" }
   | { type: "set_theme"; scheme: "light" | "dark" }
   | { type: "set_locale"; locale: AppLocale }
   | { type: "set_rate"; delta?: number; exact?: number }
@@ -371,6 +481,8 @@ export type VoiceAction =
   | { type: "set_contrast"; high: boolean }
   | { type: "set_font_scale"; scale: "md" | "lg" | "xl" }
   | { type: "reset_a11y" }
+  | { type: "toggle_drunk" }
+  | { type: "sober_up" }
   | { type: "click_element"; query: string }
   | { type: "fill_input"; field: string; value: string }
   | { type: "unknown"; transcript: string };
@@ -383,63 +495,83 @@ export function interpretVoiceCommand(
   const text = raw.trim().toLowerCase();
   if (!text) return { type: "unknown", transcript: raw };
 
-  if (/^(diam|berhenti bicara|stop|hening|tutup suara)$/.test(text)) {
+  // 1. Stop speech
+  if (/^(diam|berhenti bicara|stop|hening|tutup suara|stop talking|be quiet)$/.test(text)) {
     return { type: "stop_speech" };
   }
 
-  if (/(bantuan|perintah|menu apa saja|bisa apa|akses apa|help|commands)/.test(text)) {
+  // 2. Logout / Sign out (supports ID, EN, and mixed phrases)
+  if (
+    /(logout|log out|sign out|signout|keluar akun|keluar dari akun|mau keluar|ingin keluar|tolong keluar|cabut sesi|\bkeluar\b)/.test(
+      text,
+    )
+  ) {
+    return { type: "logout" };
+  }
+
+  // 3. Help / command list
+  if (/(bantuan|perintah|menu apa saja|bisa apa|akses apa|help|commands|what can you do)/.test(text)) {
     return { type: "list_commands" };
   }
 
+  // 4. Read page content thoroughly (ID, EN, and mixed phrases)
   if (
-    /(bacakan halaman|baca halaman|baca layar|di mana saya|ini halaman apa|sedang di mana|read page|where am i|summarize)/.test(
+    /(bacakan|baca\s+(?:isi|semua|halaman|layar|konten|apa)|jelaskan isi|ceritakan halaman|di mana saya|ini halaman apa|sedang di mana|read\s+(?:this\s+)?(?:page|screen|content|all|everything)|what\s+is\s+on\s+this\s+page|where\s+am\s+i|summarize)/.test(
       text,
-    )
+    ) ||
+    /^(baca|read)$/.test(text)
   ) {
     return { type: "read_page" };
   }
 
-  if (/^(kembali|halaman sebelumnya|balik|back|go back)$/.test(text)) {
+  // 5. History navigation (works inside polite sentences)
+  if (/(halaman sebelumnya|go back|previous page|\bkembali\b|\bback\b)/.test(text)) {
     return { type: "history", direction: "back" };
   }
-  if (/^(maju|halaman berikutnya|forward|go forward)$/.test(text)) {
+  if (/(halaman berikutnya|go forward|next page|\bmaju\b|\bforward\b)/.test(text)) {
     return { type: "history", direction: "forward" };
   }
 
-  if (/(ke paling atas|paling atas|scroll top|back to top)/.test(text)) {
+  // 6. Scroll
+  if (/(paling atas|scroll top|back to top|go to top)/.test(text)) {
     return { type: "scroll", direction: "top" };
   }
-  if (/(gulir ke bawah|scroll ke bawah|turun|scroll down)/.test(text)) {
+  if (/(paling bawah|scroll bottom|go to bottom)/.test(text)) {
+    return { type: "scroll", direction: "bottom" };
+  }
+  if (/(gulir ke bawah|scroll ke bawah|scroll down|turun ke bawah|\bturun\b)/.test(text)) {
     return { type: "scroll", direction: "down" };
   }
-  if (/(gulir ke atas|scroll ke atas|naik|scroll up)/.test(text)) {
+  if (/(gulir ke atas|scroll ke atas|scroll up|naik ke atas|\bnaik\b)/.test(text)) {
     return { type: "scroll", direction: "up" };
   }
 
-  if (/(mode gelap|tema gelap|terlalu terang|silau|dark mode)/.test(text)) {
+  // 7. Theme & Language
+  if (/(mode gelap|tema gelap|terlalu terang|silau|dark mode|switch to dark)/.test(text)) {
     return { type: "set_theme", scheme: "dark" };
   }
-  if (/(mode terang|tema terang|terlalu gelap|light mode)/.test(text)) {
+  if (/(mode terang|tema terang|terlalu gelap|light mode|switch to light)/.test(text)) {
     return { type: "set_theme", scheme: "light" };
   }
-
-  if (/(bahasa inggris|ganti inggris|switch to english|english)/.test(text)) {
+  if (/(bahasa inggris|ganti inggris|use english|switch to english|\benglish\b)/.test(text)) {
     return { type: "set_locale", locale: "en" };
   }
-  if (/(bahasa indonesia|ganti indonesia|switch to indonesian|indonesian)/.test(text)) {
+  if (/(bahasa indonesia|ganti indonesia|use indonesian|switch to indonesian|\bindonesian\b)/.test(text)) {
     return { type: "set_locale", locale: "id" };
   }
 
-  if (/(lebih cepat|percepat suara|kecepatan naik|faster|speak faster)/.test(text)) {
+  // 8. Speech rate
+  if (/(lebih cepat|percepat suara|kecepatan naik|faster|speak faster|speed up)/.test(text)) {
     return { type: "set_rate", delta: 0.2 };
   }
-  if (/(lebih lambat|perlambat suara|pelan-pelan|terlalu cepat|slower|speak slower)/.test(text)) {
+  if (/(lebih lambat|perlambat suara|pelan-pelan|terlalu cepat|slower|speak slower|slow down)/.test(text)) {
     return { type: "set_rate", delta: -0.2 };
   }
   if (/(kecepatan normal|suara normal|normal speed)/.test(text)) {
     return { type: "set_rate", exact: 1.0 };
   }
 
+  // 9. Contrast, font size, Drunk Mode, & reset
   if (/(kontras tinggi|high contrast|mode kontras|kurang jelas)/.test(text)) {
     return { type: "set_contrast", high: true };
   }
@@ -449,32 +581,44 @@ export function interpretVoiceCommand(
   if (/(sangat besar|tulisan ekstra besar|extra large text)/.test(text)) {
     return { type: "set_font_scale", scale: "xl" };
   }
-  if (/(perbesar tulisan|tulisan besar|besarkan teks|tulisan kekecilan|huruf kecil|larger text|increase font)/.test(text)) {
+  if (/(perbesar tulisan|tulisan besar|besarkan teks|tulisan kekecilan|huruf kecil|larger text|increase font|bigger text)/.test(text)) {
     return { type: "set_font_scale", scale: "lg" };
   }
-  if (/(perkecil tulisan|ukuran normal|tulisan normal|normal text|default font)/.test(text)) {
+  if (/(perkecil tulisan|ukuran normal|tulisan normal|normal text|default font|smaller text)/.test(text)) {
     return { type: "set_font_scale", scale: "md" };
   }
   if (/(reset tampilan|reset aksesibilitas|reset accessibility)/.test(text)) {
     return { type: "reset_a11y" };
   }
-
-  const fillIdMatch = text.match(/^(?:isi|ketik|masukkan)\s+(.+?)\s+dengan\s+(.+)$/);
-  if (fillIdMatch) {
-    return { type: "fill_input", field: fillIdMatch[1].trim(), value: fillIdMatch[2].trim() };
+  if (/(sadar sekarang|sober up|matikan mode mabuk|stop drunk)/.test(text)) {
+    return { type: "sober_up" };
   }
-  const fillEnMatch = text.match(/^(?:fill|type|enter)\s+(.+?)\s+with\s+(.+)$/);
-  if (fillEnMatch) {
-    return { type: "fill_input", field: fillEnMatch[1].trim(), value: fillEnMatch[2].trim() };
+  if (/(mode mabuk|drunk mode)/.test(text)) {
+    return { type: "toggle_drunk" };
   }
 
-  const clickMatch = text.match(/^(?:klik|tekan|pilih|click|press)\s+(.+)$/);
+  // 10. Fill input (flexible ID/EN/mixed)
+  const fillMatch = text.match(
+    /(?:isi|ketik|masukkan|fill|type|enter)\s+(?:kolom|field|input)?\s*(.+?)\s+(?:dengan|with|ke|as)\s+(.+)$/,
+  );
+  if (fillMatch) {
+    return { type: "fill_input", field: fillMatch[1].trim(), value: fillMatch[2].trim() };
+  }
+
+  // 11. Click element (flexible ID/EN/mixed)
+  const clickMatch = text.match(
+    /(?:klik|tekan|pencet|pilih|click|press|tap)\s+(?:tombol|button|menu|link|tautan)?\s*(.+)$/,
+  );
   if (clickMatch) {
-    return { type: "click_element", query: clickMatch[1].trim() };
+    const cleaned = clickMatch[1].replace(/\b(dong|ya|please|now|sekarang)\b/g, "").trim();
+    if (cleaned) {
+      return { type: "click_element", query: cleaned };
+    }
   }
 
-  // Semantic + fuzzy intent matching across all app routes
-  const userTokens = expandTokens(tokenize(text));
+  // 12. Semantic + fuzzy intent matching across all app routes (with role priority)
+  const rawTokens = tokenize(text);
+  const userTokens = expandTokens(rawTokens);
   if (userTokens.length > 0) {
     const scored = VOICE_ROUTES.map((route) => {
       const baseScore = scoreRoute(text, userTokens, route);
@@ -483,7 +627,6 @@ export function interpretVoiceCommand(
     })
       .filter((item) => item.baseScore >= 18)
       .sort((a, b) => {
-        // If scores are close, prefer routes permitted for the user's role
         if (Math.abs(a.baseScore - b.baseScore) <= 8 && a.allowed !== b.allowed) {
           return a.allowed ? -1 : 1;
         }
@@ -507,6 +650,12 @@ export function interpretVoiceCommand(
     }
   }
 
+  // 13. Smart DOM fallback: check if remaining meaningful words match a button/link on the current page
+  const cleanedPhrase = rawTokens.join(" ");
+  if (cleanedPhrase && findClickableMatch(cleanedPhrase)) {
+    return { type: "click_element", query: cleanedPhrase };
+  }
+
   return { type: "unknown", transcript: raw };
 }
 
@@ -517,7 +666,7 @@ export function summarizeAllowedRoutesForRole(
   if (!role) {
     return locale === "en"
       ? "You are not signed in yet. You can say: login, register, read this page, high contrast, or larger text."
-      : "Anda belum masuk akun. Anda bisa mengucapkan: login, daftar, bacakan halaman, kontras tinggi, atau perbesar tulisan.";
+      : "Anda belum masuk akun. Anda bisa mengucapkan: login, daftar, bacakan isi halaman, kontras tinggi, atau perbesar tulisan.";
   }
 
   const labels = NAV_SECTIONS[role]
@@ -526,71 +675,108 @@ export function summarizeAllowedRoutesForRole(
 
   const listed = labels.slice(0, 10).join(", ");
   return locale === "en"
-    ? `Available menus for your role include: ${listed}. You can also say read page, dark mode, high contrast, larger text, or click a button name.`
-    : `Menu yang tersedia untuk role Anda antara lain: ${listed}. Anda juga bisa mengucapkan bacakan halaman, mode gelap, kontras tinggi, perbesar tulisan, atau klik nama tombol.`;
+    ? `Available menus for your role include: ${listed}. You can also say read page content, log out, dark mode, high contrast, larger text, or click a button name.`
+    : `Menu yang tersedia untuk role Anda antara lain: ${listed}. Anda juga bisa mengucapkan bacakan isi halaman, logout, mode gelap, kontras tinggi, perbesar tulisan, atau klik nama tombol.`;
 }
 
+/**
+ * Extracts a thorough, deduplicated spoken summary of the active page's visible contents:
+ * heading, alerts, stat cards (dt/dd), section headings, paragraphs, lists, and table rows.
+ */
 export function extractPageSummary(locale: AppLocale): string {
   if (typeof document === "undefined") return "";
 
   const root = document.getElementById("main-content") ?? document.querySelector("main") ?? document.body;
-  const heading = root.querySelector("h1")?.textContent?.trim() || document.title;
-  const subHeadings = Array.from(root.querySelectorAll("h2, h3"))
-    .map((el) => el.textContent?.trim() ?? "")
-    .filter(Boolean)
-    .slice(0, 4);
-  const firstPara = Array.from(root.querySelectorAll("p, [role='alert']"))
-    .map((el) => el.textContent?.trim() ?? "")
-    .find((txt) => txt.length > 15 && txt.length < 240);
-
+  const seen = new Set<string>();
   const parts: string[] = [];
-  if (heading) {
-    parts.push(
-      locale === "en" ? `You are on ${heading}.` : `Anda berada di halaman ${heading}.`,
+
+  const pushUnique = (text: string | null | undefined) => {
+    const clean = (text ?? "").replace(/\s+/g, " ").trim();
+    if (!clean || clean.length < 2 || seen.has(clean)) return;
+    seen.add(clean);
+    parts.push(clean);
+  };
+
+  const mainHeading = root.querySelector("h1")?.textContent?.trim() || document.title;
+  if (mainHeading) {
+    pushUnique(
+      locale === "en" ? `You are on ${mainHeading}.` : `Anda berada di halaman ${mainHeading}.`,
     );
   }
-  if (firstPara) {
-    parts.push(firstPara);
+
+  // Alerts / notices
+  root.querySelectorAll("[role='alert'], .ui-alert").forEach((el) => {
+    pushUnique(el.textContent);
+  });
+
+  // Stat cards / definition pairs (dt + dd)
+  const dts = Array.from(root.querySelectorAll("dt"));
+  const statPairs: string[] = [];
+  for (const dt of dts.slice(0, 8)) {
+    const dd = dt.parentElement?.querySelector("dd");
+    const label = dt.textContent?.replace(/\s+/g, " ").trim();
+    const val = dd?.textContent?.replace(/\s+/g, " ").trim();
+    if (label && val) {
+      statPairs.push(`${label}: ${val}`);
+    }
   }
-  if (subHeadings.length > 0) {
-    parts.push(
+  if (statPairs.length > 0) {
+    pushUnique(
       locale === "en"
-        ? `Main sections: ${subHeadings.join(", ")}.`
-        : `Bagian utama: ${subHeadings.join(", ")}.`,
+        ? `Summary metrics: ${statPairs.join(", ")}.`
+        : `Ringkasan data: ${statPairs.join(", ")}.`,
     );
   }
-  return parts.join(" ");
+
+  // Section headings, paragraphs, and list items
+  root.querySelectorAll("h2, h3, p, li").forEach((el) => {
+    if (el.closest("#a11y-voice-dialog, nav, [aria-hidden='true']")) return;
+    const text = el.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    if (text.length >= 6 && text.length <= 260) {
+      pushUnique(text);
+    }
+  });
+
+  // Summarize tables if present
+  const tables = Array.from(root.querySelectorAll("table"));
+  tables.slice(0, 2).forEach((table) => {
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    if (rows.length === 0) return;
+    const headers = Array.from(table.querySelectorAll("thead th"))
+      .map((th) => th.textContent?.replace(/\s+/g, " ").trim() ?? "")
+      .filter(Boolean);
+    const sampleRows = rows.slice(0, 3).map((row) =>
+      Array.from(row.querySelectorAll("td"))
+        .map((td) => td.textContent?.replace(/\s+/g, " ").trim() ?? "")
+        .filter(Boolean)
+        .slice(0, 4)
+        .join(", "),
+    );
+    pushUnique(
+      locale === "en"
+        ? `Table with ${rows.length} rows${headers.length ? ` (${headers.slice(0, 4).join(", ")})` : ""}. Top entries: ${sampleRows.join("; ")}.`
+        : `Tabel berisi ${rows.length} baris${headers.length ? ` (${headers.slice(0, 4).join(", ")})` : ""}. Data teratas: ${sampleRows.join("; ")}.`,
+    );
+  });
+
+  const combined = parts.join(" ");
+  if (combined.length <= 1400) return combined;
+  return `${combined.slice(0, 1390).trim()}...`;
 }
 
 export function clickMatchingElement(query: string): string | null {
-  if (typeof document === "undefined") return null;
-  const target = query.trim().toLowerCase();
-  if (!target) return null;
+  const matched = findClickableMatch(query);
+  if (!matched) return null;
 
-  const candidates = Array.from(
-    document.querySelectorAll<HTMLElement>("button, a[href], [role='button'], [role='menuitem']"),
-  );
-
-  for (const el of candidates) {
-    if (el.closest("#a11y-voice-dialog")) continue;
-    if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") continue;
-
-    const label = (
-      el.getAttribute("aria-label") ||
-      el.getAttribute("title") ||
-      el.textContent ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-    if (label && (label === target || label.includes(target))) {
-      el.focus();
-      el.click();
-      return label;
-    }
-  }
-  return null;
+  const label = (
+    matched.getAttribute("aria-label") ||
+    matched.getAttribute("title") ||
+    matched.textContent ||
+    query
+  ).trim();
+  matched.focus();
+  matched.click();
+  return label;
 }
 
 export function fillMatchingInput(fieldQuery: string, value: string): string | null {
