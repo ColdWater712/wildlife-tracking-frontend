@@ -17,7 +17,7 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/tracking/live-map",
-    label: { id: "Live Map & Gunung 3D", en: "Live Map & 3D Mountain" },
+    label: { id: "Live Map", en: "Live Map" },
     keywords: [
       "live map",
       "peta langsung",
