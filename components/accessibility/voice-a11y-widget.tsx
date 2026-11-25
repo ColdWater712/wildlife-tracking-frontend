@@ -156,6 +156,10 @@ export function VoiceA11yWidget() {
   const rateRef = useRef(rate);
   const voiceUriRef = useRef(selectedVoiceURI);
   const autoReadRef = useRef(autoRead);
+  const wantListeningRef = useRef(false);
+  const fatalErrorRef = useRef(false);
+  const latestTranscriptRef = useRef("");
+  const restartTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     rateRef.current = rate;
@@ -522,13 +526,31 @@ export function VoiceA11yWidget() {
   );
 
   const stopListening = useCallback(() => {
-    try {
-      recognitionRef.current?.stop();
-    } catch {
-      // Ignore
+    wantListeningRef.current = false;
+    if (restartTimerRef.current !== null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+    const current = recognitionRef.current;
+    recognitionRef.current = null;
+    if (current) {
+      current.onstart = null;
+      current.onend = null;
+      current.onerror = null;
+      current.onresult = null;
+      try {
+        current.stop();
+      } catch {
+        // Ignore
+      }
     }
     setListening(false);
-  }, []);
+    const captured = latestTranscriptRef.current.trim();
+    latestTranscriptRef.current = "";
+    if (captured) {
+      executeCommand(captured);
+    }
+  }, [executeCommand]);
 
   const startListening = useCallback(() => {
     const win = window as SpeechWindow;
@@ -544,27 +566,48 @@ export function VoiceA11yWidget() {
     }
 
     stopSpeaking();
-    try {
-      recognitionRef.current?.abort();
-    } catch {
-      // Ignore
+    if (restartTimerRef.current !== null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+
+    const previous = recognitionRef.current;
+    recognitionRef.current = null;
+    if (previous) {
+      previous.onstart = null;
+      previous.onend = null;
+      previous.onerror = null;
+      previous.onresult = null;
+      try {
+        previous.abort();
+      } catch {
+        // Ignore
+      }
     }
 
     const recognition = new Ctor();
     recognition.lang = locale === "en" ? "en-US" : "id-ID";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
+    wantListeningRef.current = true;
+    fatalErrorRef.current = false;
+    latestTranscriptRef.current = "";
+    recognitionRef.current = recognition;
+    setListening(true);
+    setTranscript("");
+    setFeedback(
+      locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.",
+    );
+
     recognition.onstart = () => {
+      if (recognitionRef.current !== recognition) return;
       setListening(true);
-      setTranscript("");
-      setFeedback(
-        locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.",
-      );
     };
 
     recognition.onresult = (event) => {
+      if (recognitionRef.current !== recognition) return;
       let combined = "";
       let isFinal = false;
       for (let i = 0; i < event.results.length; i++) {
@@ -574,34 +617,97 @@ export function VoiceA11yWidget() {
         }
         if (res.isFinal) isFinal = true;
       }
+      latestTranscriptRef.current = combined;
       setTranscript(combined);
       if (isFinal && combined.trim()) {
+        wantListeningRef.current = false;
+        latestTranscriptRef.current = "";
+        recognitionRef.current = null;
+        recognition.onstart = null;
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.onresult = null;
+        try {
+          recognition.stop();
+        } catch {
+          // Ignore
+        }
         setListening(false);
         executeCommand(combined);
       }
     };
 
     recognition.onerror = (event) => {
+      if (recognitionRef.current !== recognition) return;
+
+      if (event.error === "aborted") {
+        return;
+      }
+
+      if (event.error === "no-speech") {
+        setFeedback(
+          locale === "en"
+            ? "No speech detected yet, still listening..."
+            : "Belum ada suara terdeteksi, masih mendengarkan...",
+        );
+        return;
+      }
+
+      fatalErrorRef.current = true;
+      wantListeningRef.current = false;
       setListening(false);
-      const errMsg =
-        event.error === "not-allowed"
-          ? locale === "en"
-            ? "Microphone permission was denied."
-            : "Izin mikrofon ditolak browser."
-          : locale === "en"
+
+      let errMsg: string;
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        errMsg =
+          locale === "en"
+            ? "Microphone permission was denied. Please allow microphone access in your browser."
+            : "Izin mikrofon ditolak. Harap izinkan akses mikrofon di browser Anda.";
+      } else if (event.error === "audio-capture") {
+        errMsg =
+          locale === "en"
+            ? "No microphone device was found on this computer."
+            : "Perangkat mikrofon tidak ditemukan pada komputer ini.";
+      } else if (event.error === "network") {
+        errMsg =
+          locale === "en"
+            ? "Browser speech service is offline or blocked here. Use Google Chrome/Edge or type commands below."
+            : "Layanan suara browser tidak terhubung di sini. Gunakan Chrome/Edge atau ketik perintah di kolom bawah.";
+      } else {
+        errMsg =
+          locale === "en"
             ? "Could not hear clearly. Please try again."
             : "Suara tidak terdengar jelas. Silakan coba lagi.";
+      }
       speak(errMsg);
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
+
+      if (wantListeningRef.current && !fatalErrorRef.current) {
+        restartTimerRef.current = window.setTimeout(() => {
+          restartTimerRef.current = null;
+          if (!wantListeningRef.current || recognitionRef.current !== recognition) return;
+          try {
+            recognition.start();
+          } catch {
+            wantListeningRef.current = false;
+            setListening(false);
+          }
+        }, 150);
+        return;
+      }
+
+      recognitionRef.current = null;
       setListening(false);
     };
 
-    recognitionRef.current = recognition;
     try {
       recognition.start();
     } catch {
+      wantListeningRef.current = false;
+      recognitionRef.current = null;
       setListening(false);
     }
   }, [executeCommand, locale, speak, stopSpeaking]);
