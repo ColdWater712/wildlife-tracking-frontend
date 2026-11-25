@@ -1,26 +1,28 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import { Compass, Moon, RotateCcw, Sun, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  Moon,
+  RotateCcw,
+  Sun,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react';
+import type { AppLocale } from '@/lib/i18n';
+import type { ManualStep } from './manual-data';
+import { createStepBoardTexture } from './canvas-board-texture';
 
-import type { AppLocale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
-import type { ManualStep } from "./manual-data";
-
-type PoiAnchor = {
-  x: number;
-  z: number;
-  camDist: number;
-  camHeight: number;
-};
-
-const POI_ANCHORS: PoiAnchor[] = [
-  { x: -2.2, z: 1.9, camDist: 4.1, camHeight: 2.3 },
-  { x: 2.4, z: 1.5, camDist: 4.2, camHeight: 2.1 },
-  { x: 2.1, z: -2.3, camDist: 4.1, camHeight: 2.0 },
-  { x: -1.7, z: -2.1, camDist: 4.0, camHeight: 2.5 },
-];
+interface LivingWorldCanvasProps {
+  locale: AppLocale;
+  steps: ManualStep[];
+  focusedIndex: number | null;
+  onSelectStep: (index: number | null) => void;
+  reducedMotion?: boolean;
+}
 
 type ProjectedPin = {
   index: number;
@@ -29,43 +31,76 @@ type ProjectedPin = {
   visible: boolean;
 };
 
+const POI_ANCHORS = [
+  { x: -2.2, z: 1.9 },
+  { x: 2.4, z: 1.5 },
+  { x: 2.1, z: -2.3 },
+  { x: -1.7, z: -2.1 },
+];
+
+function heightAt(x: number, z: number): number {
+  const r = Math.sqrt(x * x + z * z);
+  const peak = 2.65 * Math.exp(-(r * r) / 7.8);
+  const ridge =
+    0.42 * Math.sin(x * 0.9 + 0.4) * Math.cos(z * 0.85) +
+    0.2 * Math.cos(x * 1.8 - z * 1.4);
+  const skirt = Math.max(0, 1 - r / 6.2);
+  return (peak + ridge * skirt) * skirt;
+}
+
 export function LivingWorldCanvas({
   locale,
   steps,
   focusedIndex,
   onSelectStep,
   reducedMotion = false,
-}: {
-  locale: AppLocale;
-  steps: ManualStep[];
-  focusedIndex: number | null;
-  onSelectStep: (index: number | null) => void;
-  reducedMotion?: boolean;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pinRefs = useRef<(HTMLButtonElement | null)[]>([]);
+}: LivingWorldCanvasProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
   const [nightMode, setNightMode] = useState(false);
   const [webglError, setWebglError] = useState(false);
+  const [pins, setPins] = useState<ProjectedPin[]>([]);
 
-  const nightRef = useRef(nightMode);
-  const reducedRef = useRef(reducedMotion);
   const focusedRef = useRef<number | null>(focusedIndex);
-  const orbitRef = useRef({ theta: 0.65, phi: 0.94, radius: 13.5, targetTheta: 0.65 });
+  const nightRef = useRef<boolean>(nightMode);
+  const zoomRef = useRef<number>(1);
+  const manualOrbitRef = useRef<number>(0);
 
-  useEffect(() => {
-    nightRef.current = nightMode;
-  }, [nightMode]);
-
-  useEffect(() => {
-    reducedRef.current = reducedMotion;
-  }, [reducedMotion]);
+  const boardMeshesRef = useRef<THREE.Mesh[]>([]);
+  const texturesRef = useRef<THREE.CanvasTexture[]>([]);
 
   useEffect(() => {
     focusedRef.current = focusedIndex;
   }, [focusedIndex]);
 
   useEffect(() => {
-    const container = containerRef.current;
+    nightRef.current = nightMode;
+  }, [nightMode]);
+
+  // Refresh 3D CanvasTextures whenever locale, nightMode, or steps change
+  useEffect(() => {
+    const meshes = boardMeshesRef.current;
+    if (meshes.length === 0) return;
+
+    const theme = nightMode ? 'mountain-night' : 'mountain-day';
+    const nextTextures: THREE.CanvasTexture[] = [];
+
+    meshes.forEach((mesh, idx) => {
+      const step = steps[idx];
+      if (!step) return;
+      const tex = createStepBoardTexture(step, idx, locale, theme, 'POI');
+      nextTextures.push(tex);
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.map = tex;
+      mat.needsUpdate = true;
+    });
+
+    const prevTextures = texturesRef.current;
+    texturesRef.current = nextTextures;
+    prevTextures.forEach((t) => t.dispose());
+  }, [locale, nightMode, steps]);
+
+  useEffect(() => {
+    const container = mountRef.current;
     if (!container) return;
 
     let renderer: THREE.WebGLRenderer;
@@ -76,432 +111,429 @@ export function LivingWorldCanvas({
       return;
     }
 
-    const width = container.clientWidth || 680;
-    const height = container.clientHeight || 420;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const width = container.clientWidth || 720;
+    const height = container.clientHeight || 520;
     renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xd8ebe2, 0.028);
+    const dayBg = new THREE.Color('#dff2e6');
+    const nightBg = new THREE.Color('#071310');
+    scene.background = nightRef.current ? nightBg : dayBg;
+    scene.fog = new THREE.FogExp2(nightRef.current ? '#071310' : '#dff2e6', 0.036);
 
-    const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 120);
-    const camPos = new THREE.Vector3(9, 7, 9);
-    const camLook = new THREE.Vector3(0, 0.7, 0);
-    const desiredPos = new THREE.Vector3();
-    const desiredLook = new THREE.Vector3();
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+    camera.position.set(0, 4.8, 9.2);
 
-    const hemiLight = new THREE.HemisphereLight(0xdff5ff, 0x1d3b2a, 1.1);
-    scene.add(hemiLight);
-    const dirLight = new THREE.DirectionalLight(0xfff4d6, 1.45);
-    dirLight.position.set(8, 13, 6);
-    scene.add(dirLight);
+    const ambientLight = new THREE.AmbientLight('#ffffff', 0.72);
+    scene.add(ambientLight);
 
-    const worldGroup = new THREE.Group();
-    scene.add(worldGroup);
+    const sunLight = new THREE.DirectionalLight('#fff5dc', 1.25);
+    sunLight.position.set(6, 9, 5);
+    scene.add(sunLight);
 
-    const heightAt = (x: number, z: number) => {
-      const dist = Math.sqrt(x * x + z * z);
-      const peak1 = Math.exp(-((x + 1.4) ** 2 + (z + 0.9) ** 2) * 0.18) * 3.6;
-      const peak2 = Math.exp(-((x - 2.1) ** 2 + (z - 1.2) ** 2) * 0.22) * 2.7;
-      const ridge = Math.sin(x * 0.75) * Math.cos(z * 0.65) * 0.6;
-      const riverCut = Math.exp(-((z - Math.sin(x * 0.45) * 1.4) ** 2) * 1.35) * 0.75;
-      const islandMask = Math.max(0, 1 - (dist / 8.2) ** 2);
-      return Math.max(-0.35, (peak1 + peak2 + ridge + 0.45 - riverCut) * islandMask - 0.15);
-    };
+    const rimLight = new THREE.DirectionalLight('#7dd3fc', 0.45);
+    rimLight.position.set(-6, 4, -5);
+    scene.add(rimLight);
 
-    // Gunung & Lembah Leuser
-    const terrainGeo = new THREE.PlaneGeometry(16, 16, 52, 52);
-    terrainGeo.rotateX(-Math.PI / 2);
-    const pos = terrainGeo.attributes.position;
+    // Mountain terrain
+    const geo = new THREE.PlaneGeometry(11, 11, 64, 64);
+    geo.rotateX(-Math.PI / 2);
+    const posAttr = geo.attributes.position as THREE.BufferAttribute;
     const colors: number[] = [];
 
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const z = pos.getZ(i);
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const z = posAttr.getZ(i);
       const y = heightAt(x, z);
-      pos.setY(i, y);
+      posAttr.setY(i, y);
 
-      if (y < 0.05) {
-        colors.push(0.14, 0.44, 0.48);
-      } else if (y < 1.25) {
-        colors.push(0.18, 0.48, 0.28);
-      } else if (y < 2.3) {
-        colors.push(0.25, 0.43, 0.3);
+      const c = new THREE.Color();
+      if (y > 2.05) {
+        c.set('#e2ece7');
+      } else if (y > 1.2) {
+        c.set('#2e6b48');
+      } else if (y > 0.45) {
+        c.set('#3f8259');
       } else {
-        colors.push(0.52, 0.58, 0.55);
+        c.set('#25563b');
       }
-    }
-    terrainGeo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    terrainGeo.computeVertexNormals();
-
-    const terrain = new THREE.Mesh(
-      terrainGeo,
-      new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        flatShading: true,
-        roughness: 0.86,
-        metalness: 0.06,
-      }),
-    );
-    worldGroup.add(terrain);
-
-    // Sungai
-    const waterGeo = new THREE.PlaneGeometry(13.5, 13.5);
-    waterGeo.rotateX(-Math.PI / 2);
-    const water = new THREE.Mesh(
-      waterGeo,
-      new THREE.MeshStandardMaterial({
-        color: 0x2c8da8,
-        transparent: true,
-        opacity: 0.72,
-        roughness: 0.22,
-        metalness: 0.25,
-      }),
-    );
-    water.position.y = -0.02;
-    worldGroup.add(water);
-
-    // Pohon hutan hujan
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4b3621, flatShading: true });
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2a663b, flatShading: true });
-    const trunkGeo = new THREE.CylinderGeometry(0.05, 0.08, 0.35, 5);
-    const crownGeo = new THREE.ConeGeometry(0.26, 0.65, 6);
-
-    for (let i = 0; i < 44; i++) {
-      const angle = i * 2.39996;
-      const r = 1.15 + ((i * 0.73) % 4.6);
-      const x = Math.cos(angle) * r;
-      const z = Math.sin(angle) * r;
-      const y = heightAt(x, z);
-      if (y > 0.14 && y < 2.2) {
-        const tree = new THREE.Group();
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.y = 0.17;
-        const crown = new THREE.Mesh(crownGeo, leafMat);
-        crown.position.y = 0.55;
-        tree.add(trunk, crown);
-        tree.position.set(x, y, z);
-        const s = 0.75 + (i % 5) * 0.12;
-        tree.scale.set(s, s, s);
-        worldGroup.add(tree);
-      }
+      colors.push(c.r, c.g, c.b);
     }
 
-    // Awan melayang
-    const cloudMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.75,
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+
+    const mountainMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.88,
+      metalness: 0.05,
       flatShading: true,
     });
-    const clouds: THREE.Group[] = [];
-    for (let c = 0; c < 4; c++) {
-      const cloud = new THREE.Group();
-      for (let b = 0; b < 3; b++) {
-        const puff = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45 - b * 0.08, 0), cloudMat);
-        puff.position.set(b * 0.36 - 0.3, (b % 2) * 0.12, 0);
-        cloud.add(puff);
+    const mountain = new THREE.Mesh(geo, mountainMat);
+    scene.add(mountain);
+
+    // Procedural forest cones around slopes
+    const treeGeo = new THREE.ConeGeometry(0.11, 0.34, 6);
+    const treeMat = new THREE.MeshStandardMaterial({
+      color: '#1b4d32',
+      roughness: 0.9,
+      flatShading: true,
+    });
+    for (let i = 0; i < 42; i++) {
+      const angle = (i / 42) * Math.PI * 2 + (i % 3) * 0.2;
+      const rad = 1.4 + ((i * 37) % 28) / 10;
+      const tx = Math.cos(angle) * rad;
+      const tz = Math.sin(angle) * rad;
+      const ty = heightAt(tx, tz);
+      if (ty > 0.25 && ty < 1.85) {
+        const tree = new THREE.Mesh(treeGeo, treeMat);
+        tree.position.set(tx, ty + 0.14, tz);
+        scene.add(tree);
       }
-      cloud.position.set(-4 + c * 2.6, 4.3 + (c % 2) * 0.45, -2.5 + c * 1.4);
-      clouds.push(cloud);
-      worldGroup.add(cloud);
     }
 
-    // 4 Beacon POI fisik di 4 sisi gunung
-    const poiWorldPositions: THREE.Vector3[] = [];
-    const poiCrystals: THREE.Mesh[] = [];
-    const poiRings: THREE.Mesh[] = [];
+    // POI clearings, glowing crystals, and 3D CanvasTexture boards
+    const crystalGeo = new THREE.OctahedronGeometry(0.16, 0);
+    const padGeo = new THREE.CylinderGeometry(0.46, 0.56, 0.12, 16);
+    const padMat = new THREE.MeshStandardMaterial({
+      color: '#1f4f38',
+      roughness: 0.75,
+      flatShading: true,
+    });
+    const boardGeo = new THREE.PlaneGeometry(2.4, 1.54);
+
+    const crystals: THREE.Mesh[] = [];
+    const boards: THREE.Mesh[] = [];
+    const initialTextures: THREE.CanvasTexture[] = [];
+    const theme = nightRef.current ? 'mountain-night' : 'mountain-day';
 
     POI_ANCHORS.forEach((anchor, idx) => {
-      const y = heightAt(anchor.x, anchor.z);
-      const basePos = new THREE.Vector3(anchor.x, y, anchor.z);
-      poiWorldPositions.push(new THREE.Vector3(anchor.x, y + 0.95, anchor.z));
+      const baseY = heightAt(anchor.x, anchor.z);
 
-      const beam = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.03, 0.03, 0.85, 8),
-        new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.7 }),
-      );
-      beam.position.set(basePos.x, basePos.y + 0.42, basePos.z);
-      worldGroup.add(beam);
+      // Landing pad ("daratan")
+      const pad = new THREE.Mesh(padGeo, padMat);
+      pad.position.set(anchor.x, baseY + 0.04, anchor.z);
+      scene.add(pad);
 
-      const crystal = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.22, 0),
-        new THREE.MeshStandardMaterial({
-          color: idx % 2 === 0 ? 0xfbbf24 : 0x34d399,
-          emissive: idx % 2 === 0 ? 0xd97706 : 0x059669,
-          emissiveIntensity: 0.65,
-          flatShading: true,
-        }),
-      );
-      crystal.position.set(basePos.x, basePos.y + 0.92, basePos.z);
-      poiCrystals.push(crystal);
-      worldGroup.add(crystal);
+      // Glowing crystal marker
+      const crystalMat = new THREE.MeshStandardMaterial({
+        color: '#f59e0b',
+        emissive: '#d97706',
+        emissiveIntensity: 0.55,
+        roughness: 0.25,
+      });
+      const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+      crystal.position.set(anchor.x, baseY + 0.3, anchor.z);
+      scene.add(crystal);
+      crystals.push(crystal);
 
-      const ringGeo = new THREE.RingGeometry(0.24, 0.34, 24);
-      ringGeo.rotateX(-Math.PI / 2);
-      const ring = new THREE.Mesh(
-        ringGeo,
-        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.75 }),
-      );
-      ring.position.set(basePos.x, basePos.y + 0.06, basePos.z);
-      poiRings.push(ring);
-      worldGroup.add(ring);
+      // In-world 3D CanvasTexture board
+      const step = steps[idx];
+      const tex = step
+        ? createStepBoardTexture(step, idx, locale, theme, 'POI')
+        : new THREE.CanvasTexture(document.createElement('canvas'));
+      initialTextures.push(tex);
+
+      const boardMat = new THREE.MeshBasicMaterial({
+        map: tex,
+      });
+      const board = new THREE.Mesh(boardGeo, boardMat);
+      board.position.set(anchor.x, baseY + 0.68, anchor.z);
+      board.scale.set(0.22, 0.22, 0.22);
+      scene.add(board);
+      boards.push(board);
     });
 
-    // Interaksi drag orbit & scroll zoom
-    let dragging = false;
-    let prevX = 0;
-    let prevY = 0;
+    boardMeshesRef.current = boards;
+    texturesRef.current = initialTextures;
+
+    // Drag to orbit
+    let isDragging = false;
+    let lastX = 0;
 
     const onPointerDown = (e: PointerEvent) => {
-      dragging = true;
-      prevX = e.clientX;
-      prevY = e.clientY;
+      if (focusedRef.current !== null) return;
+      isDragging = true;
+      lastX = e.clientX;
     };
     const onPointerMove = (e: PointerEvent) => {
-      if (!dragging) return;
-      const dx = e.clientX - prevX;
-      const dy = e.clientY - prevY;
-      prevX = e.clientX;
-      prevY = e.clientY;
-      orbitRef.current.targetTheta -= dx * 0.008;
-      orbitRef.current.phi = Math.max(0.42, Math.min(1.3, orbitRef.current.phi - dy * 0.006));
+      if (!isDragging || focusedRef.current !== null) return;
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      manualOrbitRef.current -= dx * 0.0065;
     };
     const onPointerUp = () => {
-      dragging = false;
-    };
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      orbitRef.current.radius = Math.max(6.5, Math.min(20, orbitRef.current.radius + e.deltaY * 0.01));
+      isDragging = false;
     };
 
     const dom = renderer.domElement;
-    dom.addEventListener("pointerdown", onPointerDown);
-    dom.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
+    dom.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
 
-    const onResize = () => {
+    const lookTarget = new THREE.Vector3(0, 1.0, 0);
+    const desiredLook = new THREE.Vector3(0, 1.0, 0);
+    const desiredCam = new THREE.Vector3(0, 4.8, 9.2);
+    let autoOrbit = 0;
+    let animId = 0;
+    let frameCount = 0;
+
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      frameCount++;
+
+      // Smooth day/night transition
+      const isNight = nightRef.current;
+      scene.background = isNight ? nightBg : dayBg;
+      if (scene.fog) {
+        scene.fog.color.copy(isNight ? nightBg : dayBg);
+      }
+      ambientLight.intensity = isNight ? 0.38 : 0.75;
+      sunLight.intensity = isNight ? 0.48 : 1.25;
+
+      const focused = focusedRef.current;
+
+      if (focused === null) {
+        if (!reducedMotion && !isDragging) {
+          autoOrbit += 0.0022;
+        }
+        const angle = autoOrbit + manualOrbitRef.current;
+        const dist = 9.2 / zoomRef.current;
+        const camH = 4.6 / Math.sqrt(zoomRef.current);
+        desiredCam.set(Math.sin(angle) * dist, camH, Math.cos(angle) * dist);
+        desiredLook.set(0, 1.0, 0);
+      } else {
+        const anchor = POI_ANCHORS[focused] ?? POI_ANCHORS[0];
+        const baseY = heightAt(anchor.x, anchor.z);
+        const len = Math.hypot(anchor.x, anchor.z) || 1;
+        const nx = anchor.x / len;
+        const nz = anchor.z / len;
+
+        // Zoom all the way in to face the 3D canvas board on the mountain slope
+        desiredCam.set(
+          anchor.x + nx * 2.25,
+          baseY + 1.08,
+          anchor.z + nz * 2.25
+        );
+        desiredLook.set(anchor.x, baseY + 0.96, anchor.z);
+      }
+
+      camera.position.lerp(desiredCam, 0.075);
+      lookTarget.lerp(desiredLook, 0.09);
+      camera.lookAt(lookTarget);
+
+      // Update crystals & 3D boards
+      crystals.forEach((crystal, idx) => {
+        const isSel = focused === idx;
+        if (!reducedMotion) {
+          crystal.rotation.y += isSel ? 0.045 : 0.018;
+        }
+        const s = isSel ? 1.25 : 1.0;
+        crystal.scale.set(s, s, s);
+      });
+
+      boards.forEach((board, idx) => {
+        const anchor = POI_ANCHORS[idx];
+        const baseY = heightAt(anchor.x, anchor.z);
+        const isSel = focused === idx;
+        const targetScale = isSel ? 1.0 : focused === null ? 0.22 : 0.14;
+        const targetY = isSel ? baseY + 0.96 : baseY + 0.68;
+
+        board.scale.lerp(
+          new THREE.Vector3(targetScale, targetScale, targetScale),
+          0.1
+        );
+        board.position.y += (targetY - board.position.y) * 0.1;
+        board.lookAt(camera.position);
+      });
+
+      renderer.render(scene, camera);
+
+      // Project 2D POI pin buttons every 2 frames when in overview
+      if (frameCount % 2 === 0) {
+        const w = container.clientWidth || width;
+        const h = container.clientHeight || height;
+        const nextPins: ProjectedPin[] = POI_ANCHORS.map((anchor, idx) => {
+          const v = new THREE.Vector3(
+            anchor.x,
+            heightAt(anchor.x, anchor.z) + 0.35,
+            anchor.z
+          );
+          v.project(camera);
+          return {
+            index: idx,
+            x: (v.x * 0.5 + 0.5) * w,
+            y: (-v.y * 0.5 + 0.5) * h,
+            visible: v.z < 1,
+          };
+        });
+        setPins(nextPins);
+      }
+    };
+
+    animate();
+
+    const handleResize = () => {
       if (!container) return;
-      const w = container.clientWidth || 680;
-      const h = container.clientHeight || 420;
+      const w = container.clientWidth || 720;
+      const h = container.clientHeight || 520;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
-    window.addEventListener("resize", onResize);
-
-    let raf = 0;
-    const clock = new THREE.Clock();
-    const proj = new THREE.Vector3();
-
-    const animate = () => {
-      const elapsed = clock.getElapsedTime();
-      const isNight = nightRef.current;
-
-      if (scene.fog) {
-        scene.fog.color.setHex(isNight ? 0x0b161e : 0xd8ebe2);
-      }
-      hemiLight.intensity = isNight ? 0.48 : 1.1;
-      dirLight.intensity = isNight ? 0.6 : 1.45;
-      dirLight.color.setHex(isNight ? 0x7ec8ff : 0xfff4d6);
-      cloudMat.opacity = isNight ? 0.25 : 0.75;
-
-      const focusIdx = focusedRef.current;
-      const st = orbitRef.current;
-
-      if (focusIdx !== null && POI_ANCHORS[focusIdx] && poiWorldPositions[focusIdx]) {
-        const poi = poiWorldPositions[focusIdx];
-        const anchor = POI_ANCHORS[focusIdx];
-        const radialAngle = Math.atan2(poi.z, poi.x);
-        desiredPos.set(
-          poi.x + Math.cos(radialAngle) * anchor.camDist,
-          poi.y + anchor.camHeight,
-          poi.z + Math.sin(radialAngle) * anchor.camDist,
-        );
-        desiredLook.set(poi.x, poi.y - 0.15, poi.z);
-      } else {
-        if (!dragging && !reducedRef.current) {
-          st.targetTheta += 0.0032;
-        }
-        st.theta += (st.targetTheta - st.theta) * 0.08;
-        desiredPos.set(
-          st.radius * Math.sin(st.phi) * Math.cos(st.theta),
-          st.radius * Math.cos(st.phi),
-          st.radius * Math.sin(st.phi) * Math.sin(st.theta),
-        );
-        desiredLook.set(0, 0.7, 0);
-      }
-
-      camPos.lerp(desiredPos, 0.08);
-      camLook.lerp(desiredLook, 0.08);
-      camera.position.copy(camPos);
-      camera.lookAt(camLook);
-
-      if (!reducedRef.current) {
-        clouds.forEach((cloud, idx) => {
-          cloud.position.x = ((cloud.position.x + 0.004 * (idx % 2 === 0 ? 1 : 0.7) + 6) % 12) - 6;
-        });
-        poiCrystals.forEach((crystal, idx) => {
-          crystal.rotation.y = elapsed * (idx === focusIdx ? 2.4 : 1.2);
-          const s = idx === focusIdx ? 1.3 : 1;
-          crystal.scale.set(s, s, s);
-        });
-        poiRings.forEach((ring, idx) => {
-          const pulse = 1 + Math.sin(elapsed * 3 + idx) * (idx === focusIdx ? 0.32 : 0.14);
-          ring.scale.set(pulse, 1, pulse);
-        });
-      }
-
-      // Proyeksikan 4 POI 3D ke koordinat layar 2D untuk tombol pin interaktif
-      const w = container.clientWidth || 680;
-      const h = container.clientHeight || 420;
-      const pins: ProjectedPin[] = poiWorldPositions.map((wp, idx) => {
-        proj.copy(wp).project(camera);
-        return {
-          index: idx,
-          x: (proj.x * 0.5 + 0.5) * w,
-          y: (-proj.y * 0.5 + 0.5) * h - 14,
-          visible: proj.z < 1 && proj.x > -1.05 && proj.x < 1.05 && proj.y > -1.05 && proj.y < 1.05,
-        };
-      });
-
-      pins.forEach((pin) => {
-        const el = pinRefs.current[pin.index];
-        if (!el) return;
-        el.style.transform = `translate(-50%, -100%) translate(${pin.x.toFixed(1)}px, ${pin.y.toFixed(1)}px)`;
-        el.style.opacity = pin.visible ? "1" : "0";
-        el.style.pointerEvents = pin.visible ? "auto" : "none";
-      });
-
-      renderer.render(scene, camera);
-      raf = requestAnimationFrame(animate);
-    };
-    animate();
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(raf);
-      dom.removeEventListener("pointerdown", onPointerDown);
-      dom.removeEventListener("wheel", onWheel);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(animId);
+      dom.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('resize', handleResize);
+      texturesRef.current.forEach((t) => t.dispose());
+      texturesRef.current = [];
+      boardMeshesRef.current = [];
+      geo.dispose();
+      treeGeo.dispose();
+      crystalGeo.dispose();
+      padGeo.dispose();
+      boardGeo.dispose();
+      mountainMat.dispose();
+      treeMat.dispose();
+      padMat.dispose();
       renderer.dispose();
-      if (dom.parentNode === container) container.removeChild(dom);
     };
-  }, []);
-
-  const zoomBy = (delta: number) => {
-    if (focusedIndex !== null) onSelectStep(null);
-    orbitRef.current.radius = Math.max(6.5, Math.min(20, orbitRef.current.radius + delta));
-  };
-
-  const resetView = () => {
-    onSelectStep(null);
-    orbitRef.current = { theta: 0.65, phi: 0.94, radius: 13.5, targetTheta: 0.65 };
-  };
+  }, [reducedMotion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (webglError) {
     return (
-      <div className="flex h-72 items-center justify-center rounded-2xl border border-line bg-surface-muted p-6 text-center text-sm text-muted">
-        {locale === "en"
-          ? "WebGL is unavailable on this browser. Switch to Normal Mode to read all chapters."
-          : "WebGL tidak tersedia di browser ini. Gunakan Normal Mode untuk membaca seluruh bab."}
+      <div className="flex h-[520px] items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-6 text-center text-sm text-muted-foreground">
+        {locale === 'en'
+          ? 'WebGL is unavailable in this browser. Use the quick-picker cards below to read each sub-chapter.'
+          : 'WebGL tidak tersedia di browser ini. Gunakan kartu pilihan di bawah untuk membaca setiap sub-bab.'}
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "relative h-[420px] w-full overflow-hidden rounded-2xl border border-line transition-colors duration-500",
-        nightMode
-          ? "bg-gradient-to-b from-[#07131c] via-[#0d2229] to-[#122b23]"
-          : "bg-gradient-to-b from-[#a8d5e5] via-[#d7ece3] to-[#eaf3ec]",
-      )}
-    >
-      <div ref={containerRef} className="h-full w-full cursor-grab active:cursor-grabbing" />
+    <div className="relative h-[520px] w-full overflow-hidden rounded-2xl border border-emerald-500/25 shadow-inner">
+      <div
+        ref={mountRef}
+        className="h-full w-full cursor-grab active:cursor-grabbing"
+      />
 
-      {/* Pin POI 3D terproyeksi */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {steps.slice(0, POI_ANCHORS.length).map((step, idx) => (
-          <button
-            key={step.id}
-            ref={(el) => {
-              pinRefs.current[idx] = el;
-            }}
-            type="button"
-            onClick={() => onSelectStep(focusedIndex === idx ? null : idx)}
-            className={cn(
-              "absolute left-0 top-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold shadow-lg backdrop-blur transition-colors",
-              focusedIndex === idx
-                ? "border-white bg-primary text-white ring-4 ring-primary/40"
-                : "border-white/80 bg-forest-black/80 text-white hover:bg-primary",
-            )}
-          >
-            <span className="font-mono text-amber-300">0{idx + 1}</span>
-            <span>{step.badge?.[locale] ?? step.heading[locale]}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap items-center gap-2">
-        <span className="rounded-xl bg-forest-black/75 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+      {/* Top-left compass / status badge */}
+      <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium backdrop-blur-md">
+        <Compass className="h-3.5 w-3.5 text-emerald-500" />
+        <span>
           {focusedIndex !== null
-            ? locale === "en"
-              ? `Zoomed to POI 0${focusedIndex + 1} · Click Overview to spin`
-              : `Zoom ke POI 0${focusedIndex + 1} · Klik Overview untuk memutar`
-            : locale === "en"
-              ? "Rotating Mountain · Drag to orbit · Scroll/Click POI to zoom"
-              : "Gunung Berputar · Seret untuk orbit · Scroll/Klik POI untuk zoom"}
+            ? `POI 0${focusedIndex + 1} · ${steps[focusedIndex]?.heading[locale] ?? ''}`
+            : locale === 'en'
+              ? 'Drag to orbit · Click any POI pin to zoom into its 3D canvas'
+              : 'Geser untuk putar · Klik pin POI untuk zoom ke kanvas 3D-nya'}
         </span>
       </div>
 
+      {/* Top-right controls */}
       <div className="absolute right-3 top-3 flex items-center gap-1.5">
-        {focusedIndex !== null ? (
+        {focusedIndex === null && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                zoomRef.current = Math.min(1.65, zoomRef.current + 0.18);
+              }}
+              aria-label="Zoom in"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur-md transition hover:bg-background"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                zoomRef.current = Math.max(0.75, zoomRef.current - 0.18);
+              }}
+              aria-label="Zoom out"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur-md transition hover:bg-background"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() => setNightMode((prev) => !prev)}
+          aria-label={nightMode ? 'Switch to day' : 'Switch to night'}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-background/80 px-3 text-xs font-medium text-foreground backdrop-blur-md transition hover:bg-background"
+        >
+          {nightMode ? (
+            <Sun className="h-3.5 w-3.5 text-amber-400" />
+          ) : (
+            <Moon className="h-3.5 w-3.5 text-indigo-500" />
+          )}
+          <span>{nightMode ? (locale === 'en' ? 'Day' : 'Siang') : locale === 'en' ? 'Night' : 'Malam'}</span>
+        </button>
+      </div>
+
+      {/* Projected clickable 2D POI pins in Overview */}
+      {focusedIndex === null &&
+        pins.map((pin) => {
+          if (!pin.visible) return null;
+          const step = steps[pin.index];
+          if (!step) return null;
+          return (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => onSelectStep(pin.index)}
+              style={{
+                left: `${pin.x}px`,
+                top: `${pin.y}px`,
+                transform: 'translate(-50%, -100%)',
+              }}
+              className="absolute z-10 flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-950/85 px-2.5 py-1 text-xs font-semibold text-emerald-100 shadow-lg backdrop-blur-md transition hover:scale-105 hover:bg-emerald-800"
+            >
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-slate-950">
+                {pin.index + 1}
+              </span>
+              <span className="max-w-[140px] truncate">{step.heading[locale]}</span>
+            </button>
+          );
+        })}
+
+      {/* Bottom navigation bar when zoomed into a 3D POI canvas */}
+      {focusedIndex !== null && (
+        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-500/30 bg-background/85 px-3 py-1.5 shadow-xl backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() =>
+              onSelectStep((focusedIndex - 1 + steps.length) % steps.length)
+            }
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition hover:bg-muted"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            <span>{locale === 'en' ? 'Prev' : 'Seb'}</span>
+          </button>
           <button
             type="button"
             onClick={() => onSelectStep(null)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-primary-dark"
+            className="flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500"
           >
-            <Compass className="size-3.5" />
-            {locale === "en" ? "Overview (Spin)" : "Overview (Putar)"}
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>{locale === 'en' ? 'Mountain Overview' : 'Lihat Gunung'}</span>
           </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => setNightMode((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-forest-black/75 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur transition hover:bg-forest-black"
-        >
-          {nightMode ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-          {nightMode ? (locale === "en" ? "Day" : "Siang") : locale === "en" ? "Night" : "Malam"}
-        </button>
-        <button
-          type="button"
-          aria-label="Zoom in"
-          onClick={() => zoomBy(-2)}
-          className="inline-flex size-8 items-center justify-center rounded-xl bg-forest-black/75 text-white backdrop-blur hover:bg-forest-black"
-        >
-          <ZoomIn className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label="Zoom out"
-          onClick={() => zoomBy(2)}
-          className="inline-flex size-8 items-center justify-center rounded-xl bg-forest-black/75 text-white backdrop-blur hover:bg-forest-black"
-        >
-          <ZoomOut className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          aria-label="Reset camera"
-          onClick={resetView}
-          className="inline-flex size-8 items-center justify-center rounded-xl bg-forest-black/75 text-white backdrop-blur hover:bg-forest-black"
-        >
-          <RotateCcw className="size-3.5" />
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => onSelectStep((focusedIndex + 1) % steps.length)}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition hover:bg-muted"
+          >
+            <span>{locale === 'en' ? 'Next' : 'Lanjut'}</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

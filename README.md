@@ -33,7 +33,7 @@ README ini adalah dokumentasi utama repository `wildlife-tracking-frontend`. Isi
 
 - **Menu Panduan Pengguna (`/manual`, semua 6 role)**: berisi 6 bab lengkap (sistem & role, pelacakan & insiden, analisis AI, wisata & pembayaran otomatis, POS loket & check-in, ensiklopedia satwa 3D & bantuan cepat) dalam Bahasa Indonesia & Inggris serta mendukung Dark/Light mode.
 - **Normal Mode**: tata letak dokumentasi standar dengan daftar isi sticky, pencarian topik, langkah bernomor, dan tautan langsung ke fitur terkait.
-- **Peak Mode**: pengalaman interaktif 3D per bab — panggung halaman penuh 3D berlapis (Bab 01), lembaran bab 3D dua sisi yang dapat diputar 360° (Bab 02), karusel silinder 3D AI berputar (Bab 03), gunung 3D Gunung Leuser yang terus berputar dengan 4 pin POI yang bisa di-zoom ke sisi gunung (Bab 04), dek kartu taktil 3D (Bab 05), dan tata surya 3D dengan 4 planet mengorbit yang bisa di-zoom in (Bab 06).
+- **Peak Mode**: pengalaman interaktif 3D per bab — panggung halaman penuh 3D berlapis (Bab 01), lembaran bab 3D dua sisi yang dapat diputar 360° (Bab 02), karusel silinder 3D AI berputar (Bab 03), gunung 3D Gunung Leuser yang terus berputar dengan 4 pin POI berisi papan kanvas 3D (`CanvasTexture`) langsung di sisi gunung (Bab 04), dek kartu taktil 3D (Bab 05), dan tata surya 3D dengan 4 planet mengorbit berisi papan kanvas 3D langsung di tiap planet yang dapat di-zoom penuh (Bab 06).
 
 ---
 

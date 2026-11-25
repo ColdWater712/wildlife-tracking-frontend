@@ -553,7 +553,6 @@ function LivingWorldStage({
   reducedMotion: boolean;
 }) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const current = focusedIndex !== null ? chapter.steps[focusedIndex] : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -565,45 +564,7 @@ function LivingWorldStage({
         reducedMotion={reducedMotion}
       />
 
-      {current ? (
-        <div className="ui-panel p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
-              POI 0{(focusedIndex ?? 0) + 1} · {current.badge?.[locale]}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setFocusedIndex(null)}
-                className="rounded-lg border border-line px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-muted"
-              >
-                {locale === "en" ? "Overview (Spin)" : "Overview (Putar)"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setFocusedIndex((i) => (((i ?? 0) - 1 + chapter.steps.length) % chapter.steps.length))
-                }
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-                aria-label="Previous POI"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFocusedIndex((i) => (((i ?? 0) + 1) % chapter.steps.length))}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-                aria-label="Next POI"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          </div>
-          <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
-          <p className="mt-1.5 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
-          <StepDetailsList step={current} locale={locale} />
-        </div>
-      ) : (
+      {focusedIndex === null && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {chapter.steps.map((step, idx) => (
             <button
@@ -617,7 +578,7 @@ function LivingWorldStage({
               </span>
               <h4 className="mt-1.5 text-sm font-bold text-ink">{step.heading[locale]}</h4>
               <p className="mt-1 text-xs text-muted">
-                {locale === "en" ? "Click to zoom to mountain side →" : "Klik untuk zoom ke sisi gunung →"}
+                {locale === "en" ? "Click to zoom to mountain canvas →" : "Klik untuk zoom ke kanvas gunung →"}
               </p>
             </button>
           ))}
@@ -683,7 +644,6 @@ function OrbitalAtlasStage({
   reducedMotion: boolean;
 }) {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const current = focusedIndex !== null ? chapter.steps[focusedIndex] : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -695,45 +655,7 @@ function OrbitalAtlasStage({
         reducedMotion={reducedMotion}
       />
 
-      {current ? (
-        <div className="ui-panel p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-dark">
-              Planet 0{(focusedIndex ?? 0) + 1} · {current.badge?.[locale]}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setFocusedIndex(null)}
-                className="rounded-lg border border-line px-3 py-1 text-xs font-semibold text-ink hover:bg-surface-muted"
-              >
-                {locale === "en" ? "Back to Solar System" : "Kembali ke Tata Surya"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setFocusedIndex((i) => (((i ?? 0) - 1 + chapter.steps.length) % chapter.steps.length))
-                }
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-                aria-label="Previous planet"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setFocusedIndex((i) => (((i ?? 0) + 1) % chapter.steps.length))}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-line hover:bg-surface-muted"
-                aria-label="Next planet"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          </div>
-          <h4 className="mt-3 text-lg font-bold text-ink">{current.heading[locale]}</h4>
-          <p className="mt-1.5 text-sm leading-6 text-ink-soft">{current.body[locale]}</p>
-          <StepDetailsList step={current} locale={locale} />
-        </div>
-      ) : (
+      {focusedIndex === null && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {chapter.steps.map((step, idx) => (
             <button
@@ -747,7 +669,7 @@ function OrbitalAtlasStage({
               </span>
               <h4 className="mt-1.5 text-sm font-bold text-ink">{step.heading[locale]}</h4>
               <p className="mt-1 text-xs text-muted">
-                {locale === "en" ? "Click to zoom into planet →" : "Klik untuk zoom ke planet →"}
+                {locale === "en" ? "Click to zoom into planet canvas →" : "Klik untuk zoom ke kanvas planet →"}
               </p>
             </button>
           ))}
