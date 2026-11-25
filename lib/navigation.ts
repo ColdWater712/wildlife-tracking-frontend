@@ -56,11 +56,6 @@ export type NavSection = {
   items: NavItem[];
 };
 
-/** Ensiklopedia satwa 3D: staf (view_data), pengunjung (book_tickets), dan petugas loket (sell_tickets). */
-const ENCYCLOPEDIA_ITEMS: NavItem[] = [
-  { label: "Satwa 3D", href: "/wildlife-3d", icon: "species3d", permission: ["view_data", "book_tickets", "sell_tickets"] },
-];
-
 export const COMMON_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "grid", permission: "view_data" },
   { label: "Live Map", href: "/tracking/live-map", icon: "map", permission: "view_data" },
@@ -79,7 +74,6 @@ const AI_ITEMS: NavItem[] = [
 
 const FIELD_ITEMS: NavItem[] = [
   { label: "Satwa", href: "/animals", icon: "paw", permission: "view_data" },
-  { label: "Wildlife Explorer", href: "/wildlife-explorer", icon: "paw", permission: "view_data" },
   { label: "Insiden", href: "/incidents", icon: "alert", permission: "view_data" },
   { label: "Kunjungan Zona", href: "/zone-visits", icon: "visit", permission: "view_data" },
   { label: "Cuaca", href: "/weather", icon: "weather", permission: "view_data" },
@@ -146,8 +140,6 @@ const ALL_SECTIONS: NavSection[] = [
   { title: "Wisata", items: VISITOR_ITEMS },
   { title: "Loket", items: COUNTER_ITEMS },
   { title: "Kelola Wisata", items: TOURISM_ITEMS },
-  // Setelah menu wisata/loket: item pertama yang terlihat menjadi halaman awal role (pengunjung → /tours, loket → /pos).
-  { title: "Ensiklopedia", items: ENCYCLOPEDIA_ITEMS },
   { title: "Akun", items: ACCOUNT_ITEMS },
 ];
 

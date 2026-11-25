@@ -177,12 +177,8 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         en: "On team servers, always run php artisan users:reset-default-passwords before sharing the URL.",
       },
       {
-        id: "Tombol Mode Mabuk (ikon gelas di samping Night Mode) menyediakan efek optik 3D dengan level Tipsy/Drunk/Heavy serta siraman air dingin (Sadar Sekarang), dan otomatis dijeda di seluruh modul transaksi.",
-        en: "The Drunk Mode toggle (wine icon beside Night Mode) offers Tipsy/Drunk/Heavy 3D optical effects with a cold-water splash Sober Up sequence, and pauses automatically on all transaction modules.",
-      },
-      {
-        id: "Simbol Aksesibilitas & Asisten Suara AI di pojok kiri bawah (Alt+A / Alt+V) membantu pengguna tunanetra bernavigasi, membacakan layar, dan menjalankan perintah suara dengan pilihan model suara serta kecepatan bicara.",
-        en: "The Accessibility & Voice AI symbol at the bottom-left (Alt+A / Alt+V) helps visually impaired users navigate, hear page summaries, and run voice commands with selectable voice models and speech speed.",
+        id: "Simbol Aksesibilitas & Asisten Suara AI di sisi kanan layar (Alt+A / Alt+V) membantu pengguna tunanetra bernavigasi, membacakan layar, dan menjalankan perintah suara dengan pilihan model suara serta kecepatan bicara.",
+        en: "The Accessibility & Voice AI symbol on the right edge (Alt+A / Alt+V) helps visually impaired users navigate, hear page summaries, and run voice commands with selectable voice models and speech speed.",
       },
     ],
     links: [
@@ -821,7 +817,7 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
       },
     ],
     links: [
-      { href: "/wildlife-3d", label: { id: "Buka Satwa 3D", en: "Open 3D Wildlife" } },
+      { href: "/tracking/live-map", label: { id: "Buka Live Map & Gunung 3D", en: "Open Live Map & 3D Mountain" } },
       { href: "/dashboard", label: { id: "Kembali ke Dashboard", en: "Back to Dashboard" } },
     ],
   },

@@ -18,7 +18,6 @@ import {
 import { usePreferences } from "@/components/providers/preferences-provider";
 import { EmergencyCallModal } from "@/components/tourism/emergency-call-modal";
 import { useLogout } from "@/hooks/use-logout";
-import { DRUNK_SOBER_EVENT } from "@/lib/drunk-mode";
 import { getRoleLabel } from "@/lib/i18n";
 import {
   clickMatchingElement,
@@ -152,7 +151,7 @@ function VoiceA11yEmblem({ listening, className }: { listening: boolean; classNa
 export function VoiceA11yWidget() {
   const router = useRouter();
   const pathname = usePathname();
-  const { locale, setLocale, setDrunkMode, userRole, t } = usePreferences();
+  const { locale, setLocale, userRole, t } = usePreferences();
   const logout = useLogout();
 
   const [open, setOpen] = useState(false);
@@ -633,14 +632,6 @@ export function VoiceA11yWidget() {
               : "Pengaturan tampilan aksesibilitas direset.",
           );
           return;
-        case "toggle_drunk":
-          setDrunkMode(true);
-          speak(locale === "en" ? "Drunk mode enabled." : "Mode mabuk diaktifkan.");
-          return;
-        case "sober_up":
-          window.dispatchEvent(new Event(DRUNK_SOBER_EVENT));
-          speak(locale === "en" ? "Sobering up now." : "Menyiram air dingin sekarang.");
-          return;
         case "click_element": {
           const clicked = clickMatchingElement(action.query);
           speak(
@@ -680,7 +671,6 @@ export function VoiceA11yWidget() {
       logout,
       resetAllA11y,
       router,
-      setDrunkMode,
       setLocale,
       speak,
       stopSpeaking,
@@ -927,7 +917,6 @@ export function VoiceA11yWidget() {
       {/* Unique Right-Edge Docked Accessibility & Voice AI Tab */}
       <button
         type="button"
-        data-drunk-immune="true"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-controls="a11y-voice-dialog"
@@ -964,7 +953,6 @@ export function VoiceA11yWidget() {
               ? "Accessibility & Voice AI Assistant"
               : "Aksesibilitas & Asisten Suara AI"
           }
-          data-drunk-immune="true"
           className="fixed inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-50 flex max-h-[min(85dvh,calc(100dvh-1rem))] flex-col gap-3 overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-4 text-ink shadow-2xl sm:inset-x-auto sm:bottom-auto sm:right-16 sm:top-1/2 sm:max-h-[calc(100dvh-2.5rem)] sm:w-[min(23rem,calc(100vw-4.5rem))] sm:-translate-y-1/2"
         >
           {/* Header */}

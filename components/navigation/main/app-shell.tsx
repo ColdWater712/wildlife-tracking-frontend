@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 
 import { useLogout } from "@/hooks/use-logout";
 import { Header, MobileNav, Sidebar } from "@/components/navigation/main";
-import { DrunkEffectsEngine } from "@/components/navigation/main/drunk-effects-engine";
 import { UserRoleProvider, usePreferences } from "@/components/providers/preferences-provider";
 import { Panel, SectionHeader } from "@/components/ui/panel";
 import { canAccessRoute, getDefaultRouteForRole } from "@/lib/navigation";
@@ -49,10 +48,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
   return (
     <UserRoleProvider role={user.role}>
-      <div
-        data-drunk-perspective="true"
-        className="flex min-h-dvh overflow-x-clip bg-background"
-      >
+      <div className="flex min-h-dvh overflow-x-clip bg-background">
         <a
           href="#main-content"
           className="sr-only rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]"
@@ -60,7 +56,7 @@ export function AppShell({ user, children }: AppShellProps) {
           {t("skipToContent")}
         </a>
 
-        <div data-drunk-immune="true" className="hidden shrink-0 md:block print:hidden">
+        <div className="hidden shrink-0 md:block print:hidden">
           <Sidebar user={user} onLogout={logout} />
         </div>
 
@@ -71,7 +67,7 @@ export function AppShell({ user, children }: AppShellProps) {
           onLogout={logout}
         />
 
-        <div data-drunk-stage="true" className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Header
             user={user}
             onLogout={logout}
@@ -85,7 +81,6 @@ export function AppShell({ user, children }: AppShellProps) {
           </main>
         </div>
       </div>
-      <DrunkEffectsEngine />
     </UserRoleProvider>
   );
 }

@@ -9,6 +9,7 @@ declare module "three" {
     set(color: string | number): this;
     setHex(hex: number): this;
     copy(c: Color): this;
+    offsetHSL(h: number, s: number, l: number): this;
   }
 
   export class Vector3 {
@@ -36,6 +37,7 @@ declare module "three" {
     background: Color | null;
     fog: FogExp2 | null;
     add(...objects: unknown[]): void;
+    remove(...objects: unknown[]): void;
   }
 
   export class FogExp2 {
@@ -96,6 +98,7 @@ declare module "three" {
 
   export class BufferGeometry {
     setAttribute(name: string, attr: Float32BufferAttribute | BufferAttribute): void;
+    setFromPoints(points: Vector3[]): this;
     dispose(): void;
   }
 
@@ -186,6 +189,8 @@ declare module "three" {
   }
 
   export class Line {
-    constructor(geometry: unknown, material: unknown);
+    geometry: BufferGeometry;
+    material: LineBasicMaterial;
+    constructor(geometry: BufferGeometry, material: LineBasicMaterial);
   }
 }

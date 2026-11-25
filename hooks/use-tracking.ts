@@ -25,10 +25,14 @@ import type { ApiResponse } from "@/types/api.type";
 
 type GpsReadingApiResponse = ApiResponse<GpsReading[]>;
 
-export const useGpsReadings = (params?: GpsReadingListParams) => {
+export const useGpsReadings = (
+  params?: GpsReadingListParams,
+  options?: { refetchInterval?: number | false },
+) => {
   return useQuery<GpsReadingApiResponse>({
     queryKey: ["gps-readings", params],
     queryFn: () => getGpsReadings(params),
+    refetchInterval: options?.refetchInterval,
   });
 };
 

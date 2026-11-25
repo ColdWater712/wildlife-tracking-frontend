@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Languages } from "lucide-react";
 import { Sidebar } from "@/components/navigation/main";
-import { DrunkModeToggle } from "@/components/navigation/main/drunk-mode-toggle";
 import { ThemeToggle } from "@/components/navigation/main/theme-toggle";
 import { usePreferences } from "@/components/providers/preferences-provider";
 import type { SessionUser } from "@/lib/session";
@@ -114,7 +113,6 @@ export function MobileNav({
             <span>{locale.toUpperCase()}</span>
           </button>
           <ThemeToggle />
-          <DrunkModeToggle />
         </div>
       </div>
     </div>

@@ -11,7 +11,6 @@ import {
   type ReactNode,
 } from "react";
 
-import { DRUNK_EVENT, DRUNK_STORAGE_KEY } from "@/lib/drunk-mode";
 import { translateIdToEn } from "@/lib/auto-translate";
 import { DEFAULT_LOCALE, MESSAGES, type AppLocale, type MessageKey } from "@/lib/i18n";
 import type { TYPE_USER_ROLE } from "@/types/auth.type";
@@ -23,9 +22,6 @@ type PreferencesContextValue = {
   locale: AppLocale;
   setLocale: (next: AppLocale) => void;
   toggleLocale: () => void;
-  drunkMode: boolean;
-  setDrunkMode: (next: boolean) => void;
-  toggleDrunkMode: () => void;
   userRole: TYPE_USER_ROLE | null;
   setUserRole: (role: TYPE_USER_ROLE | null) => void;
   t: (key: MessageKey) => string;
@@ -35,9 +31,6 @@ const PreferencesContext = createContext<PreferencesContextValue>({
   locale: DEFAULT_LOCALE,
   setLocale: () => undefined,
   toggleLocale: () => undefined,
-  drunkMode: false,
-  setDrunkMode: () => undefined,
-  toggleDrunkMode: () => undefined,
   userRole: null,
   setUserRole: () => undefined,
   t: (key) => MESSAGES[DEFAULT_LOCALE][key],
@@ -50,30 +43,6 @@ const readStoredLocale = (): AppLocale => {
   } catch {
     return DEFAULT_LOCALE;
   }
-};
-
-const readStoredDrunkMode = (): boolean => {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(DRUNK_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-};
-
-const subscribeDrunkMode = (onStoreChange: () => void) => {
-  if (typeof window === "undefined") return () => undefined;
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === DRUNK_STORAGE_KEY) onStoreChange();
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(DRUNK_EVENT, onStoreChange);
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(DRUNK_EVENT, onStoreChange);
-  };
 };
 
 const subscribeLocale = (onStoreChange: () => void) => {
@@ -252,11 +221,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     readStoredLocale,
     () => DEFAULT_LOCALE,
   );
-  const drunkMode = useSyncExternalStore(
-    subscribeDrunkMode,
-    readStoredDrunkMode,
-    () => false,
-  );
   const [userRole, setUserRole] = useState<TYPE_USER_ROLE | null>(null);
 
   useEffect(() => {
@@ -277,23 +241,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setLocale(locale === "id" ? "en" : "id");
   }, [locale, setLocale]);
 
-  const setDrunkMode = useCallback((next: boolean) => {
-    try {
-      if (next) {
-        window.localStorage.setItem(DRUNK_STORAGE_KEY, "true");
-      } else {
-        window.localStorage.removeItem(DRUNK_STORAGE_KEY);
-      }
-    } catch {
-      // Abaikan jika penyimpanan browser diblokir.
-    }
-    window.dispatchEvent(new Event(DRUNK_EVENT));
-  }, []);
-
-  const toggleDrunkMode = useCallback(() => {
-    setDrunkMode(!drunkMode);
-  }, [drunkMode, setDrunkMode]);
-
   const t = useCallback((key: MessageKey) => MESSAGES[locale][key], [locale]);
 
   const value = useMemo(
@@ -301,14 +248,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       locale,
       setLocale,
       toggleLocale,
-      drunkMode,
-      setDrunkMode,
-      toggleDrunkMode,
       userRole,
       setUserRole,
       t,
     }),
-    [locale, setLocale, toggleLocale, drunkMode, setDrunkMode, toggleDrunkMode, userRole, t],
+    [locale, setLocale, toggleLocale, userRole, t],
   );
 
   return (

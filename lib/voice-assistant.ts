@@ -17,8 +17,24 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/tracking/live-map",
-    label: { id: "Peta Pelacakan Langsung", en: "Live Tracking Map" },
-    keywords: ["live map", "peta langsung", "pelacakan langsung", "peta satwa", "tracking map", "gps langsung", "posisi satwa"],
+    label: { id: "Live Map & Gunung 3D", en: "Live Map & 3D Mountain" },
+    keywords: [
+      "live map",
+      "peta langsung",
+      "pelacakan langsung",
+      "peta satwa",
+      "tracking map",
+      "gps langsung",
+      "posisi satwa",
+      "satwa 3d",
+      "ensiklopedia",
+      "3d wildlife",
+      "model 3d",
+      "wildlife 3d",
+      "wildlife explorer",
+      "gunung 3d",
+      "gunung leuser 3d",
+    ],
   },
   {
     href: "/ai/staff-faces",
@@ -64,11 +80,6 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     href: "/animals",
     label: { id: "Data Satwa", en: "Animals" },
     keywords: ["data satwa", "daftar satwa", "satwa", "animals", "individu satwa", "hewan"],
-  },
-  {
-    href: "/wildlife-explorer",
-    label: { id: "Wildlife Explorer", en: "Wildlife Explorer" },
-    keywords: ["wildlife explorer", "penjelajah satwa", "profil individu", "reid satwa"],
   },
   {
     href: "/incidents",
@@ -204,11 +215,6 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     href: "/tourism/reviews",
     label: { id: "Ulasan Wisata", en: "Tour Reviews" },
     keywords: ["ulasan", "review wisata", "rating", "komentar pengunjung"],
-  },
-  {
-    href: "/wildlife-3d",
-    label: { id: "Ensiklopedia Satwa 3D", en: "3D Wildlife Encyclopedia" },
-    keywords: ["satwa 3d", "ensiklopedia", "3d wildlife", "model 3d", "wildlife 3d"],
   },
   {
     href: "/notifications",
@@ -486,8 +492,6 @@ export type VoiceAction =
   | { type: "set_contrast"; high: boolean }
   | { type: "set_font_scale"; scale: "md" | "lg" | "xl" }
   | { type: "reset_a11y" }
-  | { type: "toggle_drunk" }
-  | { type: "sober_up" }
   | { type: "click_element"; query: string }
   | { type: "fill_input"; field: string; value: string }
   | { type: "unknown"; transcript: string };
@@ -644,7 +648,7 @@ export function interpretVoiceCommand(
     return { type: "set_rate", exact: 1.0 };
   }
 
-  // 9. Contrast, font size, Drunk Mode, & reset
+  // 9. Contrast, font size, & reset
   if (/(kontras tinggi|high contrast|mode kontras|kurang jelas)/.test(text)) {
     return { type: "set_contrast", high: true };
   }
@@ -662,12 +666,6 @@ export function interpretVoiceCommand(
   }
   if (/(reset tampilan|reset aksesibilitas|reset accessibility)/.test(text)) {
     return { type: "reset_a11y" };
-  }
-  if (/(sadar sekarang|sober up|matikan mode mabuk|stop drunk)/.test(text)) {
-    return { type: "sober_up" };
-  }
-  if (/(mode mabuk|drunk mode)/.test(text)) {
-    return { type: "toggle_drunk" };
   }
 
   // 10. Fill input (flexible ID/EN/mixed)
