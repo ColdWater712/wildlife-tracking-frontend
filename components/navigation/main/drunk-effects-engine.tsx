@@ -2,11 +2,28 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Volume2, VolumeX } from "lucide-react";
 
 import { usePreferences } from "@/components/providers/preferences-provider";
+import { playWaterSplashSound } from "@/lib/drunk-audio";
 import { DRUNK_SOBER_EVENT, isTransactionRoute } from "@/lib/drunk-mode";
+import { cn } from "@/lib/utils";
 
 const SOBER_DURATION_MS = 2300;
+
+type DrunkLevel = "tipsy" | "drunk" | "heavy";
+
+const LEVEL_MULTIPLIER: Record<DrunkLevel, number> = {
+  tipsy: 0.55,
+  drunk: 1.0,
+  heavy: 1.55,
+};
+
+const LEVEL_OPTIONS: { id: DrunkLevel; label: string }[] = [
+  { id: "tipsy", label: "Tipsy" },
+  { id: "drunk", label: "Drunk" },
+  { id: "heavy", label: "Heavy" },
+];
 
 type WaterDroplet = {
   x: number;
@@ -36,9 +53,23 @@ export function DrunkEffectsEngine() {
   const { drunkMode, setDrunkMode, locale, t } = usePreferences();
 
   const [sobering, setSobering] = useState(false);
+  const [level, setLevel] = useState<DrunkLevel>("drunk");
+  const [muted, setMuted] = useState(false);
+
   const soberingRef = useRef(false);
   const soberStartRef = useRef(0);
+  const levelRef = useRef<DrunkLevel>(level);
+  const mutedRef = useRef(muted);
   const splashCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ghostCursorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
+
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
 
   const isTx = isTransactionRoute(pathname);
   const isActive = drunkMode && !isTx;
@@ -50,6 +81,9 @@ export function DrunkEffectsEngine() {
     setSobering(true);
     document.documentElement.dataset.drunkSobering = "true";
     releaseFleeingElements(true);
+    if (!mutedRef.current) {
+      playWaterSplashSound();
+    }
   }, [isActive]);
 
   useEffect(() => {
@@ -83,10 +117,16 @@ export function DrunkEffectsEngine() {
       return;
     }
 
+    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
     let targetMouseX = 0;
     let targetMouseY = 0;
     let currentMouseX = 0;
     let currentMouseY = 0;
+    let rawPointerX = window.innerWidth * 0.5;
+    let rawPointerY = window.innerHeight * 0.5;
+    let ghostCursorX = rawPointerX;
+    let ghostCursorY = rawPointerY;
+    let pointerInsideMain = false;
     let rafId = 0;
     const startTime = performance.now();
 
@@ -95,6 +135,7 @@ export function DrunkEffectsEngine() {
       currentMouseX += (targetMouseX - currentMouseX) * 0.05;
       currentMouseY += (targetMouseY - currentMouseY) * 0.05;
 
+      const mult = LEVEL_MULTIPLIER[levelRef.current];
       let intensity = 1;
       let splashJoltX = 0;
       let splashProgress = 0;
@@ -104,7 +145,6 @@ export function DrunkEffectsEngine() {
         const eased = 1 - Math.pow(1 - splashProgress, 3);
         intensity = Math.max(0, 1 - eased);
 
-        // Brief physical jolt when cold water hits the lens (0..350ms)
         if (splashProgress < 0.15) {
           splashJoltX = Math.sin((splashProgress / 0.15) * Math.PI) * 3.5;
         }
@@ -114,12 +154,12 @@ export function DrunkEffectsEngine() {
       const swayY = Math.cos(tSec * 0.52) * 1.85 + Math.sin(tSec * 1.31) * 0.75;
       const roll = Math.sin(tSec * 0.43) * 0.95 + Math.cos(tSec * 0.97) * 0.45;
 
-      const tiltX = (swayX - currentMouseY * 3.8) * intensity + splashJoltX;
-      const tiltY = (swayY + currentMouseX * 4.4) * intensity;
-      const rollDeg = roll * intensity;
+      const tiltX = (swayX - currentMouseY * 3.8) * intensity * mult + splashJoltX;
+      const tiltY = (swayY + currentMouseX * 4.4) * intensity * mult;
+      const rollDeg = roll * intensity * mult;
 
-      const ghostX = (Math.sin(tSec * 1.45) * 2.4 + currentMouseX * 1.4) * intensity;
-      const ghostY = (Math.cos(tSec * 1.15) * 1.6 - currentMouseY * 1.1) * intensity;
+      const ghostX = (Math.sin(tSec * 1.45) * 2.4 + currentMouseX * 1.4) * intensity * mult;
+      const ghostY = (Math.cos(tSec * 1.15) * 1.6 - currentMouseY * 1.1) * intensity * mult;
 
       root.style.setProperty("--drunk-tilt-x", `${tiltX.toFixed(2)}deg`);
       root.style.setProperty("--drunk-tilt-y", `${tiltY.toFixed(2)}deg`);
@@ -127,6 +167,19 @@ export function DrunkEffectsEngine() {
       root.style.setProperty("--drunk-ghost-x", `${ghostX.toFixed(2)}px`);
       root.style.setProperty("--drunk-ghost-y", `${ghostY.toFixed(2)}px`);
       root.style.setProperty("--drunk-vignette-opacity", intensity.toFixed(2));
+
+      // Lagging ghost cursor on desktop inside #main-content
+      const ghostEl = ghostCursorRef.current;
+      if (ghostEl) {
+        if (!isCoarsePointer && !soberingRef.current && pointerInsideMain) {
+          ghostCursorX += (rawPointerX - ghostCursorX) * 0.08;
+          ghostCursorY += (rawPointerY - ghostCursorY) * 0.08;
+          ghostEl.style.opacity = "1";
+          ghostEl.style.transform = `translate3d(${(ghostCursorX - 12).toFixed(1)}px, ${(ghostCursorY - 12).toFixed(1)}px, 0)`;
+        } else {
+          ghostEl.style.opacity = "0";
+        }
+      }
 
       if (soberingRef.current && splashProgress >= 1) {
         soberingRef.current = false;
@@ -149,10 +202,29 @@ export function DrunkEffectsEngine() {
       const vh = window.innerHeight || 1;
       targetMouseX = (e.clientX / vw - 0.5) * 2;
       targetMouseY = (e.clientY / vh - 0.5) * 2;
+      rawPointerX = e.clientX;
+      rawPointerY = e.clientY;
+
+      // Keep touch devices comfortable by skipping fleeing text on coarse pointers
+      if (isCoarsePointer) {
+        pointerInsideMain = false;
+        return;
+      }
 
       const main = document.getElementById("main-content");
-      if (!main) return;
+      if (!main) {
+        pointerInsideMain = false;
+        return;
+      }
 
+      const mainRect = main.getBoundingClientRect();
+      pointerInsideMain =
+        e.clientX >= mainRect.left &&
+        e.clientX <= mainRect.right &&
+        e.clientY >= mainRect.top &&
+        e.clientY <= mainRect.bottom;
+
+      const mult = LEVEL_MULTIPLIER[levelRef.current];
       const nodes = main.querySelectorAll<HTMLElement>("h1, h2, h3, h4, p, td, th, li, label");
       nodes.forEach((el) => {
         if (el.closest('button, a, input, select, textarea, canvas, [data-drunk-immune="true"]')) {
@@ -171,10 +243,10 @@ export function DrunkEffectsEngine() {
           const strength = (160 - dist) / 160;
           const ux = dist > 1 ? dx / dist : 1;
           const uy = dist > 1 ? dy / dist : -1;
-          const tx = Math.round(ux * strength * 68);
-          const ty = Math.round(uy * strength * 52);
-          const skew = Math.round(ux * strength * 7);
-          const rot = Math.round((ux - uy) * strength * 10);
+          const tx = Math.max(-96, Math.min(96, Math.round(ux * strength * 64 * mult)));
+          const ty = Math.max(-72, Math.min(72, Math.round(uy * strength * 48 * mult)));
+          const skew = Math.round(ux * strength * 7 * mult);
+          const rot = Math.round((ux - uy) * strength * 10 * mult);
 
           el.dataset.drunkFled = "true";
           el.style.transition = "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)";
@@ -239,7 +311,6 @@ export function DrunkEffectsEngine() {
       const p = Math.min(1, elapsed / SOBER_DURATION_MS);
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Glossy cold-water curtain pouring top-to-bottom (0..700ms)
       if (p < 0.42) {
         const curtainP = Math.min(1, p / 0.28);
         const curtainFade = p < 0.25 ? 1 : Math.max(0, 1 - (p - 0.25) / 0.17);
@@ -269,7 +340,6 @@ export function DrunkEffectsEngine() {
         ctx.restore();
       }
 
-      // 2. Refractive lens droplets sliding down & fading out smoothly
       const dropletFade = p < 0.55 ? Math.min(1, p / 0.14) : Math.max(0, 1 - (p - 0.55) / 0.45);
       if (dropletFade > 0.01) {
         for (const d of droplets) {
@@ -278,7 +348,6 @@ export function DrunkEffectsEngine() {
           d.vy *= 0.992;
 
           const a = d.alpha * dropletFade;
-          // Soft vertical water trail
           ctx.beginPath();
           ctx.moveTo(d.x, d.y - d.streak);
           ctx.lineTo(d.x, d.y);
@@ -287,7 +356,6 @@ export function DrunkEffectsEngine() {
           ctx.lineCap = "round";
           ctx.stroke();
 
-          // Droplet body with refractive edge
           ctx.beginPath();
           ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(205, 236, 252, ${a * 0.24})`;
@@ -296,7 +364,6 @@ export function DrunkEffectsEngine() {
           ctx.strokeStyle = `rgba(15, 35, 48, ${a * 0.22})`;
           ctx.stroke();
 
-          // Specular highlight crescent
           ctx.beginPath();
           ctx.arc(d.x - d.r * 0.28, d.y - d.r * 0.28, d.r * 0.34, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.72})`;
@@ -318,6 +385,14 @@ export function DrunkEffectsEngine() {
   }, [sobering]);
 
   if (!isActive) return null;
+
+  const muteLabel = muted
+    ? locale === "en"
+      ? "Unmute splash sound"
+      : "Aktifkan suara siraman"
+    : locale === "en"
+      ? "Mute splash sound"
+      : "Bisukan suara siraman";
 
   return (
     <>
@@ -347,6 +422,16 @@ export function DrunkEffectsEngine() {
         </svg>
       </div>
 
+      {/* Lagging ghost cursor inside #main-content (desktop only) */}
+      {!sobering ? (
+        <div
+          ref={ghostCursorRef}
+          data-drunk-ghost-cursor="true"
+          aria-hidden="true"
+          className="pointer-events-none fixed left-0 top-0 z-40 size-6 rounded-full border border-amber-500/60 bg-amber-400/10 opacity-0 backdrop-blur-[1px] transition-opacity duration-150"
+        />
+      ) : null}
+
       {/* Cold-water splash & lens droplets overlay */}
       {sobering ? (
         <canvas
@@ -360,9 +445,9 @@ export function DrunkEffectsEngine() {
       {/* Minimalist Swiss-editorial Optics HUD */}
       <div
         data-drunk-immune="true"
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-line bg-surface/95 px-3.5 py-2 shadow-lg backdrop-blur-md"
+        className="fixed bottom-4 right-4 z-50 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface/95 px-3 py-2 shadow-lg backdrop-blur-md"
       >
-        <span className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
+        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
           <span
             className={sobering ? "size-2 rounded-full bg-sky-500" : "size-2 rounded-full bg-amber-500"}
             aria-hidden="true"
@@ -373,10 +458,46 @@ export function DrunkEffectsEngine() {
                 ? "Splashing..."
                 : "Menyiram..."
               : locale === "en"
-                ? "Optics · Drift"
-                : "Mode Mabuk"}
+                ? "Optics"
+                : "Mabuk"}
           </span>
         </span>
+
+        <div className="flex items-center rounded-md border border-line bg-surface-muted p-0.5">
+          {LEVEL_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              disabled={sobering}
+              aria-pressed={level === opt.id}
+              onClick={() => setLevel(opt.id)}
+              className={cn(
+                "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase transition",
+                level === opt.id
+                  ? "bg-ink text-background"
+                  : "text-ink-muted hover:text-ink",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          disabled={sobering}
+          onClick={() => setMuted((prev) => !prev)}
+          aria-label={muteLabel}
+          title={muteLabel}
+          className="inline-flex size-7 items-center justify-center rounded-md border border-line bg-surface text-ink-soft transition hover:border-primary hover:text-ink disabled:opacity-50"
+        >
+          {muted ? (
+            <VolumeX aria-hidden="true" className="size-3.5" />
+          ) : (
+            <Volume2 aria-hidden="true" className="size-3.5" />
+          )}
+        </button>
+
         <button
           type="button"
           disabled={sobering}

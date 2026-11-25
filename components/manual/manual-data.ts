@@ -176,6 +176,10 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         id: "Di server tim, selalu jalankan php artisan users:reset-default-passwords sebelum URL dibagikan.",
         en: "On team servers, always run php artisan users:reset-default-passwords before sharing the URL.",
       },
+      {
+        id: "Tombol Mode Mabuk (ikon gelas di samping Night Mode) menyediakan efek optik 3D dengan level Tipsy/Drunk/Heavy serta siraman air dingin (Sadar Sekarang), dan otomatis dijeda di seluruh modul transaksi.",
+        en: "The Drunk Mode toggle (wine icon beside Night Mode) offers Tipsy/Drunk/Heavy 3D optical effects with a cold-water splash Sober Up sequence, and pauses automatically on all transaction modules.",
+      },
     ],
     links: [
       { href: "/notifications", label: { id: "Buka Notifikasi", en: "Open Notifications" } },
