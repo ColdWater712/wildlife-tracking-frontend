@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, Clock, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Search } from "lucide-react";
 
 import type { AppLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -16,160 +16,196 @@ export function NormalManualView({
   locale: AppLocale;
 }) {
   const [query, setQuery] = useState("");
-  const [activeId, setActiveId] = useState(chapters[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(chapters[0]?.id ?? "");
+
+  const trimmedQuery = query.trim().toLowerCase();
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return chapters;
+    if (!trimmedQuery) return chapters;
     return chapters.filter(
       (c) =>
-        c.title[locale].toLowerCase().includes(q) ||
-        c.subtitle[locale].toLowerCase().includes(q) ||
-        c.summary[locale].toLowerCase().includes(q) ||
+        c.title[locale].toLowerCase().includes(trimmedQuery) ||
+        c.subtitle[locale].toLowerCase().includes(trimmedQuery) ||
+        c.summary[locale].toLowerCase().includes(trimmedQuery) ||
         c.steps.some(
           (s) =>
-            s.heading[locale].toLowerCase().includes(q) ||
-            s.body[locale].toLowerCase().includes(q),
+            s.heading[locale].toLowerCase().includes(trimmedQuery) ||
+            s.body[locale].toLowerCase().includes(trimmedQuery),
         ),
     );
-  }, [chapters, locale, query]);
+  }, [chapters, locale, trimmedQuery]);
+
+  const activeIndex = Math.max(
+    0,
+    chapters.findIndex((c) => c.id === selectedId),
+  );
+  const activeChapter = chapters[activeIndex] ?? chapters[0];
+  const prevChapter = activeIndex > 0 ? chapters[activeIndex - 1] : null;
+  const nextChapter = activeIndex < chapters.length - 1 ? chapters[activeIndex + 1] : null;
+
+  const displayedChapters = trimmedQuery ? filtered : activeChapter ? [activeChapter] : [];
 
   return (
-    <div className="grid items-start gap-10 lg:grid-cols-[240px_minmax(0,1fr)]">
-      {/* Clean borderless docs sidebar TOC */}
-      <aside className="flex flex-col gap-5 lg:sticky lg:top-20">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={locale === "en" ? "Search guide..." : "Cari panduan..."}
-            className="ui-input pl-9 text-sm"
-          />
+    <div className="flex flex-col gap-6">
+      {/* Top search bar spanning full centered width */}
+      <div className="relative max-w-md">
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={locale === "en" ? "Search topics in manual..." : "Cari topik di panduan..."}
+          className="ui-input h-10 pl-10 text-sm"
+        />
+      </div>
+
+      {/* Main content on LEFT, compact TOC card on RIGHT (no double-left-sidebar!) */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="min-w-0 space-y-6">
+          {displayedChapters.length === 0 ? (
+            <div className="rounded-lg border border-line bg-surface p-8 text-center text-sm text-muted">
+              {locale === "en"
+                ? "No topics match your search."
+                : "Tidak ada topik yang cocok dengan pencarian Anda."}
+            </div>
+          ) : (
+            displayedChapters.map((chapter) => (
+              <article
+                key={chapter.id}
+                className="rounded-lg border border-line bg-surface p-6 sm:p-8"
+              >
+                <p className="text-xs font-semibold text-primary">
+                  {locale === "en" ? `Part ${Number(chapter.number)}` : `Bagian ${Number(chapter.number)}`}
+                  {" · "}
+                  {chapter.roles.map((r) => r[locale]).join(", ")}
+                </p>
+
+                <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-ink">
+                  {chapter.title[locale]}
+                </h2>
+                <p className="mt-1 text-[15px] text-muted">{chapter.subtitle[locale]}</p>
+
+                <p className="mt-5 border-b border-line pb-5 text-[15px] leading-7 text-ink-soft">
+                  {chapter.summary[locale]}
+                </p>
+
+                <ol className="mt-6 space-y-6">
+                  {chapter.steps.map((step, index) => (
+                    <li key={step.id} className="space-y-1.5">
+                      <h3 className="text-base font-semibold text-ink">
+                        {index + 1}. {step.heading[locale]}
+                      </h3>
+                      <p className="text-[15px] leading-7 text-ink-soft">{step.body[locale]}</p>
+                      {step.details.length > 0 ? (
+                        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[14.5px] leading-6 text-ink-soft">
+                          {step.details.map((detail, dIdx) => (
+                            <li key={dIdx}>{detail[locale]}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+
+                {chapter.tips.length > 0 ? (
+                  <div className="mt-7 rounded-lg bg-surface-muted p-4">
+                    <p className="text-sm font-semibold text-ink">
+                      {locale === "en" ? "Important Notes" : "Catatan Penting"}
+                    </p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-ink-soft">
+                      {chapter.tips.map((tip, idx) => (
+                        <li key={idx}>{tip[locale]}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {chapter.links.length > 0 ? (
+                  <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
+                    {chapter.links.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-3.5 text-sm font-medium text-ink transition hover:border-primary hover:text-primary"
+                      >
+                        <span>{item.label[locale]}</span>
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </article>
+            ))
+          )}
+
+          {/* Previous / Next chapter navigation (like standard docs) */}
+          {!trimmedQuery ? (
+            <div className="flex items-center justify-between gap-4">
+              {prevChapter ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(prevChapter.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-left text-sm font-medium text-ink transition hover:border-primary hover:text-primary"
+                >
+                  <ArrowLeft className="size-4 shrink-0" />
+                  <span className="line-clamp-1">{prevChapter.title[locale]}</span>
+                </button>
+              ) : (
+                <span />
+              )}
+
+              {nextChapter ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(nextChapter.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-right text-sm font-medium text-ink transition hover:border-primary hover:text-primary"
+                >
+                  <span className="line-clamp-1">{nextChapter.title[locale]}</span>
+                  <ArrowRight className="size-4 shrink-0" />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        <nav aria-label={locale === "en" ? "Manual chapters" : "Daftar bab panduan"}>
-          <p className="mb-2.5 text-xs font-semibold text-muted">
-            {locale === "en" ? "Contents" : "Daftar Isi"}
+        {/* Right navigation rail: normal clean card */}
+        <aside className="rounded-lg border border-line bg-surface p-4 lg:sticky lg:top-20">
+          <p className="mb-3 text-sm font-semibold text-ink">
+            {locale === "en" ? "Topics" : "Daftar Topik"}
           </p>
-          <ul className="flex flex-col border-l border-line">
-            {filtered.map((chapter) => {
-              const isActive = activeId === chapter.id;
+          <ul className="space-y-1">
+            {chapters.map((chapter) => {
+              const isActive = !trimmedQuery && activeChapter?.id === chapter.id;
               return (
                 <li key={chapter.id}>
-                  <a
-                    href={`#chapter-${chapter.id}`}
-                    onClick={() => setActiveId(chapter.id)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      setSelectedId(chapter.id);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                     className={cn(
-                      "-ml-px block border-l-2 py-2 pl-3.5 pr-2 text-[13px] leading-snug transition-colors",
+                      "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
                       isActive
-                        ? "border-primary font-semibold text-ink"
-                        : "border-transparent text-muted hover:border-line-strong/50 hover:text-ink",
+                        ? "bg-primary-soft font-semibold text-primary"
+                        : "text-ink-soft hover:bg-surface-muted hover:text-ink",
                     )}
                   >
-                    {chapter.title[locale]}
-                  </a>
+                    <span className="line-clamp-2 leading-snug">{chapter.title[locale]}</span>
+                    {isActive ? <ChevronRight className="size-4 shrink-0" /> : null}
+                  </button>
                 </li>
               );
             })}
           </ul>
-        </nav>
-      </aside>
-
-      {/* Natural, open editorial documentation column */}
-      <div className="min-w-0 max-w-3xl divide-y divide-line">
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted">
-            {locale === "en"
-              ? "No topics match your search."
-              : "Tidak ada topik yang cocok dengan pencarian Anda."}
-          </div>
-        ) : (
-          filtered.map((chapter) => (
-            <article
-              key={chapter.id}
-              id={`chapter-${chapter.id}`}
-              className="scroll-mt-24 py-8 first:pt-0 last:pb-0"
-            >
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-                <span className="font-semibold text-primary">
-                  {locale === "en" ? `Chapter ${Number(chapter.number)}` : `Bab ${Number(chapter.number)}`}
-                </span>
-                <span aria-hidden="true">·</span>
-                <span>{chapter.roles.map((r) => r[locale]).join(", ")}</span>
-                <span aria-hidden="true">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {chapter.readMinutes} {locale === "en" ? "min read" : "menit baca"}
-                </span>
-              </div>
-
-              <h3 className="mt-2 text-xl font-bold tracking-tight text-ink sm:text-2xl">
-                {chapter.title[locale]}
-              </h3>
-              <p className="mt-1.5 text-sm leading-6 text-muted">
-                {chapter.subtitle[locale]}
-              </p>
-              <p className="mt-4 text-[14.5px] leading-7 text-ink-soft">
-                {chapter.summary[locale]}
-              </p>
-
-              <ol className="mt-7 space-y-6">
-                {chapter.steps.map((step, index) => (
-                  <li key={step.id} className="space-y-1.5">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <h4 className="text-[15px] font-semibold text-ink">
-                        {index + 1}. {step.heading[locale]}
-                      </h4>
-                      {step.badge ? (
-                        <span className="text-xs font-medium text-primary">
-                          — {step.badge[locale]}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-sm leading-6 text-ink-soft">{step.body[locale]}</p>
-                    {step.details.length > 0 ? (
-                      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6 text-ink-soft marker:text-primary/60">
-                        {step.details.map((detail, dIdx) => (
-                          <li key={dIdx}>{detail[locale]}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-
-              {chapter.tips.length > 0 ? (
-                <div className="mt-7 border-l-2 border-primary/50 pl-4">
-                  <p className="text-xs font-semibold text-ink">
-                    {locale === "en" ? "Notes" : "Catatan"}
-                  </p>
-                  <ul className="mt-1.5 space-y-1.5 text-sm leading-6 text-muted">
-                    {chapter.tips.map((tip, idx) => (
-                      <li key={idx}>{tip[locale]}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              {chapter.links.length > 0 ? (
-                <div className="mt-6 flex flex-wrap items-center gap-4">
-                  {chapter.links.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition hover:text-primary-dark hover:underline"
-                    >
-                      <span>{item.label[locale]}</span>
-                      <ArrowRight className="size-3.5" />
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          ))
-        )}
+        </aside>
       </div>
     </div>
   );

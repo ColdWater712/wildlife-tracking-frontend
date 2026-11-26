@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import type { ReactNode } from "react";
 import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
@@ -7,9 +7,10 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
-const fontSans = Inter({
+const fontSans = Source_Sans_3({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-source-sans",
   display: "swap",
 });
 
@@ -45,7 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="id"
-      className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${fontSans.variable} ${fontMono.variable} h-full`}
       suppressHydrationWarning
     >
       <head>
