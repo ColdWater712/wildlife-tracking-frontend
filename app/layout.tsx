@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
+import { JetBrains_Mono, Nunito_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
@@ -7,15 +7,10 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
-const fontSans = Plus_Jakarta_Sans({
+const fontSans = Nunito_Sans({
   subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
-
-const fontSerif = Newsreader({
-  subsets: ["latin"],
-  variable: "--font-newsreader",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-nunito",
   display: "swap",
 });
 
@@ -51,7 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="id"
-      className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
