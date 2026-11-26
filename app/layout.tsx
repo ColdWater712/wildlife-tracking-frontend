@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Nunito_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
@@ -7,10 +7,9 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
-const fontSans = Nunito_Sans({
+const fontSans = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-nunito",
+  variable: "--font-inter",
   display: "swap",
 });
 
