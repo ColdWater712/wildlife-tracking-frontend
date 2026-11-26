@@ -895,3 +895,25 @@ export function fillMatchingInput(fieldQuery: string, value: string): string | n
   }
   return null;
 }
+
+export function getAllowedVoiceRoutes(
+  role: TYPE_USER_ROLE | null,
+  locale: AppLocale,
+): Array<{ href: string; label: string }> {
+  const seen = new Set<string>();
+  const routes: Array<{ href: string; label: string }> = [];
+
+  for (const entry of VOICE_ROUTES) {
+    if (seen.has(entry.href)) continue;
+    const allowed = entry.isPublic || (role !== null && canAccessRoute(role, entry.href));
+    if (!allowed) continue;
+
+    seen.add(entry.href);
+    routes.push({
+      href: entry.href,
+      label: getNavLabel(locale, entry.href, entry.label[locale]),
+    });
+  }
+
+  return routes;
+}
