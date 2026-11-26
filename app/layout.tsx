@@ -1,24 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import type { ReactNode } from "react";
 import { VoiceA11yWidget } from "@/components/accessibility/voice-a11y-widget";
 import { PreferencesProvider } from "@/components/providers/preferences-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ToastProvider } from "@/components/toast";
 import "./globals.css";
-
-const fontSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-source-sans",
-  display: "swap",
-});
-
-const fontMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Wildlife Monitoring System - BTNGL",
@@ -46,7 +32,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="id"
-      className={`${fontSans.variable} ${fontMono.variable} h-full`}
+      className="h-full"
       suppressHydrationWarning
     >
       <head>
