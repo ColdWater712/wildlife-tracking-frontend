@@ -38,7 +38,8 @@ export function QueryProvider({ children }: QueryProviderProps) {
         mutationCache: new MutationCache({ onError: handleUnauthorized }),
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
+            staleTime: 60_000,
+            gcTime: 10 * 60_000,
             retry: shouldRetry,
             refetchOnWindowFocus: false,
           },

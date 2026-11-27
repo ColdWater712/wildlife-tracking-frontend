@@ -60,14 +60,20 @@ const toView = (
 export const useDashboardSummary = () =>
   useQuery<ApiResponse<DashboardSummaryView>>({
     queryKey: ["dashboard-summary"],
+    staleTime: 60_000,
     queryFn: async () => {
-      const [summaryResponse, recentResponse] = await Promise.all([
-        getDashboardSummary(),
-        getDashboardRecentData(),
-      ]);
-
+      const summaryResponse = await getDashboardSummary();
       const summary = summaryResponse.data;
-      const recent = recentResponse.data;
+
+      // Backend /api/dashboard now returns latest_readings & latest_notifications in a single round-trip.
+      // Keep fallback only for older backend builds that omit those fields.
+      const recent =
+        Array.isArray(summary.latest_readings) && Array.isArray(summary.latest_notifications)
+          ? {
+              latestReadings: summary.latest_readings,
+              latestNotifications: summary.latest_notifications,
+            }
+          : (await getDashboardRecentData()).data;
 
       return {
         success: summaryResponse.success,

@@ -72,14 +72,16 @@ export const useUnreadNotifications = () =>
   useQuery<NotificationApiResponse>({
     queryKey: ["notifications-unread"],
     queryFn: () => getUnreadNotifications(),
-    refetchInterval: 8_000,
-    refetchOnWindowFocus: true,
+    staleTime: 25_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: false,
   });
 
 export const useUnreadNotificationCount = () =>
   useQuery({
     queryKey: ["notifications-unread-count"],
     queryFn: () => getUnreadNotificationCount(),
+    staleTime: 30_000,
   });
 
 export const useMarkNotificationAsRead = () => {

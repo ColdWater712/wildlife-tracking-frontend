@@ -34,6 +34,8 @@ export type DashboardSummary = DashboardStatistics & {
   device_alerts: DeviceAlert[];
   latest_threats: AiPrediction[];
   latest_incidents: IncidentReport[];
+  latest_readings?: GpsReading[];
+  latest_notifications?: Notification[];
 };
 
 export type DashboardSpeciesBreakdownItem = {
