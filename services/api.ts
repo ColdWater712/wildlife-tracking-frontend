@@ -16,7 +16,7 @@ import type { TYPE_META_PAGGINATION } from "@/types/meta.type";
 
 export { resolveErrorKind };
 
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 45000;
 const FALLBACK_BASE_URL = "http://127.0.0.1:8000/api";
 
 export const getLaravelApiBaseUrl = (): string => {
