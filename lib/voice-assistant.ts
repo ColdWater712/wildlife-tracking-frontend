@@ -510,8 +510,11 @@ const POLITE_PREFIX_RE = /^(?:(?:eh|halo|hai|min|tolong|coba|bisa\s+tolong|mau|p
 function stripPoliteTail(value: string): string {
   let out = value.trim().replace(/[.,!?;:]+$/g, "").trim();
   for (let i = 0; i < 3; i++) {
-    // Pertahankan frasa tombol seperti "pesan sekarang" / "bayar sekarang" / "beli sekarang"
+    // Pertahankan frasa penting seperti "pesan sekarang" atau "apa saja" / "apa aja"
     if (/\b(?:pesan|bayar|beli|daftar|mulai)\s+sekarang$/i.test(out)) {
+      break;
+    }
+    if (/\bapa\s+(?:saja|aja)$/i.test(out)) {
       break;
     }
     const next = out.replace(POLITE_SUFFIX_RE, "").replace(/[.,!?;:]+$/g, "").trim();
