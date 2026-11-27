@@ -645,17 +645,48 @@ export function interpretVoiceCommand(
     return { type: "logout" };
   }
 
-  // 6. List dropdown / select options on the current page ("ada pilihan apa saja di tingkat minimum")
-  const listOptMatch = stripped.match(
-    /(?:ada\s+)?(?:pilihan|opsi|isi\s+dropdown|isi\s+pilihan|daftar\s+pilihan|options?)\s+(?:apa\s+saja|yang\s+tersedia|what\s+are)?\s*(?:(?:di|pada|untuk|in|for|of)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+))?$/,
+  // 6. List dropdown / filter / item options on the current page (NEVER hijack questions into page navigation!)
+  // Matches:
+  // - "ada pilihan apa saja di tingkat minimum"
+  // - "ada apa aja statusnya difilter kunjungan" / "ada apa saja di filter status"
+  // - "ada zona apa saja" / "ada spesies apa saja" / "ada status apa saja" / "zona apa aja"
+  const cleanQ = stripped.replace(/[?.!]+$/g, "").trim();
+
+  // Pattern 6a: "ada (pilihan|opsi|isi)? apa (saja|aja) ... (di|pada|untuk|difilter) <field>" or "ada apa aja <field>nya ..."
+  const qWhatInField = cleanQ.match(
+    /^(?:ada\s+)?(?:(?:pilihan|opsi|daftar|isi)\s+)?apa\s+(?:saja|aja)(?:\s+(?:isi|pilihan|opsi))?\s+(?:(?:di|pada|untuk)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?|difilter\s+)?(.+)$/,
   );
-  if (
-    listOptMatch &&
-    /(?:pilihan|opsi|dropdown|options?)\s+(?:apa\s+saja|yang\s+tersedia)|ada\s+(?:pilihan|opsi)|isi\s+(?:dropdown|pilihan)|what\s+options/.test(
-      stripped,
-    )
-  ) {
-    const field = listOptMatch[1] ? stripPoliteTail(listOptMatch[1].replace(/[?.!]+$/, "")) : "";
+  if (qWhatInField && !/^(?:yang\s+bisa|perintah|menu)/.test(qWhatInField[1])) {
+    const rawField = qWhatInField[1]
+      .replace(/nya\b/g, "")
+      .replace(/\b(difilter|di\s+filter|filter|dropdown|pilihan|opsi|di\s+sini|di\s+halaman\s+ini|kunjungan)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return { type: "list_options", field: rawField };
+  }
+
+  // Pattern 6b: "ada <field> apa (saja|aja)" or "<field> apa (saja|aja)" (e.g. "ada zona apa saja", "ada status apa aja", "pilihan tingkat minimum apa saja")
+  const qFieldWhat = cleanQ.match(
+    /^(?:ada\s+)?(?:pilihan\s+|opsi\s+|filter\s+|dropdown\s+)?(.+?)\s+apa\s+(?:saja|aja)(?:\s+(?:di|pada|untuk)\s+(.+))?$/,
+  );
+  if (qFieldWhat && !/\b(menu|perintah|halaman|fitur)\b/.test(qFieldWhat[1])) {
+    const part1 = qFieldWhat[1]
+      .replace(/nya\b/g, "")
+      .replace(/\b(pilihan|opsi|dropdown|filter|yang\s+ada|yg\s+ada)\b/g, " ")
+      .trim();
+    const part2 = (qFieldWhat[2] ?? "")
+      .replace(/\b(halaman\s+ini|sini|dropdown|pilihan|filter)\b/g, " ")
+      .trim();
+    const field = (part1 || part2).replace(/\s+/g, " ").trim();
+    return { type: "list_options", field };
+  }
+
+  // Pattern 6c: "ada pilihan/opsi di <field>" or "isi dropdown <field>" or "what options are in <field>"
+  const qListExplicit = cleanQ.match(
+    /^(?:(?:ada|lihat|cek|bacakan|sebutkan)\s+)?(?:pilihan|opsi|isi\s+dropdown|isi\s+filter|daftar\s+pilihan|options?|what\s+options?)(?:\s+(?:apa\s+saja|yang\s+tersedia|are))?(?:\s+(?:di|pada|untuk|in|for|of)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+))?$/,
+  );
+  if (qListExplicit) {
+    const field = (qListExplicit[1] ?? "").replace(/\b(halaman\s+ini|sini)\b/g, "").trim();
     return { type: "list_options", field };
   }
 
@@ -818,9 +849,14 @@ export function interpretVoiceCommand(
   }
 
   // 16. Semantic + fuzzy intent matching across all app routes (with role priority)
+  // NEVER hijack a general question ("ada ... apa saja", "berapa ...", "bagaimana ...", "kenapa ...") into route navigation!
+  const isQuestionNotNav =
+    /^(?:ada\s+|apa\s+|berapa\s+|siapa\s+|kenapa\s+|mengapa\s+|bagaimana\s+|gimana\s+|apakah\s+)/i.test(stripped) &&
+    !/\b(buka|bukain|pindah|arahkan|pergi|ke\s+halaman|tampilkan\s+halaman)\b/i.test(stripped);
+
   const rawTokens = tokenize(text);
   const userTokens = expandTokens(rawTokens);
-  if (userTokens.length > 0) {
+  if (!isQuestionNotNav && userTokens.length > 0) {
     const scored = VOICE_ROUTES.map((route) => {
       const baseScore = scoreRoute(text, userTokens, route);
       const allowed = route.isPublic || (userRole !== null && canAccessRoute(userRole, route.href));
@@ -1172,14 +1208,22 @@ function scoreDropdownMatch(select: HTMLSelectElement, query: string): number {
   const q = query.trim().toLowerCase();
   if (!q) return 1;
   const label = getFieldLabel(select).toLowerCase();
-  const meta = `${label} ${select.name} ${select.id} ${select.getAttribute("aria-label") ?? ""}`.toLowerCase();
-  if (label === q) return 100;
-  if (label.includes(q) || q.includes(label)) return 80;
-  if (meta.includes(q)) return 60;
+  const firstOpt = (select.options[0]?.textContent ?? "").trim().toLowerCase();
+  const allOptsText = Array.from(select.options)
+    .slice(0, 12)
+    .map((o) => (o.textContent ?? o.value).trim().toLowerCase())
+    .join(" ");
+  const meta = `${label} ${firstOpt} ${select.name} ${select.id} ${select.getAttribute("aria-label") ?? ""}`.toLowerCase();
+
+  if (label === q || firstOpt === `semua ${q}` || firstOpt === `pilih ${q}`) return 100;
+  if (label.includes(q) || firstOpt.includes(q) || (label.length >= 3 && q.includes(label))) return 85;
+  if (meta.includes(q)) return 65;
+
   const qTokens = q.split(/\s+/).filter((t) => t.length >= 2);
   let hits = 0;
   for (const tok of qTokens) {
-    if (meta.includes(tok)) hits += 25;
+    if (meta.includes(tok)) hits += 30;
+    else if (allOptsText.includes(tok)) hits += 15;
   }
   return hits;
 }
