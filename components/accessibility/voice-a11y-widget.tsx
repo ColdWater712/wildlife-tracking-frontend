@@ -34,7 +34,6 @@ import {
 } from "@/lib/voice-assistant";
 import {
   sendVoiceChat,
-  transcribeVoiceAudio,
   type VoiceChatAction,
   type VoiceChatHistoryItem,
 } from "@/services/voice-assistant.service";
@@ -179,20 +178,12 @@ export function VoiceA11yWidget() {
   const [feedback, setFeedback] = useState("");
   const [textCommand, setTextCommand] = useState("");
   const [speechSupported, setSpeechSupported] = useState(true);
-  const [useWhisperMode, setUseWhisperMode] = useState(true);
-  const [micLevel, setMicLevel] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [chatHistory, setChatHistory] = useState<VoiceChatHistoryItem[]>([]);
 
   const [activeEmergencyCall, setActiveEmergencyCall] = useState<TYPE_EMERGENCY_CONTACT | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const meterFrameRef = useRef<number | null>(null);
-  const whisperTimeoutRef = useRef<number | null>(null);
   const silenceTimerRef = useRef<number | null>(null);
   const rateRef = useRef(rate);
   const voiceUriRef = useRef(selectedVoiceURI);
@@ -1061,207 +1052,13 @@ export function VoiceA11yWidget() {
       window.clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
-    if (whisperTimeoutRef.current !== null) {
-      window.clearTimeout(whisperTimeoutRef.current);
-      whisperTimeoutRef.current = null;
-    }
   }, []);
-
-  const stopMediaStream = useCallback(() => {
-    if (meterFrameRef.current !== null) {
-      window.cancelAnimationFrame(meterFrameRef.current);
-      meterFrameRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      void audioCtxRef.current.close().catch(() => {});
-      audioCtxRef.current = null;
-    }
-    setMicLevel(0);
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-  }, []);
-
-  const stopWhisperRecording = useCallback(
-    (shouldTranscribe: boolean) => {
-      if (whisperTimeoutRef.current !== null) {
-        window.clearTimeout(whisperTimeoutRef.current);
-        whisperTimeoutRef.current = null;
-      }
-      const recorder = mediaRecorderRef.current;
-      mediaRecorderRef.current = null;
-      if (recorder && recorder.state !== "inactive") {
-        if (!shouldTranscribe) {
-          recorder.onstop = null;
-        }
-        try {
-          recorder.stop();
-        } catch {
-          // Ignore
-        }
-      }
-      if (!shouldTranscribe) {
-        audioChunksRef.current = [];
-        stopMediaStream();
-        setListening(false);
-      }
-    },
-    [stopMediaStream],
-  );
-
-  const startWhisperRecording = useCallback(async () => {
-    conversationActiveRef.current = true;
-    stopSpeaking();
-    clearSpeechTimers();
-
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      setFeedback(
-        locale === "en"
-          ? "Microphone recording is unavailable in this browser. Please type your command below."
-          : "Perekaman mikrofon tidak tersedia di browser ini. Silakan ketik perintah di bawah.",
-      );
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
-      audioChunksRef.current = [];
-
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "";
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
-
-      mediaRecorderRef.current = recorder;
-      setListening(true);
-      setTranscript("");
-      setFeedback(
-        locale === "en"
-          ? "Recording (Whisper AI)... Speak then press Stop to send."
-          : "Merekam (Whisper AI)... Silakan bicara lalu tekan Berhenti & Kirim.",
-      );
-
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        const chunks = audioChunksRef.current;
-        audioChunksRef.current = [];
-        stopMediaStream();
-        setListening(false);
-
-        if (chunks.length === 0) {
-          setFeedback(
-            locale === "en"
-              ? "No audio captured. Please try again."
-              : "Tidak ada suara terekam. Silakan coba lagi.",
-          );
-          return;
-        }
-
-        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-        setThinking(true);
-        setFeedback(
-          locale === "en" ? "Transcribing voice..." : "Mengenali suara (Whisper AI)...",
-        );
-
-        void transcribeVoiceAudio(blob).then((res) => {
-          setThinking(false);
-          if (!res.ok) {
-            setFeedback(res.error);
-            return;
-          }
-          setTranscript(res.text);
-          executeCommand(res.text);
-        });
-      };
-
-      // Live audio level meter + automatic silence detection (auto-stops 1.6s after user finishes speaking)
-      try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          audioCtxRef.current = ctx;
-          const source = ctx.createMediaStreamSource(stream);
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          source.connect(analyser);
-
-          const dataArray = new Uint8Array(analyser.fftSize);
-          let hasSpoken = false;
-          let silentSince = 0;
-
-          const tick = () => {
-            if (mediaRecorderRef.current !== recorder || recorder.state !== "recording") return;
-            analyser.getByteTimeDomainData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              const v = (dataArray[i] - 128) / 128;
-              sum += v * v;
-            }
-            const rms = Math.sqrt(sum / dataArray.length);
-            const level = Math.min(100, Math.round(rms * 420));
-            setMicLevel(level);
-
-            const now = performance.now();
-            if (level >= 10) {
-              hasSpoken = true;
-              silentSince = 0;
-            } else if (hasSpoken) {
-              if (silentSince === 0) {
-                silentSince = now;
-              } else if (now - silentSince >= 1600) {
-                stopWhisperRecording(true);
-                return;
-              }
-            }
-
-            meterFrameRef.current = window.requestAnimationFrame(tick);
-          };
-
-          meterFrameRef.current = window.requestAnimationFrame(tick);
-        }
-      } catch {
-        // Audio meter optional; recording still works without it
-      }
-
-      recorder.start(250);
-      // Auto-stop after 12 seconds max
-      whisperTimeoutRef.current = window.setTimeout(() => {
-        stopWhisperRecording(true);
-      }, 12_000);
-    } catch {
-      stopMediaStream();
-      setListening(false);
-      speak(
-        locale === "en"
-          ? "Microphone permission was denied. Please allow microphone access."
-          : "Izin mikrofon ditolak. Harap izinkan akses mikrofon di browser Anda.",
-      );
-    }
-  }, [clearSpeechTimers, executeCommand, locale, speak, stopMediaStream, stopSpeaking, stopWhisperRecording]);
 
   const stopListening = useCallback(() => {
     conversationActiveRef.current = false;
     pendingEmergencyRef.current = null;
     wantListeningRef.current = false;
     clearSpeechTimers();
-
-    if (mediaRecorderRef.current) {
-      stopWhisperRecording(true);
-      return;
-    }
 
     const current = recognitionRef.current;
     recognitionRef.current = null;
@@ -1282,21 +1079,19 @@ export function VoiceA11yWidget() {
     if (captured) {
       executeCommand(captured);
     }
-  }, [clearSpeechTimers, executeCommand, stopWhisperRecording]);
+  }, [clearSpeechTimers, executeCommand]);
 
   const startListening = useCallback(() => {
-    if (useWhisperMode) {
-      void startWhisperRecording();
-      return;
-    }
-
     conversationActiveRef.current = true;
     const win = window as SpeechWindow;
     const Ctor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
     if (!Ctor) {
       setSpeechSupported(false);
-      setUseWhisperMode(true);
-      void startWhisperRecording();
+      speak(
+        locale === "en"
+          ? "Speech recognition is not supported in this browser. Please type your command below."
+          : "Pengenalan suara tidak didukung di browser ini. Silakan ketik perintah Anda di kolom bawah.",
+      );
       return;
     }
 
@@ -1319,7 +1114,6 @@ export function VoiceA11yWidget() {
 
     const recognition = new Ctor();
     recognition.lang = locale === "en" ? "en-US" : "id-ID";
-    // Single-utterance mode is far more reliable on Microsoft Edge & Chrome (Windows)
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -1388,7 +1182,7 @@ export function VoiceA11yWidget() {
         return;
       }
 
-      // Auto-commit interim transcript after 1.5s of silence in case Edge/Chrome omits isFinal
+      // Auto-commit interim transcript after 1.5s of silence so user never has to press Stop
       if (combined.trim()) {
         silenceTimerRef.current = window.setTimeout(() => {
           silenceTimerRef.current = null;
@@ -1409,22 +1203,8 @@ export function VoiceA11yWidget() {
       if (event.error === "no-speech") {
         setFeedback(
           locale === "en"
-            ? "No speech detected yet, still listening... (Tip: try Whisper AI mode if mic isn't picked up)"
-            : "Belum ada suara terdeteksi, masih mendengarkan... (Tips: coba mode Whisper AI bila browser tidak menangkap suara)",
-        );
-        return;
-      }
-
-      // If Edge/Chrome cloud speech service is unreachable or blocked, switch seamlessly to Whisper AI!
-      if (event.error === "network" || event.error === "service-not-allowed") {
-        wantListeningRef.current = false;
-        recognitionRef.current = null;
-        setListening(false);
-        setUseWhisperMode(true);
-        setFeedback(
-          locale === "en"
-            ? "Browser speech service unavailable; switched to Whisper AI mode. Press Start Speaking again."
-            : "Layanan suara browser tidak merespons; dialihkan otomatis ke mode Whisper AI. Klik Mulai Bicara lagi.",
+            ? "No speech detected yet, still listening..."
+            : "Belum ada suara terdeteksi, masih mendengarkan...",
         );
         return;
       }
@@ -1434,7 +1214,7 @@ export function VoiceA11yWidget() {
       setListening(false);
 
       let errMsg: string;
-      if (event.error === "not-allowed") {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         errMsg =
           locale === "en"
             ? "Microphone permission was denied. Please allow microphone access in your browser."
@@ -1444,6 +1224,11 @@ export function VoiceA11yWidget() {
           locale === "en"
             ? "No microphone device was found on this computer."
             : "Perangkat mikrofon tidak ditemukan pada komputer ini.";
+      } else if (event.error === "network") {
+        errMsg =
+          locale === "en"
+            ? "Browser speech service is offline or blocked here. Use Google Chrome/Edge or type commands below."
+            : "Layanan suara browser tidak terhubung di sini. Gunakan Chrome/Edge atau ketik perintah di kolom bawah.";
       } else {
         errMsg =
           locale === "en"
@@ -1456,14 +1241,12 @@ export function VoiceA11yWidget() {
     recognition.onend = () => {
       if (recognitionRef.current !== recognition) return;
 
-      // If browser ended with an interim transcript captured, execute it instead of dropping it!
       const pending = latestTranscriptRef.current.trim();
       if (pending) {
         commitCaptured(pending);
         return;
       }
 
-      // Spawn a FRESH SpeechRecognition instance on restart (reusing old instance freezes Edge)
       if (wantListeningRef.current && !fatalErrorRef.current) {
         recognitionRef.current = null;
         restartTimerRef.current = window.setTimeout(() => {
@@ -1485,7 +1268,7 @@ export function VoiceA11yWidget() {
       recognitionRef.current = null;
       setListening(false);
     }
-  }, [clearSpeechTimers, executeCommand, locale, speak, startWhisperRecording, stopSpeaking, useWhisperMode]);
+  }, [clearSpeechTimers, executeCommand, locale, speak, stopSpeaking]);
 
   useEffect(() => {
     startListeningRef.current = startListening;
@@ -1608,15 +1391,7 @@ export function VoiceA11yWidget() {
                 {listening ? (
                   <>
                     <MicOff aria-hidden="true" className="size-4" />
-                    <span>
-                      {useWhisperMode
-                        ? locale === "en"
-                          ? "Stop & Send"
-                          : "Berhenti & Kirim"
-                        : locale === "en"
-                          ? "Stop Listening"
-                          : "Berhenti Mendengarkan"}
-                    </span>
+                    <span>{locale === "en" ? "Stop Listening" : "Berhenti Mendengarkan"}</span>
                   </>
                 ) : (
                   <>
@@ -1637,56 +1412,24 @@ export function VoiceA11yWidget() {
               ) : null}
             </div>
 
-            {/* Speech Engine Switcher: Browser Web Speech vs Groq Whisper AI */}
-            <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-0.5 text-[11px]">
-              <button
-                type="button"
-                disabled={listening || !speechSupported}
-                onClick={() => setUseWhisperMode(false)}
-                className={cn(
-                  "rounded-md px-2 py-1 font-semibold transition disabled:opacity-50",
-                  !useWhisperMode
-                    ? "bg-primary text-white"
-                    : "text-ink-soft hover:bg-surface-muted",
-                )}
-              >
-                {locale === "en" ? "Browser Mic" : "Suara Browser"}
-              </button>
-              <button
-                type="button"
-                disabled={listening}
-                onClick={() => setUseWhisperMode(true)}
-                className={cn(
-                  "rounded-md px-2 py-1 font-semibold transition disabled:opacity-50",
-                  useWhisperMode
-                    ? "bg-primary text-white"
-                    : "text-ink-soft hover:bg-surface-muted",
-                )}
-              >
-                Whisper AI (Groq)
-              </button>
-            </div>
+            {!speechSupported ? (
+              <p className="text-[11px] text-warning">
+                {locale === "en"
+                  ? "Mic speech recognition is unavailable in this browser; use text commands below."
+                  : "Mikrofon suara tidak tersedia di browser ini; gunakan kolom perintah teks di bawah."}
+              </p>
+            ) : null}
 
-            {/* Always-visible live mic status, audio level bar, & interim transcript */}
+            {/* Always-visible live mic status & interim transcript */}
             {listening ? (
-              <div className="flex flex-col gap-1.5 rounded-lg border border-primary/40 bg-primary-soft px-2.5 py-2 text-[11px] font-medium text-ink">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 shrink-0 animate-pulse rounded-full bg-rose-500" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {transcript
-                      ? `"${transcript}"`
-                      : feedback ||
-                        (locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.")}
-                  </span>
-                </div>
-                {useWhisperMode ? (
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-75"
-                      style={{ width: `${Math.max(4, micLevel)}%` }}
-                    />
-                  </div>
-                ) : null}
+              <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary-soft px-2.5 py-1.5 text-[11px] font-medium text-ink">
+                <span className="size-2 shrink-0 animate-pulse rounded-full bg-rose-500" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate">
+                  {transcript
+                    ? `"${transcript}"`
+                    : feedback ||
+                      (locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.")}
+                </span>
               </div>
             ) : null}
 

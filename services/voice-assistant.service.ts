@@ -68,38 +68,3 @@ export async function sendVoiceChat(
     return null;
   }
 }
-
-export type TranscribeResult =
-  | { ok: true; text: string }
-  | { ok: false; error: string };
-
-export async function transcribeVoiceAudio(
-  audioBlob: Blob,
-): Promise<TranscribeResult> {
-  try {
-    const formData = new FormData();
-    const ext = audioBlob.type.includes("mp4")
-      ? "m4a"
-      : audioBlob.type.includes("ogg")
-        ? "ogg"
-        : "webm";
-    formData.append("audio", audioBlob, `voice.${ext}`);
-
-    const response = await api.post<ApiResponse<{ text: string }>>(
-      "/voice-assistant/transcribe",
-      { formData, timeoutMs: 25000 },
-    );
-
-    const text = response?.data?.text?.trim();
-    if (!text) {
-      return { ok: false, error: "Suara terlalu pelan atau tidak ada kata yang terdeteksi." };
-    }
-    return { ok: true, text };
-  } catch (err) {
-    const message =
-      err instanceof Error && err.message
-        ? err.message
-        : "Gagal menghubungi layanan transkripsi suara.";
-    return { ok: false, error: message };
-  }
-}
