@@ -1024,6 +1024,40 @@ export function clickMatchingElement(query: string): string | null {
   return label;
 }
 
+function setReactControlValue(
+  el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  nextValue: string,
+): void {
+  const prevValue = el.value;
+  const proto =
+    el instanceof HTMLSelectElement
+      ? HTMLSelectElement.prototype
+      : el instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+  if (setter) {
+    setter.call(el, nextValue);
+  } else {
+    el.value = nextValue;
+  }
+
+  // Sync React's internal _valueTracker so controlled onChange always fires
+  const tracker = (
+    el as unknown as { _valueTracker?: { setValue?: (v: string) => void } }
+  )._valueTracker;
+  if (tracker && typeof tracker.setValue === "function") {
+    tracker.setValue(prevValue);
+  }
+
+  if (el instanceof HTMLSelectElement) {
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  } else {
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+}
+
 export function fillMatchingInput(fieldQuery: string, value: string): string | null {
   if (typeof document === "undefined") return null;
   const target = fieldQuery.trim().toLowerCase();
@@ -1051,18 +1085,7 @@ export function fillMatchingInput(fieldQuery: string, value: string): string | n
       .toLowerCase();
 
     if (candidateText.includes(target)) {
-      const proto =
-        input instanceof HTMLTextAreaElement
-          ? HTMLTextAreaElement.prototype
-          : HTMLInputElement.prototype;
-      const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
-      if (setter) {
-        setter.call(input, value);
-      } else {
-        input.value = value;
-      }
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      setReactControlValue(input, value);
       input.focus();
       return labelText.trim() || input.getAttribute("placeholder") || input.name || target;
     }
@@ -1313,14 +1336,7 @@ export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string |
       ? `${isoDate}T${chosen.value.includes("T") ? chosen.value.split("T")[1] : "09:00"}`
       : isoDate;
 
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-  if (setter) {
-    setter.call(chosen, finalValue);
-  } else {
-    chosen.value = finalValue;
-  }
-  chosen.dispatchEvent(new Event("input", { bubbles: true }));
-  chosen.dispatchEvent(new Event("change", { bubbles: true }));
+  setReactControlValue(chosen, finalValue);
   chosen.focus();
 
   return getFieldLabel(chosen) || "tanggal";
@@ -1390,14 +1406,7 @@ export function selectMatchingOption(optionQuery: string, fieldQuery = ""): stri
 
   if (bestCandidate) {
     const { select, option } = bestCandidate;
-    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-    if (setter) {
-      setter.call(select, option.value);
-    } else {
-      select.value = option.value;
-    }
-    select.dispatchEvent(new Event("input", { bubbles: true }));
-    select.dispatchEvent(new Event("change", { bubbles: true }));
+    setReactControlValue(select, option.value);
     select.focus();
     return (option.textContent ?? option.value).trim();
   }
