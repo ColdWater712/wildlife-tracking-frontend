@@ -474,6 +474,7 @@ export type VoiceAction =
   | { type: "navigate"; href: string; label: string }
   | { type: "open_entity"; query: string; fallbackHref: string }
   | { type: "set_date"; date: string; field?: string }
+  | { type: "list_options"; field?: string }
   | { type: "select_option"; option: string; field?: string }
   | { type: "access_denied"; href: string; label: string }
   | { type: "auth_required"; label: string }
@@ -644,7 +645,21 @@ export function interpretVoiceCommand(
     return { type: "logout" };
   }
 
-  // 6. Help / command list
+  // 6. List dropdown / select options on the current page ("ada pilihan apa saja di tingkat minimum")
+  const listOptMatch = stripped.match(
+    /(?:ada\s+)?(?:pilihan|opsi|isi\s+dropdown|isi\s+pilihan|daftar\s+pilihan|options?)\s+(?:apa\s+saja|yang\s+tersedia|what\s+are)?\s*(?:(?:di|pada|untuk|in|for|of)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+))?$/,
+  );
+  if (
+    listOptMatch &&
+    /(?:pilihan|opsi|dropdown|options?)\s+(?:apa\s+saja|yang\s+tersedia)|ada\s+(?:pilihan|opsi)|isi\s+(?:dropdown|pilihan)|what\s+options/.test(
+      stripped,
+    )
+  ) {
+    const field = listOptMatch[1] ? stripPoliteTail(listOptMatch[1].replace(/[?.!]+$/, "")) : "";
+    return { type: "list_options", field };
+  }
+
+  // 7. Help / command list
   if (/(bantuan|daftar perintah|perintah apa|menu apa saja|bisa apa|akses apa|\bhelp\b|commands|what can you do)/.test(text)) {
     return { type: "list_commands" };
   }
@@ -745,7 +760,32 @@ export function interpretVoiceCommand(
     }
   }
 
-  // 14. Select dropdown / filter option ("pilih spesies orangutan", "filter ancaman kritis", "ganti filter ke belum dibaca", "ubah tipe ke kamera jebak", "set kondisi jadi sehat")
+  // 14. Select dropdown / filter option (works for ANY dropdown label on the page!)
+  // Pattern A: "pilih tinggi di tingkat minimum" / "pilih kritis pada filter ancaman"
+  const selectInFieldMatch = stripped.match(
+    /^(?:pilih|set|atur|pakai|pake|ganti\s+ke|ubah\s+ke)\s+(?:opsi\s+|pilihan\s+)?(.+?)\s+(?:di|pada|untuk)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+)$/,
+  );
+  if (selectInFieldMatch) {
+    return {
+      type: "select_option",
+      option: stripPoliteTail(selectInFieldMatch[1]),
+      field: stripPoliteTail(selectInFieldMatch[2]),
+    };
+  }
+
+  // Pattern B: "ubah tingkat minimum ke tinggi" / "ganti tingkat minimum jadi kritis" / "set status menjadi aktif"
+  const setFieldToOptionMatch = stripped.match(
+    /^(?:ubah|ganti|set|atur|pilih)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+?)\s+(?:ke|jadi|menjadi|dengan)\s+(.+)$/,
+  );
+  if (setFieldToOptionMatch) {
+    const field = stripPoliteTail(setFieldToOptionMatch[1]);
+    const option = stripPoliteTail(setFieldToOptionMatch[2]);
+    if (option) {
+      return { type: "select_option", field, option };
+    }
+  }
+
+  // Pattern C: "pilih spesies orangutan" / "filter ancaman kritis" / "pilih kritis"
   const selectMatch = stripped.match(
     /^(?:pilih|filter|ganti\s+filter|ubah\s+filter|ubah|set)\s+(?:opsi\s+|pilihan\s+)?(?:(spesies|status|ancaman|kategori|filter|rute|peran|tipe|kondisi)\s+)?(?:(?:ke|jadi|menjadi)\s+)?(.+)$/,
   );
@@ -1095,14 +1135,97 @@ function getFieldLabel(el: HTMLElement): string {
     const label = document.querySelector(`label[for="${CSS.escape(id)}"]`)?.textContent?.trim();
     if (label) return label;
   }
-  const parentLabel = el.closest("label")?.textContent?.trim();
-  if (parentLabel) return parentLabel.slice(0, 60);
-  return (
+  const parentLabel = el.closest("label");
+  if (parentLabel) {
+    // Extract only non-option text so <label>Tingkat minimum <select>...</select></label> doesn't include all options
+    const clone = parentLabel.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll("select, input, textarea").forEach((child) => child.remove());
+    const text = clone.textContent?.trim();
+    if (text) return text.slice(0, 60);
+  }
+  const prev = el.previousElementSibling;
+  if (prev && (prev.tagName === "LABEL" || prev.tagName === "SPAN" || prev.tagName === "P")) {
+    const prevText = prev.textContent?.trim();
+    if (prevText && prevText.length <= 60) return prevText;
+  }
+  const siblingLabel = el.parentElement?.querySelector("label");
+  if (siblingLabel && !siblingLabel.contains(el)) {
+    const sibText = siblingLabel.textContent?.trim();
+    if (sibText && sibText.length <= 60) return sibText;
+  }
+  const attr = (
     el.getAttribute("aria-label") ||
+    el.getAttribute("title") ||
     el.getAttribute("placeholder") ||
     el.getAttribute("name") ||
     ""
   ).trim();
+  if (attr) return attr;
+
+  if (el instanceof HTMLSelectElement && el.options.length > 0) {
+    return (el.options[0].textContent ?? "").trim().slice(0, 50);
+  }
+  return "";
+}
+
+function scoreDropdownMatch(select: HTMLSelectElement, query: string): number {
+  const q = query.trim().toLowerCase();
+  if (!q) return 1;
+  const label = getFieldLabel(select).toLowerCase();
+  const meta = `${label} ${select.name} ${select.id} ${select.getAttribute("aria-label") ?? ""}`.toLowerCase();
+  if (label === q) return 100;
+  if (label.includes(q) || q.includes(label)) return 80;
+  if (meta.includes(q)) return 60;
+  const qTokens = q.split(/\s+/).filter((t) => t.length >= 2);
+  let hits = 0;
+  for (const tok of qTokens) {
+    if (meta.includes(tok)) hits += 25;
+  }
+  return hits;
+}
+
+export function listDropdownOptions(fieldQuery = "", locale: AppLocale = "id"): string {
+  if (typeof document === "undefined") {
+    return locale === "en" ? "No dropdown found." : "Tidak ada dropdown ditemukan.";
+  }
+
+  const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select")).filter(
+    (el) => !el.closest("#a11y-voice-dialog") && !el.disabled,
+  );
+
+  if (selects.length === 0) {
+    return locale === "en"
+      ? "There are no dropdown menus on this page."
+      : "Tidak ada pilihan dropdown di halaman ini.";
+  }
+
+  const formatSelect = (select: HTMLSelectElement) => {
+    const label = getFieldLabel(select) || (locale === "en" ? "Dropdown" : "Pilihan");
+    const opts = Array.from(select.options)
+      .map((o) => (o.textContent ?? o.value).trim())
+      .filter(Boolean);
+    const current = (select.selectedOptions[0]?.textContent ?? select.value ?? "").trim();
+
+    if (locale === "en") {
+      return `In ${label}, there are ${opts.length} options: ${opts.join(", ")}. Currently selected: ${current}.`;
+    }
+    return `Di pilihan ${label} terdapat ${opts.length} opsi: ${opts.join(", ")}. Saat ini dipilih ${current}.`;
+  };
+
+  const cleanedQuery = fieldQuery.trim();
+  if (cleanedQuery) {
+    const ranked = selects
+      .map((s) => ({ select: s, score: scoreDropdownMatch(s, cleanedQuery) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (ranked.length > 0) {
+      return formatSelect(ranked[0].select);
+    }
+  }
+
+  // If no specific dropdown matched or user asked generally, list all dropdowns on the page
+  return selects.slice(0, 5).map(formatSelect).join(" ");
 }
 
 export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string | null {
@@ -1162,12 +1285,10 @@ export function selectMatchingOption(optionQuery: string, fieldQuery = ""): stri
   );
 
   const orderedSelects = fieldTarget
-    ? [
-        ...selects.filter((s) =>
-          [getFieldLabel(s), s.name, s.id].join(" ").toLowerCase().includes(fieldTarget),
-        ),
-        ...selects,
-      ]
+    ? selects
+        .map((s) => ({ s, score: scoreDropdownMatch(s, fieldTarget) }))
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.s)
     : selects;
 
   const visited = new Set<HTMLSelectElement>();
@@ -1225,13 +1346,14 @@ export function extractInteractiveElements(): Array<{
     });
   }
 
-  for (const select of Array.from(root.querySelectorAll<HTMLSelectElement>("select")).slice(0, 8)) {
+  for (const select of Array.from(root.querySelectorAll<HTMLSelectElement>("select")).slice(0, 10)) {
     if (select.closest("#a11y-voice-dialog") || select.disabled) continue;
     elements.push({
       kind: "select",
-      label: (getFieldLabel(select) || "pilihan").slice(0, 50),
+      label: (getFieldLabel(select) || "pilihan").slice(0, 60),
+      value: (select.selectedOptions[0]?.textContent ?? select.value ?? "").trim().slice(0, 40) || undefined,
       options: Array.from(select.options)
-        .slice(0, 8)
+        .slice(0, 20)
         .map((o) => (o.textContent ?? "").trim().slice(0, 40))
         .filter(Boolean),
     });

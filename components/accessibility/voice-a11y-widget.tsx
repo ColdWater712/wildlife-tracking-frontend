@@ -27,6 +27,7 @@ import {
   getAllowedVoiceRoutes,
   interpretConfirmation,
   interpretVoiceCommand,
+  listDropdownOptions,
   parseNaturalDateToIso,
   selectMatchingOption,
   setMatchingDateInput,
@@ -584,6 +585,12 @@ export function VoiceA11yWidget() {
           speak(reply);
           return;
         }
+        case "list_options": {
+          const reply = listDropdownOptions(action.field ?? "", locale);
+          appendChatTurn(rawText, reply);
+          speak(reply);
+          return;
+        }
         case "select_option": {
           const chosen = selectMatchingOption(action.option, action.field ?? "");
           const clicked = chosen ? null : clickMatchingElement(action.option);
@@ -813,6 +820,12 @@ export function VoiceA11yWidget() {
           speak(finalReply);
           return;
         }
+        case "list_options": {
+          const reply = listDropdownOptions(action.field ?? "", locale);
+          appendChatTurn(rawText, reply);
+          speak(reply);
+          return;
+        }
         case "select_option": {
           const chosen = selectMatchingOption(action.option, action.field ?? "");
           const finalReply = chosen
@@ -988,11 +1001,12 @@ export function VoiceA11yWidget() {
         return;
       }
 
-      // 2. Instant local handling for critical safety & speech stop (zero latency)
+      // 2. Instant local handling for critical safety, speech stop, & live DOM dropdown inspection (zero latency)
       const quickLocal = interpretVoiceCommand(cleaned, locale, userRole);
       if (
         quickLocal.type === "stop_speech" ||
-        quickLocal.type === "emergency_distress"
+        quickLocal.type === "emergency_distress" ||
+        quickLocal.type === "list_options"
       ) {
         executeLocalCommand(cleaned);
         return;

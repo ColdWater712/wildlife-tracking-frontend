@@ -19,6 +19,7 @@ export type VoiceChatAction =
   | { type: "none" }
   | { type: "navigate"; href: string; label?: string }
   | { type: "set_date"; date: string; field?: string }
+  | { type: "list_options"; field?: string }
   | { type: "select_option"; option: string; field?: string }
   | { type: "set_theme"; scheme: "light" | "dark" }
   | { type: "set_locale"; locale: AppLocale }
