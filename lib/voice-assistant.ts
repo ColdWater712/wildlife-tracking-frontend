@@ -443,7 +443,12 @@ function scoreRoute(
 
 function findClickableMatch(query: string): HTMLElement | null {
   if (typeof document === "undefined") return null;
-  const target = query.trim().toLowerCase();
+  const target = query
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?;:"'()[\]]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!target) return null;
 
   const candidates = Array.from(
@@ -503,13 +508,13 @@ const POLITE_SUFFIX_RE = /\s*\b(dong|ya|deh|sekarang|dulu|kak|nih|aja|saja|pleas
 const POLITE_PREFIX_RE = /^(?:(?:eh|halo|hai|min|tolong|coba|bisa\s+tolong|mau|pengen|aku\s+mau|saya\s+ingin|saya\s+mau|mohon)\s+)+/i;
 
 function stripPoliteTail(value: string): string {
-  let out = value.trim();
+  let out = value.trim().replace(/[.,!?;:]+$/g, "").trim();
   for (let i = 0; i < 3; i++) {
     // Pertahankan frasa tombol seperti "pesan sekarang" / "bayar sekarang" / "beli sekarang"
     if (/\b(?:pesan|bayar|beli|daftar|mulai)\s+sekarang$/i.test(out)) {
       break;
     }
-    const next = out.replace(POLITE_SUFFIX_RE, "").trim();
+    const next = out.replace(POLITE_SUFFIX_RE, "").replace(/[.,!?;:]+$/g, "").trim();
     if (next === out) break;
     out = next;
   }
@@ -1320,9 +1325,18 @@ export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string |
 
 export function selectMatchingOption(optionQuery: string, fieldQuery = ""): string | null {
   if (typeof document === "undefined") return null;
-  const optTarget = optionQuery.trim().toLowerCase();
-  const fieldTarget = fieldQuery.trim().toLowerCase();
+  const normalizeStr = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[.,!?;:"'()[\]]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const optTarget = normalizeStr(optionQuery);
+  const fieldTarget = normalizeStr(fieldQuery);
   if (!optTarget) return null;
+
+  const optTokens = optTarget.split(" ").filter((t) => t.length >= 2);
 
   const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select")).filter(
     (el) => !el.closest("#a11y-voice-dialog") && !el.disabled,
@@ -1336,28 +1350,53 @@ export function selectMatchingOption(optionQuery: string, fieldQuery = ""): stri
     : selects;
 
   const visited = new Set<HTMLSelectElement>();
+  let bestCandidate: { select: HTMLSelectElement; option: HTMLOptionElement; score: number } | null = null;
+
   for (const select of orderedSelects) {
     if (visited.has(select)) continue;
     visited.add(select);
 
-    const matchedOption = Array.from(select.options).find((opt) => {
-      const label = (opt.textContent ?? "").trim().toLowerCase();
-      const val = opt.value.trim().toLowerCase();
-      return label.includes(optTarget) || val === optTarget;
-    });
+    for (const opt of Array.from(select.options)) {
+      const label = normalizeStr(opt.textContent ?? "");
+      const val = normalizeStr(opt.value);
+      let score = 0;
 
-    if (matchedOption) {
-      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
-      if (setter) {
-        setter.call(select, matchedOption.value);
-      } else {
-        select.value = matchedOption.value;
+      if (label === optTarget || val === optTarget) {
+        score = 100;
+      } else if (label.includes(optTarget) || (label.length >= 3 && optTarget.includes(label))) {
+        score = 80;
+      } else if (optTokens.length > 0) {
+        const matchedCount = optTokens.filter((tok) => label.includes(tok)).length;
+        if (matchedCount === optTokens.length) {
+          score = 70;
+        } else if (matchedCount > 0 && matchedCount >= Math.ceil(optTokens.length * 0.6)) {
+          score = 45 + matchedCount * 5;
+        }
       }
-      select.dispatchEvent(new Event("input", { bubbles: true }));
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-      select.focus();
-      return (matchedOption.textContent ?? matchedOption.value).trim();
+
+      if (score > 0 && (!bestCandidate || score > bestCandidate.score)) {
+        bestCandidate = { select, option: opt, score };
+      }
     }
+
+    // If we found an exact/strong match in the highest-ranked dropdown, apply immediately
+    if (bestCandidate && bestCandidate.score >= 80 && bestCandidate.select === select) {
+      break;
+    }
+  }
+
+  if (bestCandidate) {
+    const { select, option } = bestCandidate;
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+    if (setter) {
+      setter.call(select, option.value);
+    } else {
+      select.value = option.value;
+    }
+    select.dispatchEvent(new Event("input", { bubbles: true }));
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    select.focus();
+    return (option.textContent ?? option.value).trim();
   }
 
   return null;
