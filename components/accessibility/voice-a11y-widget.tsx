@@ -179,7 +179,8 @@ export function VoiceA11yWidget() {
   const [feedback, setFeedback] = useState("");
   const [textCommand, setTextCommand] = useState("");
   const [speechSupported, setSpeechSupported] = useState(true);
-  const [useWhisperMode, setUseWhisperMode] = useState(false);
+  const [useWhisperMode, setUseWhisperMode] = useState(true);
+  const [micLevel, setMicLevel] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [chatHistory, setChatHistory] = useState<VoiceChatHistoryItem[]>([]);
 
@@ -189,6 +190,8 @@ export function VoiceA11yWidget() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const meterFrameRef = useRef<number | null>(null);
   const whisperTimeoutRef = useRef<number | null>(null);
   const silenceTimerRef = useRef<number | null>(null);
   const rateRef = useRef(rate);
@@ -1065,6 +1068,15 @@ export function VoiceA11yWidget() {
   }, []);
 
   const stopMediaStream = useCallback(() => {
+    if (meterFrameRef.current !== null) {
+      window.cancelAnimationFrame(meterFrameRef.current);
+      meterFrameRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      void audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    setMicLevel(0);
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
@@ -1162,23 +1174,70 @@ export function VoiceA11yWidget() {
           locale === "en" ? "Transcribing voice..." : "Mengenali suara (Whisper AI)...",
         );
 
-        void transcribeVoiceAudio(blob).then((text) => {
+        void transcribeVoiceAudio(blob).then((res) => {
           setThinking(false);
-          if (!text) {
-            setFeedback(
-              locale === "en"
-                ? "Could not recognize speech. Please speak closer to the mic and try again."
-                : "Suara belum terbaca jelas. Coba bicara lebih dekat ke mikrofon.",
-            );
+          if (!res.ok) {
+            setFeedback(res.error);
             return;
           }
-          setTranscript(text);
-          executeCommand(text);
+          setTranscript(res.text);
+          executeCommand(res.text);
         });
       };
 
-      recorder.start();
-      // Auto-stop after 12 seconds so users don't accidentally record forever
+      // Live audio level meter + automatic silence detection (auto-stops 1.6s after user finishes speaking)
+      try {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          audioCtxRef.current = ctx;
+          const source = ctx.createMediaStreamSource(stream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+
+          const dataArray = new Uint8Array(analyser.fftSize);
+          let hasSpoken = false;
+          let silentSince = 0;
+
+          const tick = () => {
+            if (mediaRecorderRef.current !== recorder || recorder.state !== "recording") return;
+            analyser.getByteTimeDomainData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              const v = (dataArray[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / dataArray.length);
+            const level = Math.min(100, Math.round(rms * 420));
+            setMicLevel(level);
+
+            const now = performance.now();
+            if (level >= 10) {
+              hasSpoken = true;
+              silentSince = 0;
+            } else if (hasSpoken) {
+              if (silentSince === 0) {
+                silentSince = now;
+              } else if (now - silentSince >= 1600) {
+                stopWhisperRecording(true);
+                return;
+              }
+            }
+
+            meterFrameRef.current = window.requestAnimationFrame(tick);
+          };
+
+          meterFrameRef.current = window.requestAnimationFrame(tick);
+        }
+      } catch {
+        // Audio meter optional; recording still works without it
+      }
+
+      recorder.start(250);
+      // Auto-stop after 12 seconds max
       whisperTimeoutRef.current = window.setTimeout(() => {
         stopWhisperRecording(true);
       }, 12_000);
@@ -1608,16 +1667,26 @@ export function VoiceA11yWidget() {
               </button>
             </div>
 
-            {/* Always-visible live mic status & interim transcript */}
+            {/* Always-visible live mic status, audio level bar, & interim transcript */}
             {listening ? (
-              <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary-soft px-2.5 py-1.5 text-[11px] font-medium text-ink">
-                <span className="size-2 shrink-0 animate-pulse rounded-full bg-rose-500" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate">
-                  {transcript
-                    ? `"${transcript}"`
-                    : feedback ||
-                      (locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.")}
-                </span>
+              <div className="flex flex-col gap-1.5 rounded-lg border border-primary/40 bg-primary-soft px-2.5 py-2 text-[11px] font-medium text-ink">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 shrink-0 animate-pulse rounded-full bg-rose-500" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {transcript
+                      ? `"${transcript}"`
+                      : feedback ||
+                        (locale === "en" ? "Listening... Speak now." : "Mendengarkan... Silakan bicara.")}
+                  </span>
+                </div>
+                {useWhisperMode ? (
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-75"
+                      style={{ width: `${Math.max(4, micLevel)}%` }}
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
