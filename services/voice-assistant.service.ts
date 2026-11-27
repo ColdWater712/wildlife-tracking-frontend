@@ -68,3 +68,27 @@ export async function sendVoiceChat(
     return null;
   }
 }
+
+export async function transcribeVoiceAudio(
+  audioBlob: Blob,
+): Promise<string | null> {
+  try {
+    const formData = new FormData();
+    const ext = audioBlob.type.includes("mp4")
+      ? "m4a"
+      : audioBlob.type.includes("ogg")
+        ? "ogg"
+        : "webm";
+    formData.append("audio", audioBlob, `voice.${ext}`);
+
+    const response = await api.post<ApiResponse<{ text: string }>>(
+      "/voice-assistant/transcribe",
+      { body: formData, timeoutMs: 20000 },
+    );
+
+    const text = response?.data?.text?.trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
