@@ -37,7 +37,8 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
       "peta 3d",
       "peta wisata",
       "3d map",
-      "rute tur",
+      "peta rute tur",
+      "rute 3d",
     ],
   },
   {
@@ -48,7 +49,7 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/ai/vision",
     label: { id: "AI Vision", en: "AI Vision" },
-    keywords: ["ai vision", "unggah media", "deteksi ai", "analisis ai", "unggah foto ai", "unggah audio", "upload media"],
+    keywords: ["ai vision", "unggah media", "deteksi ai", "analisis ai", "halaman analisis ai", "menu analisis ai", "unggah foto ai", "unggah audio", "upload media"],
   },
   {
     href: "/ai/vision/history",
@@ -63,12 +64,12 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/ai/threats",
     label: { id: "Ancaman AI", en: "AI Threats" },
-    keywords: ["ancaman", "threats", "peringatan ancaman", "bahaya", "suara tembakan", "gergaji", "pembalakan"],
+    keywords: ["ancaman", "ancaman ai", "threats", "peringatan ancaman", "bahaya", "suara tembakan", "gergaji", "pembalakan"],
   },
   {
     href: "/ai/recap",
     label: { id: "Rekap Data AI", en: "AI Data Recap" },
-    keywords: ["rekap ai", "rekap data", "ringkasan ai", "pdf ai", "ai recap"],
+    keywords: ["rekap ai", "rekap data", "rekap data ai", "ringkasan ai", "pdf ai", "ai recap"],
   },
   {
     href: "/ai/reports",
@@ -82,8 +83,13 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/animals",
-    label: { id: "Data Satwa", en: "Animals" },
-    keywords: ["data satwa", "daftar satwa", "satwa", "animals", "individu satwa", "hewan"],
+    label: { id: "Satwa (Lapangan)", en: "Animals (Field)" },
+    keywords: ["lapangan", "halaman lapangan", "menu lapangan", "operasional lapangan", "field", "data satwa", "daftar satwa", "satwa", "animals", "individu satwa", "hewan"],
+  },
+  {
+    href: "/animals/create",
+    label: { id: "Tambah Satwa", en: "Add Animal" },
+    keywords: ["tambah satwa", "buat satwa", "satwa baru", "add animal", "new animal"],
   },
   {
     href: "/incidents",
@@ -91,9 +97,19 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     keywords: ["insiden", "laporan insiden", "incidents", "kejadian lapangan", "konflik satwa"],
   },
   {
+    href: "/incidents/create",
+    label: { id: "Lapor Insiden", en: "Report Incident" },
+    keywords: ["tambah insiden", "buat insiden", "lapor insiden", "laporkan insiden", "insiden baru", "report incident"],
+  },
+  {
     href: "/zone-visits",
     label: { id: "Kunjungan Zona", en: "Zone Visits" },
     keywords: ["kunjungan zona", "zone visits", "keluar masuk zona", "perlintasan zona"],
+  },
+  {
+    href: "/zone-visits/create",
+    label: { id: "Catat Kunjungan Zona", en: "Record Zone Visit" },
+    keywords: ["tambah kunjungan zona", "catat kunjungan zona", "kunjungan baru", "add zone visit"],
   },
   {
     href: "/weather",
@@ -102,8 +118,13 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/species",
-    label: { id: "Spesies", en: "Species" },
-    keywords: ["spesies", "species", "jenis satwa", "taksonomi"],
+    label: { id: "Spesies (Master Data)", en: "Species (Master Data)" },
+    keywords: ["master data", "halaman master data", "menu master data", "data master", "spesies", "species", "jenis satwa", "taksonomi"],
+  },
+  {
+    href: "/species/create",
+    label: { id: "Tambah Spesies", en: "Add Species" },
+    keywords: ["tambah spesies", "buat spesies", "spesies baru", "add species"],
   },
   {
     href: "/devices",
@@ -111,34 +132,49 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     keywords: ["perangkat", "devices", "sensor", "kalung gps", "kamera jebak", "camera trap", "baterai"],
   },
   {
+    href: "/devices/create",
+    label: { id: "Tambah Perangkat", en: "Add Device" },
+    keywords: ["tambah perangkat", "buat perangkat", "perangkat baru", "add device"],
+  },
+  {
     href: "/geo-zones",
     label: { id: "Zona Geografis", en: "Geo Zones" },
     keywords: ["zona", "geo zone", "zona geografis", "wilayah", "poligon", "kawasan"],
   },
   {
+    href: "/geo-zones/create",
+    label: { id: "Tambah Zona Geografis", en: "Add Geo Zone" },
+    keywords: ["tambah zona", "tambah zona geografis", "buat zona", "zona baru", "add geo zone"],
+  },
+  {
     href: "/statistics",
-    label: { id: "Statistik", en: "Statistics" },
-    keywords: ["statistik", "statistics", "grafik", "analitik"],
+    label: { id: "Statistik (Laporan)", en: "Statistics (Reports)" },
+    keywords: ["statistik", "statistics", "grafik", "analitik", "laporan"],
   },
   {
     href: "/reports",
     label: { id: "Laporan Agregat", en: "Aggregate Reports" },
-    keywords: ["laporan agregat", "laporan", "reports", "aggregate"],
+    keywords: ["laporan agregat", "agregat", "aggregate reports", "aggregate", "buat laporan"],
   },
   {
     href: "/exports",
     label: { id: "Ekspor Data", en: "Data Export" },
-    keywords: ["ekspor", "export", "unduh data", "csv", "geojson"],
+    keywords: ["ekspor", "ekspor data", "export", "unduh data", "csv", "geojson"],
   },
   {
     href: "/users",
-    label: { id: "Pengguna", en: "Users" },
-    keywords: ["pengguna", "users", "manajemen user", "daftar akun", "kelola user"],
+    label: { id: "Pengguna (Sistem)", en: "Users (System)" },
+    keywords: ["sistem", "halaman sistem", "menu sistem", "pengaturan sistem", "system", "pengguna", "users", "manajemen user", "daftar akun", "kelola user"],
+  },
+  {
+    href: "/users/create",
+    label: { id: "Tambah Pengguna", en: "Add User" },
+    keywords: ["tambah pengguna", "tambah user", "buat akun baru", "pengguna baru", "add user"],
   },
   {
     href: "/roles",
     label: { id: "Role & Izin", en: "Roles & Permissions" },
-    keywords: ["role", "peran", "izin", "hak akses", "permissions"],
+    keywords: ["role", "role dan izin", "peran", "izin", "hak akses", "permissions"],
   },
   {
     href: "/activity-logs",
@@ -162,8 +198,8 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/pos",
-    label: { id: "Kasir POS", en: "Cashier POS" },
-    keywords: ["kasir", "pos", "loket", "cashier", "penjualan langsung"],
+    label: { id: "Kasir (POS)", en: "Cashier (POS)" },
+    keywords: ["kasir", "kasir pos", "pos", "loket", "cashier", "penjualan langsung"],
   },
   {
     href: "/tourism/check-in",
@@ -173,7 +209,7 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/pos/sessions",
     label: { id: "Riwayat Sesi Kas", en: "Cashier Sessions" },
-    keywords: ["sesi kas", "riwayat kasir", "cashier sessions", "buka tutup kas"],
+    keywords: ["sesi kas", "riwayat sesi kas", "riwayat kasir", "cashier sessions", "buka tutup kas"],
   },
   {
     href: "/pos/report",
@@ -182,8 +218,8 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   },
   {
     href: "/tourism/bookings",
-    label: { id: "Kelola Pemesanan", en: "Bookings Admin" },
-    keywords: ["kelola pemesanan", "daftar pemesanan", "pemesanan wisata", "tourism bookings"],
+    label: { id: "Kelola Wisata (Pemesanan)", en: "Manage Tourism (Bookings)" },
+    keywords: ["kelola wisata", "halaman kelola wisata", "menu kelola wisata", "manajemen wisata", "kelola pemesanan", "daftar pemesanan", "pemesanan", "pemesanan wisata", "tourism bookings"],
   },
   {
     href: "/tourism/payments",
@@ -196,9 +232,14 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     keywords: ["kelola rute", "rute tur", "tour routes", "edit rute"],
   },
   {
+    href: "/tourism/routes/create",
+    label: { id: "Tambah Rute Tur", en: "Add Tour Route" },
+    keywords: ["tambah rute", "tambah rute tur", "buat rute tur", "rute baru", "add tour route"],
+  },
+  {
     href: "/tourism/guides",
     label: { id: "Kelola Pemandu", en: "Manage Guides" },
-    keywords: ["kelola pemandu", "daftar pemandu", "manage guides"],
+    keywords: ["kelola pemandu", "daftar pemandu", "pemandu", "manage guides"],
   },
   {
     href: "/tourism/shifts",
@@ -208,12 +249,12 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
   {
     href: "/tourism/prices",
     label: { id: "Tarif & Libur", en: "Prices & Holidays" },
-    keywords: ["tarif", "harga tiket", "hari libur", "pnbp", "prices", "holidays"],
+    keywords: ["tarif", "tarif dan libur", "harga tiket", "hari libur", "pnbp", "prices", "holidays"],
   },
   {
     href: "/tourism/reviews",
     label: { id: "Ulasan Wisata", en: "Tour Reviews" },
-    keywords: ["ulasan", "review wisata", "rating", "komentar pengunjung"],
+    keywords: ["ulasan", "ulasan wisata", "review wisata", "rating", "komentar pengunjung"],
   },
   {
     href: "/notifications",
@@ -251,11 +292,13 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
 
 const FILLER_WORDS = new Set([
   "saya", "aku", "kami", "ingin", "mau", "tolong", "coba", "bisa", "boleh", "mohon",
-  "lihat", "melihat", "buka", "membuka", "pergi", "ke", "menuju", "arahkan", "tampilkan",
-  "tunjukkan", "cari", "carikan", "halaman", "menu", "bagian", "fitur", "data", "daftar",
+  "lihat", "melihat", "liat", "liatin", "buka", "membuka", "bukain", "bukakan",
+  "pergi", "pindah", "pindahkan", "alih", "alihkan", "lompat", "langsung", "bawa",
+  "ke", "menuju", "arahkan", "tampilkan", "tampilin", "tunjukkan", "tunjukin", "kasih",
+  "cari", "carikan", "cek", "cekin", "halaman", "menu", "tab", "bagian", "fitur", "data", "daftar",
   "yang", "di", "dan", "atau", "untuk", "ini", "itu", "ya", "dong", "please", "i", "want",
   "to", "see", "open", "go", "show", "me", "the", "page", "view", "navigate", "take",
-  "can", "you", "my", "check", "open", "look", "at", "about", "of", "in", "on",
+  "can", "you", "my", "check", "look", "at", "about", "of", "in", "on", "switch", "move",
 ]);
 
 const SYNONYM_MAP: Record<string, string[]> = {
@@ -441,6 +484,15 @@ function scoreRoute(
   return score;
 }
 
+function isElementVisible(el: HTMLElement): boolean {
+  if (el.hidden || el.getAttribute("aria-hidden") === "true") return false;
+  if (typeof window !== "undefined" && typeof window.getComputedStyle === "function") {
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+  }
+  return true;
+}
+
 function findClickableMatch(query: string): HTMLElement | null {
   if (typeof document === "undefined") return null;
   const target = query
@@ -451,13 +503,16 @@ function findClickableMatch(query: string): HTMLElement | null {
     .trim();
   if (!target) return null;
 
+  const targetTokens = target.split(" ").filter((t) => t.length >= 2);
   const candidates = Array.from(
-    document.querySelectorAll<HTMLElement>("button, a[href], [role='button'], [role='menuitem']"),
+    document.querySelectorAll<HTMLElement>("button, a[href], [role='button'], [role='menuitem'], [role='tab'], [role='radio']"),
   );
 
+  let best: { el: HTMLElement; score: number } | null = null;
   for (const el of candidates) {
     if (el.closest("#a11y-voice-dialog")) continue;
     if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") continue;
+    if (!isElementVisible(el)) continue;
 
     const label = (
       el.getAttribute("aria-label") ||
@@ -465,14 +520,31 @@ function findClickableMatch(query: string): HTMLElement | null {
       el.textContent ||
       ""
     )
-      .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/[.,!?;:"'()[\]]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-    if (label && (label === target || label.includes(target))) {
-      return el;
+    if (!label) continue;
+    let score = 0;
+    if (label === target) {
+      score = 100;
+    } else if (label.startsWith(target)) {
+      score = 85;
+    } else if (label.includes(target)) {
+      score = 70;
+    } else if (targetTokens.length > 0 && targetTokens.every((t) => label.includes(t))) {
+      score = 55;
+    }
+
+    if (score > 0) {
+      if (el.closest("main")) score += 10;
+      if (!best || score > best.score) {
+        best = { el, score };
+      }
     }
   }
-  return null;
+  return best?.el ?? null;
 }
 
 export type VoiceAction =
@@ -548,9 +620,9 @@ export function interpretConfirmation(raw: string): "yes" | "no" | "unknown" {
 function detectEmergencyDistress(
   text: string,
 ): "cedera" | "kebakaran" | "satwa_agresif" | "tersesat" | "pemburu" | "lainnya" | null {
-  // Do not hijack explicit page-navigation requests such as "buka halaman kontak darurat"
+  // Do not hijack explicit page-navigation requests such as "buka/pindah ke halaman kontak darurat"
   if (
-    /(?:buka|lihat|liat|tampilkan|arahkan\s+ke|pergi\s+ke|cek|open|show|go\s+to)\s+(?:halaman\s+|menu\s+)?(?:kontak\s+darurat|emergency\s+contacts|ancaman|ai\s+threats)/.test(
+    /(?:buka|bukain|lihat|liat|tampilkan|arahkan\s+ke|pergi\s+ke|pindah\s+ke|ganti\s+(?:halaman\s+)?ke|ke\s+halaman|halaman|menu|cek|open|show|go\s+to)\s+(?:halaman\s+|menu\s+)?(?:kontak\s+darurat|emergency\s+contacts|ancaman|ai\s+threats)/.test(
       text,
     )
   ) {
@@ -620,16 +692,18 @@ export function interpretVoiceCommand(
     }
   }
 
-  // 3. Natural date picker setting ("pilih tanggal 26 november 2026", "atur tanggal besok", "tgl 14 feb 2027")
+  // 3. Natural date picker setting ("pilih tanggal 26 november 2026", "atur dari tanggal 20 november 2026", "sampai tanggal besok")
   const hasDateCue =
-    /\b(tanggal|tgl|besok|lusa|kemarin|hari ini|tomorrow|today|yesterday)\b/.test(text) ||
+    /\b(tanggal|tgl|besok|lusa|kemarin|hari ini|tomorrow|today|yesterday|sejak)\b/.test(text) ||
     /\b20\d{2}-\d{1,2}-\d{1,2}\b/.test(text) ||
     /\b\d{1,2}\/\d{1,2}\/20\d{2}\b/.test(text);
   if (hasDateCue && !/\bcuaca\b/.test(text)) {
     const isoDate = parseNaturalDateToIso(text);
     if (isoDate) {
-      const fieldMatch = text.match(/\b(?:tanggal|tgl)\s+(mulai|akhir|kunjungan|berangkat|lahir|kejadian)\b/);
-      return { type: "set_date", date: isoDate, field: fieldMatch?.[1] };
+      const beforeMatch = text.match(/\b(dari|mulai|awal|sejak|sampai|akhir|hingga|selesai|from|to|start|end)\s+(?:tanggal|tgl)\b/);
+      const afterMatch = text.match(/\b(?:tanggal|tgl|masuk)\s+(dari|mulai|awal|sejak|sampai|akhir|hingga|selesai|kunjungan|berangkat|lahir|kejadian|from|to|start|end)\b/);
+      const field = beforeMatch?.[1] ?? afterMatch?.[1];
+      return { type: "set_date", date: isoDate, field };
     }
   }
 
@@ -689,11 +763,23 @@ export function interpretVoiceCommand(
     return { type: "list_options", field };
   }
 
-  // Pattern 6c: "ada pilihan/opsi di <field>" or "isi dropdown <field>" or "what options are in <field>"
-  const qListExplicit = cleanQ.match(
-    /^(?:(?:ada|lihat|cek|bacakan|sebutkan)\s+)?(?:pilihan|opsi|isi\s+dropdown|isi\s+filter|daftar\s+pilihan|options?|what\s+options?)(?:\s+(?:apa\s+saja|yang\s+tersedia|are))?(?:\s+(?:di|pada|untuk|in|for|of)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+))?$/,
+  // Pattern 6c: "ada pilihan/opsi di <field>" or "isi dropdown <field>" or "filter <field> ada apa aja" or "what options are in <field>"
+  const qFilterHasWhat = cleanQ.match(
+    /^(?:di\s+)?(?:filter|dropdown|pilihan|opsi|kolom)\s+(.+?)\s+ada\s+(?:pilihan\s+|opsi\s+)?apa\s*(?:saja|aja)?$/,
   );
-  if (qListExplicit) {
+  if (qFilterHasWhat) {
+    const field = qFilterHasWhat[1]
+      .replace(/nya\b/g, "")
+      .replace(/\b(halaman\s+ini|sini|di\s+sini)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    return { type: "list_options", field };
+  }
+
+  const qListExplicit = cleanQ.match(
+    /^(?:(?:ada|lihat|cek|bacakan|sebutkan)\s+)?(?:pilihan|opsi|isi\s+dropdown|isi\s+filter|daftar\s+pilihan|dropdown|filter|options?|what\s+options?)(?:\s+(?:apa\s+saja|apa\s+aja|yang\s+tersedia|are))?(?:\s+(?:di|pada|untuk|in|for|of)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+))?$/,
+  );
+  if (qListExplicit && (/\b(pilihan|opsi|dropdown|options?)\b/.test(cleanQ) || /\bapa\s+(?:saja|aja)\b/.test(cleanQ))) {
     const field = (qListExplicit[1] ?? "").replace(/\b(halaman\s+ini|sini)\b/g, "").trim();
     return { type: "list_options", field };
   }
@@ -800,39 +886,46 @@ export function interpretVoiceCommand(
   }
 
   // 14. Select dropdown / filter option (works for ANY dropdown label on the page!)
-  // Pattern A: "pilih tinggi di tingkat minimum" / "pilih kritis pada filter ancaman"
-  const selectInFieldMatch = stripped.match(
-    /^(?:pilih|set|atur|pakai|pake|ganti\s+ke|ubah\s+ke)\s+(?:opsi\s+|pilihan\s+)?(.+?)\s+(?:di|pada|untuk)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+)$/,
-  );
-  if (selectInFieldMatch) {
-    return {
-      type: "select_option",
-      option: stripPoliteTail(selectInFieldMatch[1]),
-      field: stripPoliteTail(selectInFieldMatch[2]),
-    };
-  }
+  // Guard: NEVER hijack explicit page/menu navigation ("ganti halaman ke lapangan", "pindah ke halaman ...", "pilih menu lapangan")
+  const isNavPhrase =
+    /\b(halaman|menu|page)\b/.test(stripped) ||
+    /^(?:pindah|pindahkan|alihkan|pergi|buka|bukain|bukakan|arahkan|tampilkan|tunjukkan|lihat)\b/.test(stripped);
 
-  // Pattern B: "ubah tingkat minimum ke tinggi" / "ganti tingkat minimum jadi kritis" / "set status menjadi aktif"
-  const setFieldToOptionMatch = stripped.match(
-    /^(?:ubah|ganti|set|atur|pilih)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+?)\s+(?:ke|jadi|menjadi|dengan)\s+(.+)$/,
-  );
-  if (setFieldToOptionMatch) {
-    const field = stripPoliteTail(setFieldToOptionMatch[1]);
-    const option = stripPoliteTail(setFieldToOptionMatch[2]);
-    if (option) {
-      return { type: "select_option", field, option };
+  if (!isNavPhrase) {
+    // Pattern A: "pilih tinggi di tingkat minimum" / "pilih kritis pada filter ancaman"
+    const selectInFieldMatch = stripped.match(
+      /^(?:pilih|set|atur|pakai|pake|ganti\s+ke|ubah\s+ke)\s+(?:opsi\s+|pilihan\s+)?(.+?)\s+(?:di|pada|untuk)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+)$/,
+    );
+    if (selectInFieldMatch) {
+      return {
+        type: "select_option",
+        option: stripPoliteTail(selectInFieldMatch[1]),
+        field: stripPoliteTail(selectInFieldMatch[2]),
+      };
     }
-  }
 
-  // Pattern C: "pilih spesies orangutan" / "filter ancaman kritis" / "pilih kritis"
-  const selectMatch = stripped.match(
-    /^(?:pilih|filter|ganti\s+filter|ubah\s+filter|ubah|set)\s+(?:opsi\s+|pilihan\s+)?(?:(spesies|status|ancaman|kategori|filter|rute|peran|tipe|kondisi)\s+)?(?:(?:ke|jadi|menjadi)\s+)?(.+)$/,
-  );
-  if (selectMatch) {
-    const field = selectMatch[1]?.trim() ?? "";
-    const option = stripPoliteTail(selectMatch[2]);
-    if (option) {
-      return { type: "select_option", field, option };
+    // Pattern B: "ubah tingkat minimum ke tinggi" / "ganti tingkat minimum jadi kritis" / "set status menjadi aktif"
+    const setFieldToOptionMatch = stripped.match(
+      /^(?:ubah|ganti|set|atur|pilih)\s+(?:dropdown\s+|pilihan\s+|kolom\s+|filter\s+)?(.+?)\s+(?:ke|jadi|menjadi|dengan)\s+(.+)$/,
+    );
+    if (setFieldToOptionMatch) {
+      const field = stripPoliteTail(setFieldToOptionMatch[1]);
+      const option = stripPoliteTail(setFieldToOptionMatch[2]);
+      if (option) {
+        return { type: "select_option", field, option };
+      }
+    }
+
+    // Pattern C: "pilih spesies orangutan" / "pilih zona konservasi utara" / "filter ancaman kritis" / "pilih 30 hari"
+    const selectMatch = stripped.match(
+      /^(?:pilih|filter|ganti\s+filter|ubah\s+filter|ubah|set|pakai|pake)\s+(?:opsi\s+|pilihan\s+)?(?:(zona|spesies|status|ancaman|tingkat|level|kategori|filter|rute|peran|role|tipe|jenis|kondisi|perangkat|pemandu|satwa|media|sumber|periode|kertas|verifikasi|kesehatan|kesulitan|prioritas|aksi|metode)\s+)?(?:(?:ke|jadi|menjadi)\s+)?(.+)$/,
+    );
+    if (selectMatch) {
+      const field = selectMatch[1]?.trim() ?? "";
+      const option = stripPoliteTail(selectMatch[2]);
+      if (option) {
+        return { type: "select_option", field, option };
+      }
     }
   }
 
@@ -1093,6 +1186,15 @@ export function fillMatchingInput(fieldQuery: string, value: string): string | n
   return null;
 }
 
+const SIDEBAR_GROUP_ALIAS: Record<string, Record<AppLocale, string>> = {
+  "/ai/vision": { id: "Analisis AI", en: "AI Analysis" },
+  "/animals": { id: "Lapangan", en: "Field" },
+  "/species": { id: "Master Data", en: "Master Data" },
+  "/statistics": { id: "Laporan", en: "Reports" },
+  "/tourism/bookings": { id: "Kelola Wisata", en: "Manage Tourism" },
+  "/users": { id: "Sistem", en: "System" },
+};
+
 export function getAllowedVoiceRoutes(
   role: TYPE_USER_ROLE | null,
   locale: AppLocale,
@@ -1106,9 +1208,16 @@ export function getAllowedVoiceRoutes(
     if (!allowed) continue;
 
     seen.add(entry.href);
+    const baseLabel = getNavLabel(locale, entry.href, entry.label[locale]);
+    const groupAlias = SIDEBAR_GROUP_ALIAS[entry.href]?.[locale];
+    const fullLabel =
+      groupAlias && !baseLabel.toLowerCase().includes(groupAlias.toLowerCase())
+        ? `${baseLabel} (${groupAlias})`
+        : baseLabel;
+
     routes.push({
       href: entry.href,
-      label: getNavLabel(locale, entry.href, entry.label[locale]),
+      label: fullLabel,
     });
   }
 
@@ -1269,6 +1378,29 @@ export function listDropdownOptions(fieldQuery = "", locale: AppLocale = "id"): 
   );
 
   if (selects.length === 0) {
+    // Fallback: inspect visible filter preset button groups / tablists inside <main>
+    const root = document.querySelector("main") ?? document.body;
+    const groups = Array.from(
+      root.querySelectorAll<HTMLElement>("[role='group'], [role='tablist'], [role='radiogroup']"),
+    ).filter((g) => !g.closest("#a11y-voice-dialog") && isElementVisible(g));
+
+    const summaries: string[] = [];
+    for (const g of groups.slice(0, 3)) {
+      const label = (g.getAttribute("aria-label") || (locale === "en" ? "Options" : "Pilihan")).trim();
+      const btns = Array.from(g.querySelectorAll<HTMLElement>("button, [role='tab'], [role='radio']"))
+        .filter((b) => !b.hasAttribute("disabled") && isElementVisible(b))
+        .map((b) => (b.textContent ?? b.getAttribute("aria-label") ?? "").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+      if (btns.length > 0) {
+        summaries.push(
+          locale === "en"
+            ? `In ${label}, available options are: ${btns.slice(0, 12).join(", ")}.`
+            : `Di ${label} terdapat pilihan: ${btns.slice(0, 12).join(", ")}.`,
+        );
+      }
+    }
+    if (summaries.length > 0) return summaries.join(" ");
+
     return locale === "en"
       ? "There are no dropdown menus on this page."
       : "Tidak ada pilihan dropdown di halaman ini.";
@@ -1303,6 +1435,21 @@ export function listDropdownOptions(fieldQuery = "", locale: AppLocale = "id"): 
   return selects.slice(0, 5).map(formatSelect).join(" ");
 }
 
+const DATE_FIELD_SYNONYMS: Record<string, string[]> = {
+  dari: ["dari", "mulai", "awal", "sejak", "start", "from"],
+  mulai: ["mulai", "dari", "awal", "sejak", "start", "from"],
+  awal: ["awal", "dari", "mulai", "sejak", "start", "from"],
+  sejak: ["sejak", "dari", "mulai", "start", "from"],
+  from: ["from", "dari", "mulai", "start"],
+  start: ["start", "mulai", "dari", "from"],
+  sampai: ["sampai", "akhir", "hingga", "selesai", "end", "to"],
+  akhir: ["akhir", "sampai", "hingga", "selesai", "end", "to"],
+  hingga: ["hingga", "sampai", "akhir", "selesai", "end", "to"],
+  selesai: ["selesai", "sampai", "akhir", "hingga", "end", "to"],
+  to: ["to", "sampai", "akhir", "end"],
+  end: ["end", "akhir", "sampai", "to"],
+};
+
 export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string | null {
   if (typeof document === "undefined") return null;
   const target = fieldQuery.trim().toLowerCase();
@@ -1317,6 +1464,7 @@ export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string |
 
   let chosen = dateInputs[0];
   if (target) {
+    const terms = DATE_FIELD_SYNONYMS[target] ?? [target];
     const matched = dateInputs.find((el) => {
       const text = [
         getFieldLabel(el),
@@ -1326,9 +1474,13 @@ export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string |
       ]
         .join(" ")
         .toLowerCase();
-      return text.includes(target);
+      return terms.some((term) => text.includes(term));
     });
-    if (matched) chosen = matched;
+    if (matched) {
+      chosen = matched;
+    } else if (dateInputs.length >= 2 && ["sampai", "akhir", "hingga", "selesai", "end", "to"].includes(target)) {
+      chosen = dateInputs[1];
+    }
   }
 
   const finalValue =
@@ -1355,8 +1507,6 @@ export function selectMatchingOption(optionQuery: string, fieldQuery = ""): stri
   const fieldTarget = normalizeStr(fieldQuery);
   if (!optTarget) return null;
 
-  const optTokens = optTarget.split(" ").filter((t) => t.length >= 2);
-
   const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select")).filter(
     (el) => !el.closest("#a11y-voice-dialog") && !el.disabled,
   );
@@ -1375,22 +1525,40 @@ export function selectMatchingOption(optionQuery: string, fieldQuery = ""): stri
     if (visited.has(select)) continue;
     visited.add(select);
 
+    // If user said "pilih tingkat minimum tinggi" without explicit field separator, also try stripping the select's label prefix
+    const selectLabelNorm = normalizeStr(getFieldLabel(select));
+    const strippedOptTarget =
+      !fieldTarget && selectLabelNorm.length >= 3 && optTarget.startsWith(`${selectLabelNorm} `)
+        ? optTarget.slice(selectLabelNorm.length).trim()
+        : optTarget;
+    const effectiveTargets = strippedOptTarget !== optTarget ? [optTarget, strippedOptTarget] : [optTarget];
+
     for (const opt of Array.from(select.options)) {
       const label = normalizeStr(opt.textContent ?? "");
       const val = normalizeStr(opt.value);
+      const labelTokens = label.split(" ").filter((t) => t.length >= 2);
       let score = 0;
 
-      if (label === optTarget || val === optTarget) {
-        score = 100;
-      } else if (label.includes(optTarget) || (label.length >= 3 && optTarget.includes(label))) {
-        score = 80;
-      } else if (optTokens.length > 0) {
-        const matchedCount = optTokens.filter((tok) => label.includes(tok)).length;
-        if (matchedCount === optTokens.length) {
-          score = 70;
-        } else if (matchedCount > 0 && matchedCount >= Math.ceil(optTokens.length * 0.6)) {
-          score = 45 + matchedCount * 5;
+      for (const curTarget of effectiveTargets) {
+        const curTokens = curTarget.split(" ").filter((t) => t.length >= 2);
+        let curScore = 0;
+        if (label === curTarget || val === curTarget) {
+          curScore = 100;
+        } else if (label.includes(curTarget) || (label.length >= 3 && curTarget.includes(label))) {
+          curScore = 80;
+        } else if (curTokens.length > 0) {
+          const matchedCount = curTokens.filter(
+            (tok) =>
+              label.includes(tok) ||
+              (tok.length >= 4 && labelTokens.some((lt) => lt.length >= 4 && levenshtein(tok, lt) <= 1)),
+          ).length;
+          if (matchedCount === curTokens.length) {
+            curScore = 70;
+          } else if (matchedCount > 0 && matchedCount >= Math.ceil(curTokens.length * 0.6)) {
+            curScore = 45 + matchedCount * 5;
+          }
         }
+        if (curScore > score) score = curScore;
       }
 
       if (score > 0 && (!bestCandidate || score > bestCandidate.score)) {
@@ -1431,12 +1599,13 @@ export function extractInteractiveElements(): Array<{
     href?: string;
   }> = [];
 
-  for (const input of Array.from(root.querySelectorAll<HTMLInputElement>("input")).slice(0, 12)) {
-    if (input.closest("#a11y-voice-dialog") || input.type === "hidden" || input.disabled) continue;
-    const isDate = input.type === "date" || input.type === "datetime-local";
+  for (const input of Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("input, textarea")).slice(0, 12)) {
+    if (input.closest("#a11y-voice-dialog") || input.disabled) continue;
+    if (input instanceof HTMLInputElement && input.type === "hidden") continue;
+    const isDate = input instanceof HTMLInputElement && (input.type === "date" || input.type === "datetime-local");
     elements.push({
       kind: isDate ? "date" : "input",
-      label: (getFieldLabel(input) || input.type).slice(0, 50),
+      label: (getFieldLabel(input) || (input instanceof HTMLInputElement ? input.type : "textarea")).slice(0, 50),
       value: input.value ? input.value.slice(0, 40) : undefined,
     });
   }
@@ -1454,6 +1623,16 @@ export function extractInteractiveElements(): Array<{
     });
   }
 
+  const seenButtons = new Set<string>();
+  for (const btn of Array.from(root.querySelectorAll<HTMLElement>("button, [role='tab']")).slice(0, 20)) {
+    if (btn.closest("#a11y-voice-dialog") || btn.hasAttribute("disabled") || !isElementVisible(btn)) continue;
+    const label = (btn.getAttribute("aria-label") || btn.textContent || "").trim().replace(/\s+/g, " ");
+    if (!label || label.length > 50 || seenButtons.has(label.toLowerCase())) continue;
+    seenButtons.add(label.toLowerCase());
+    elements.push({ kind: "button", label });
+    if (seenButtons.size >= 10) break;
+  }
+
   for (const link of Array.from(root.querySelectorAll<HTMLAnchorElement>("a[href]")).slice(0, 12)) {
     if (link.closest("#a11y-voice-dialog")) continue;
     const label = (link.textContent ?? link.getAttribute("aria-label") ?? "").trim().replace(/\s+/g, " ");
@@ -1462,5 +1641,5 @@ export function extractInteractiveElements(): Array<{
     elements.push({ kind: "link", label: label.slice(0, 50), href: href.slice(0, 100) });
   }
 
-  return elements.slice(0, 30);
+  return elements.slice(0, 35);
 }

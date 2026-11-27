@@ -828,7 +828,8 @@ export function VoiceA11yWidget() {
         }
         case "select_option": {
           const chosen = selectMatchingOption(action.option, action.field ?? "");
-          const finalReply = chosen
+          const clicked = chosen ? null : clickMatchingElement(action.option);
+          const finalReply = chosen || clicked
             ? reply
             : locale === "en"
               ? `Could not find option ${action.option} on this page.`
@@ -1032,6 +1033,16 @@ export function VoiceA11yWidget() {
         .then((res) => {
           setThinking(false);
           if (res && !res.fallback && res.reply) {
+            // Safety net: if Groq returned action="none" (e.g. failed to recognize a sidebar group or local control),
+            // but our deterministic local parser found a concrete UI/navigation action, execute it locally!
+            const isDeterministicLocal =
+              quickLocal.type !== "unknown" &&
+              quickLocal.type !== "open_entity" &&
+              quickLocal.type !== "list_commands";
+            if (res.action.type === "none" && isDeterministicLocal) {
+              executeLocalCommand(cleaned);
+              return;
+            }
             applyAiAction(res.action, res.reply, cleaned);
             return;
           }
