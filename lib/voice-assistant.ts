@@ -34,6 +34,10 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
       "wildlife explorer",
       "gunung 3d",
       "gunung leuser 3d",
+      "peta 3d",
+      "peta wisata",
+      "3d map",
+      "rute tur",
     ],
   },
   {
@@ -145,11 +149,6 @@ export const VOICE_ROUTES: VoiceRouteEntry[] = [
     href: "/tours",
     label: { id: "Jelajah Tur", en: "Explore Tours" },
     keywords: ["jelajah tur", "tur wisata", "wisata", "explore tours", "paket wisata", "pesan tiket"],
-  },
-  {
-    href: "/tours/map-3d",
-    label: { id: "Peta Wisata 3D", en: "3D Tour Map" },
-    keywords: ["peta 3d", "peta wisata", "3d map", "gunung leuser"],
   },
   {
     href: "/guides",

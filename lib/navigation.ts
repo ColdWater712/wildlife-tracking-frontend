@@ -130,7 +130,6 @@ const TOURISM_AND_COUNTER_ITEMS: NavItem[] = [
     permission: "book_tickets",
     subItems: [
       { label: "Jelajah Tur", href: "/tours", permission: "book_tickets" },
-      { label: "Peta 3D", href: "/tours/map-3d", permission: "book_tickets" },
       { label: "Jadwal Pemandu", href: "/guides", permission: "book_tickets" },
       { label: "Pesanan Saya", href: "/bookings", permission: "book_tickets" },
     ],

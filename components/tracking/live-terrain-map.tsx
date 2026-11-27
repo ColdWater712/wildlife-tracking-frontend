@@ -5,7 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, LngLatBoundsLike, Map as MlMap, Marker } from "maplibre-gl";
 
-import { buildStyle, LEUSER } from "@/components/tourism/route-map-3d";
+import { buildStyle, LEUSER, type Map3DRoute } from "@/components/tourism/route-map-3d";
 import { cn } from "@/lib/utils";
 import type { GeoZone } from "@/types/geo-zone.type";
 
@@ -33,6 +33,9 @@ type Props = {
   zones: GeoZone[];
   selectedKey: string | null;
   onSelect: (key: string) => void;
+  tourRoutes?: Map3DRoute[];
+  selectedRouteId?: number | null;
+  onSelectRoute?: (id: number) => void;
 };
 
 const RELIEF = 1.8 as const;
@@ -101,6 +104,47 @@ const trailsGeoJson = (animals: TrackedAnimal[], selectedKey: string | null) => 
     })),
 });
 
+const tourRoutesGeoJson = (routes: Map3DRoute[], selectedRouteId: number | null) => ({
+  type: "FeatureCollection" as const,
+  features: routes
+    .filter((r) => r.waypoints.length > 1)
+    .map((r) => ({
+      type: "Feature" as const,
+      properties: {
+        id: r.id,
+        name: r.name,
+        color: r.color,
+        selected: r.id === selectedRouteId ? 1 : 0,
+        dimmed: selectedRouteId !== null && r.id !== selectedRouteId ? 1 : 0,
+      },
+      geometry: {
+        type: "LineString" as const,
+        coordinates: r.waypoints.map(([lat, lon]) => [lon, lat] as [number, number]),
+      },
+    })),
+});
+
+function tourMarkerElement(route: Map3DRoute, onSelectRoute: (id: number) => void) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = "tour-route-marker";
+  el.setAttribute("aria-label", `Rute tur ${route.name}`);
+  el.innerHTML = `<span class="tour-route-marker__pin"></span><span class="tour-route-marker__label"></span>`;
+  el.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onSelectRoute(route.id);
+  });
+  return el;
+}
+
+function paintTourMarker(el: HTMLElement, route: Map3DRoute, selected: boolean) {
+  const pin = el.querySelector<HTMLElement>(".tour-route-marker__pin");
+  const label = el.querySelector<HTMLElement>(".tour-route-marker__label");
+  if (pin) pin.style.background = route.color;
+  if (label) label.textContent = route.name;
+  el.dataset.selected = selected ? "true" : "false";
+}
+
 function markerElement(animal: TrackedAnimal, onSelect: (key: string) => void) {
   const el = document.createElement("button");
   el.type = "button";
@@ -122,15 +166,26 @@ function paintMarker(el: HTMLElement, animal: TrackedAnimal, selected: boolean) 
   el.dataset.selected = selected ? "true" : "false";
 }
 
-export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props) {
+export function LiveTerrainMap({
+  animals,
+  zones,
+  selectedKey,
+  onSelect,
+  tourRoutes = [],
+  selectedRouteId = null,
+  onSelectRoute,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markersRef = useRef(new Map<string, { marker: Marker; from: [number, number]; to: [number, number] }>());
+  const tourMarkersRef = useRef(new Map<number, Marker>());
   const fittedRef = useRef(false);
   const onSelectRef = useRef(onSelect);
+  const onSelectRouteRef = useRef(onSelectRoute);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [relief, setRelief] = useState(true);
+  const [showTourRoutes, setShowTourRoutes] = useState(true);
   const [basemap, setBasemap] = useState<"hybrid" | "topo">("hybrid");
 
   useEffect(() => {
@@ -138,8 +193,13 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
   }, [onSelect]);
 
   useEffect(() => {
+    onSelectRouteRef.current = onSelectRoute;
+  }, [onSelectRoute]);
+
+  useEffect(() => {
     let cancelled = false;
     const markers = markersRef.current;
+    const tourMarkers = tourMarkersRef.current;
     (async () => {
       const maplibregl = await import("maplibre-gl");
       maplibregl.setWorkerUrl("/maplibre-gl-worker.js");
@@ -170,6 +230,43 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
         map.addSource("zones", { type: "geojson", data: zonesGeoJson([]) });
         map.addLayer({ id: "zone-fill", type: "fill", source: "zones", paint: { "fill-color": ["get", "color"], "fill-opacity": 0.12 } });
         map.addLayer({ id: "zone-line", type: "line", source: "zones", paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-dasharray": [3, 2] } });
+
+        map.addSource("tour-routes", { type: "geojson", data: tourRoutesGeoJson([], null) });
+        map.addLayer({
+          id: "tour-route-casing",
+          type: "line",
+          source: "tour-routes",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": ["case", ["==", ["get", "selected"], 1], 8, 5.5],
+            "line-opacity": ["case", ["==", ["get", "dimmed"], 1], 0.25, 0.78],
+          },
+        });
+        map.addLayer({
+          id: "tour-route-line",
+          type: "line",
+          source: "tour-routes",
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": ["case", ["==", ["get", "selected"], 1], 5, 3.2],
+            "line-opacity": ["case", ["==", ["get", "dimmed"], 1], 0.35, 0.95],
+          },
+        });
+        map.on("click", "tour-route-line", (event) => {
+          const id = Number(event.features?.[0]?.properties?.id);
+          if (Number.isFinite(id)) {
+            onSelectRouteRef.current?.(id);
+          }
+        });
+        map.on("mouseenter", "tour-route-line", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "tour-route-line", () => {
+          map.getCanvas().style.cursor = "";
+        });
+
         map.addSource("trails", { type: "geojson", data: trailsGeoJson([], null) });
         map.addLayer({
           id: "trail-line",
@@ -190,6 +287,8 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
       cancelled = true;
       markers.forEach(({ marker }) => marker.remove());
       markers.clear();
+      tourMarkers.forEach((marker) => marker.remove());
+      tourMarkers.clear();
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -200,6 +299,80 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
     if (!ready || !map) return;
     (map.getSource("zones") as GeoJSONSource | undefined)?.setData(zonesGeoJson(zones));
   }, [zones, ready]);
+
+  // Layer rute tur + penanda titik awal rute di atas peta 3D Live Map.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    const visibleRoutes = showTourRoutes ? tourRoutes : [];
+    (map.getSource("tour-routes") as GeoJSONSource | undefined)?.setData(
+      tourRoutesGeoJson(visibleRoutes, selectedRouteId),
+    );
+    map.setLayoutProperty("tour-route-casing", "visibility", showTourRoutes ? "visible" : "none");
+    map.setLayoutProperty("tour-route-line", "visibility", showTourRoutes ? "visible" : "none");
+
+    let active = true;
+    void import("maplibre-gl").then((maplibregl) => {
+      if (!active) return;
+      const store = tourMarkersRef.current;
+      const validIds = new Set(visibleRoutes.map((r) => r.id));
+
+      store.forEach((marker, id) => {
+        if (!validIds.has(id)) {
+          marker.remove();
+          store.delete(id);
+        }
+      });
+
+      visibleRoutes.forEach((route) => {
+        const startPoint = route.meeting
+          ? ([route.meeting.lon, route.meeting.lat] as [number, number])
+          : route.waypoints.length > 0
+            ? ([route.waypoints[0][1], route.waypoints[0][0]] as [number, number])
+            : null;
+        if (!startPoint) return;
+
+        const existing = store.get(route.id);
+        if (!existing) {
+          const element = tourMarkerElement(route, (id) => onSelectRouteRef.current?.(id));
+          paintTourMarker(element, route, route.id === selectedRouteId);
+          const marker = new maplibregl.Marker({ element, anchor: "bottom" })
+            .setLngLat(startPoint)
+            .addTo(map);
+          store.set(route.id, marker);
+        } else {
+          paintTourMarker(existing.getElement(), route, route.id === selectedRouteId);
+          existing.setLngLat(startPoint);
+        }
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [tourRoutes, selectedRouteId, showTourRoutes, ready]);
+
+  // Terbang ke rute tur yang dipilih.
+  const tourRoutesRef = useRef(tourRoutes);
+  useEffect(() => {
+    tourRoutesRef.current = tourRoutes;
+  }, [tourRoutes]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || selectedRouteId === null) return;
+    const route = tourRoutesRef.current.find((r) => r.id === selectedRouteId);
+    if (!route || route.waypoints.length === 0) return;
+
+    const lons = route.waypoints.map((w) => w[1]);
+    const lats = route.waypoints.map((w) => w[0]);
+    const bounds: LngLatBoundsLike = [
+      [Math.min(...lons), Math.min(...lats)],
+      [Math.max(...lons), Math.max(...lats)],
+    ];
+    map.fitBounds(bounds, { padding: 80, maxZoom: 13.5, pitch: relief ? 55 : 0, duration: 900 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRouteId, ready]);
 
   // Penanda & jejak. Posisi baru dianimasikan ±1 detik agar perpindahan tiap 10 detik terlihat sebagai gerakan.
   useEffect(() => {
@@ -311,6 +484,12 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
         <MapToggle pressed={basemap === "topo"} onClick={() => setBasemap("topo")}>Topografi</MapToggle>
         <span className="w-px bg-white/20" aria-hidden="true" />
         <MapToggle pressed={relief} onClick={() => setRelief((v) => !v)}>Relief 3D</MapToggle>
+        {tourRoutes.length > 0 ? (
+          <>
+            <span className="w-px bg-white/20" aria-hidden="true" />
+            <MapToggle pressed={showTourRoutes} onClick={() => setShowTourRoutes((v) => !v)}>Rute Tur</MapToggle>
+          </>
+        ) : null}
       </div>
 
       <style>{`
@@ -320,6 +499,11 @@ export function LiveTerrainMap({ animals, zones, selectedKey, onSelect }: Props)
         .live-marker[data-selected="true"] .live-marker__dot { width:18px; height:18px; box-shadow:0 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(0,0,0,.4); }
         .live-marker[data-selected="true"] .live-marker__label { background:#fff; color:#111814; }
         .live-marker:focus-visible { outline:2px solid #fff; outline-offset:3px; border-radius:4px; }
+        .tour-route-marker { display:flex; align-items:center; gap:5px; padding:0; border:0; background:none; cursor:pointer; }
+        .tour-route-marker__pin { width:11px; height:11px; border-radius:3px; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.45); transform:rotate(45deg); }
+        .tour-route-marker__label { font:600 10px/1.1 ui-sans-serif,system-ui,sans-serif; color:#f8fafc; background:rgba(15,31,23,.82); padding:3px 6px; border-radius:4px; border:1px solid rgba(255,255,255,.22); white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis; }
+        .tour-route-marker[data-selected="true"] .tour-route-marker__pin { width:14px; height:14px; box-shadow:0 0 0 3px rgba(255,255,255,.6); }
+        .tour-route-marker[data-selected="true"] .tour-route-marker__label { background:#ffffff; color:#0f1f17; border-color:#ffffff; }
       `}</style>
     </div>
   );
