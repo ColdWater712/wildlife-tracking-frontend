@@ -7,9 +7,19 @@ export type VoiceChatHistoryItem = {
   content: string;
 };
 
+export type PageInteractiveElement = {
+  kind: "date" | "select" | "input" | "button" | "link";
+  label: string;
+  value?: string;
+  options?: string[];
+  href?: string;
+};
+
 export type VoiceChatAction =
   | { type: "none" }
   | { type: "navigate"; href: string; label?: string }
+  | { type: "set_date"; date: string; field?: string }
+  | { type: "select_option"; option: string; field?: string }
   | { type: "set_theme"; scheme: "light" | "dark" }
   | { type: "set_locale"; locale: AppLocale }
   | { type: "set_font_scale"; scale: "md" | "lg" | "xl" }
@@ -28,6 +38,7 @@ export type VoiceChatPayload = {
   locale: AppLocale;
   current_path?: string;
   page_context?: string;
+  page_elements?: PageInteractiveElement[];
   allowed_routes?: Array<{ href: string; label: string }>;
   history?: VoiceChatHistoryItem[];
 };

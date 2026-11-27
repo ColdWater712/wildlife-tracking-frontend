@@ -21,11 +21,15 @@ import { useLogout } from "@/hooks/use-logout";
 import { getRoleLabel } from "@/lib/i18n";
 import {
   clickMatchingElement,
+  extractInteractiveElements,
   extractPageSummary,
   fillMatchingInput,
   getAllowedVoiceRoutes,
   interpretConfirmation,
   interpretVoiceCommand,
+  parseNaturalDateToIso,
+  selectMatchingOption,
+  setMatchingDateInput,
   summarizeAllowedRoutesForRole,
 } from "@/lib/voice-assistant";
 import {
@@ -474,12 +478,16 @@ export function VoiceA11yWidget() {
             emergencyType: action.emergencyType,
             transcript: action.transcript,
           };
+          const isThreat =
+            action.emergencyType === "pemburu" || action.emergencyType === "satwa_agresif";
           const reply =
             locale === "en"
-              ? "Emergency detected! Do you want me to call the BBTNGL Emergency Command Post right now? Please say yes or cancel."
-              : "Keadaan darurat terdeteksi! Apakah Anda ingin saya langsung menelepon Posko Komando Darurat BBTNGL sekarang? Ucapkan ya atau batal.";
+              ? "Emergency detected. Call emergency number now?"
+              : isThreat
+                ? "Ancaman darurat terdeteksi. Ingin saya telepon nomor darurat?"
+                : "Permintaan pertolongan terdeteksi. Ingin saya telepon nomor darurat?";
           appendChatTurn(rawText, reply);
-          speak(reply);
+          speak(reply, Math.max(rateRef.current, 1.35));
           return;
         }
         case "list_commands": {
@@ -681,10 +689,40 @@ export function VoiceA11yWidget() {
           return;
         }
         case "unknown": {
+          // Local date fallback ("pilih tanggal 26 november 2026")
+          const parsedDate = parseNaturalDateToIso(rawText);
+          if (parsedDate) {
+            const setField = setMatchingDateInput(parsedDate);
+            if (setField) {
+              const reply =
+                locale === "en"
+                  ? `Date set to ${parsedDate}.`
+                  : `Tanggal diatur ke ${parsedDate}.`;
+              appendChatTurn(rawText, reply);
+              speak(reply);
+              return;
+            }
+          }
+          // Try clicking a matching element/row on the current page before giving up
+          const cleanedQuery = rawText
+            .replace(/^(cek|lihat|buka|pilih|klik|tekan|tampilkan)\s+/i, "")
+            .trim();
+          if (cleanedQuery.length >= 3) {
+            const clicked = clickMatchingElement(cleanedQuery);
+            if (clicked) {
+              const reply =
+                locale === "en"
+                  ? `Opening ${clicked}.`
+                  : `Membuka ${clicked}.`;
+              appendChatTurn(rawText, reply);
+              speak(reply);
+              return;
+            }
+          }
           const reply =
             locale === "en"
-              ? `I heard "${action.transcript}", but did not recognize that command. Say help for available commands.`
-              : `Saya mendengar "${action.transcript}", namun perintah belum dikenali. Ucapkan bantuan untuk daftar perintah.`;
+              ? `I heard "${action.transcript}", but could not complete that here. Try asking more specifically.`
+              : `Saya mendengar "${action.transcript}", namun belum menemukan aksi yang cocok di halaman ini.`;
           appendChatTurn(rawText, reply);
           speak(reply);
         }
@@ -714,6 +752,28 @@ export function VoiceA11yWidget() {
           speak(reply);
           router.push(action.href);
           return;
+        case "set_date": {
+          const updated = setMatchingDateInput(action.date, action.field ?? "");
+          const finalReply = updated
+            ? reply
+            : locale === "en"
+              ? "No date picker found on this page."
+              : "Tidak ada pilihan tanggal di halaman ini.";
+          appendChatTurn(rawText, finalReply);
+          speak(finalReply);
+          return;
+        }
+        case "select_option": {
+          const chosen = selectMatchingOption(action.option, action.field ?? "");
+          const finalReply = chosen
+            ? reply
+            : locale === "en"
+              ? `Could not find option ${action.option} on this page.`
+              : `Pilihan ${action.option} tidak ditemukan di halaman ini.`;
+          appendChatTurn(rawText, finalReply);
+          speak(finalReply);
+          return;
+        }
         case "set_theme": {
           try {
             window.localStorage.setItem("color-scheme", action.scheme);
@@ -797,15 +857,20 @@ export function VoiceA11yWidget() {
           speak(finalReply);
           return;
         }
-        case "trigger_sos":
+        case "trigger_sos": {
           conversationActiveRef.current = true;
           pendingEmergencyRef.current = {
             emergencyType: action.emergency_type ?? "general",
             transcript: rawText,
           };
-          appendChatTurn(rawText, reply);
-          speak(reply);
+          const shortSos =
+            locale === "en"
+              ? "Emergency detected. Call emergency number now?"
+              : "Permintaan pertolongan terdeteksi. Ingin saya telepon nomor darurat?";
+          appendChatTurn(rawText, shortSos);
+          speak(shortSos, Math.max(rateRef.current, 1.35));
           return;
+        }
         case "logout":
           if (!userRole) {
             appendChatTurn(rawText, reply);
@@ -842,7 +907,7 @@ export function VoiceA11yWidget() {
       const cleaned = rawText.trim();
       if (!cleaned) return;
 
-      // 1. Instant local confirmation for pending SOS emergency
+      // 1. Instant local confirmation for pending SOS emergency (short & brisk)
       if (pendingEmergencyRef.current) {
         const confirmation = interpretConfirmation(cleaned);
         if (confirmation === "yes") {
@@ -851,28 +916,25 @@ export function VoiceA11yWidget() {
           setActiveEmergencyCall(PRIMARY_EMERGENCY_CONTACT);
           const reply =
             locale === "en"
-              ? "Calling BBTNGL Emergency Command Post now. Help is being connected."
-              : "Menghubungkan panggilan darurat ke Posko Komando BBTNGL sekarang.";
+              ? "Calling emergency number now."
+              : "Menghubungi nomor darurat sekarang.";
           appendChatTurn(cleaned, reply);
-          speak(reply, undefined, { resumeAfter: false });
+          speak(reply, Math.max(rateRef.current, 1.35), { resumeAfter: false });
           return;
         }
         if (confirmation === "no") {
           pendingEmergencyRef.current = null;
-          const reply =
-            locale === "en"
-              ? "Emergency call cancelled. I am still listening if you need anything else."
-              : "Panggilan darurat dibatalkan. Saya masih mendengarkan jika Anda membutuhkan hal lain.";
+          const reply = locale === "en" ? "Cancelled." : "Dibatalkan.";
           appendChatTurn(cleaned, reply);
           speak(reply);
           return;
         }
         const reply =
           locale === "en"
-            ? "Please say yes to call emergency services now, or say cancel to abort."
-            : "Mohon ucapkan ya untuk menghubungi posko darurat sekarang, atau ucapkan batal untuk membatalkan.";
+            ? "Say yes or cancel."
+            : "Ucapkan ya atau batal.";
         appendChatTurn(cleaned, reply);
-        speak(reply);
+        speak(reply, Math.max(rateRef.current, 1.35));
         return;
       }
 
@@ -886,18 +948,20 @@ export function VoiceA11yWidget() {
         return;
       }
 
-      // 3. Full AI Chatbot via backend Groq LLM (with automatic local fallback)
+      // 3. Full AI Chatbot via backend Groq LLM (with live page elements & automatic local fallback)
       setThinking(true);
       setFeedback(locale === "en" ? "Thinking..." : "Sedang memproses...");
 
       const allowedRoutes = getAllowedVoiceRoutes(userRole, locale);
       const pageContext = extractPageSummary(locale).slice(0, 1000);
+      const pageElements = extractInteractiveElements();
 
       void sendVoiceChat({
         message: cleaned,
         locale,
         current_path: pathname,
         page_context: pageContext,
+        page_elements: pageElements,
         allowed_routes: allowedRoutes,
         history: chatHistoryRef.current.slice(-8),
       })

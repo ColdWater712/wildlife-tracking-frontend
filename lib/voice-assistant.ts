@@ -916,3 +916,243 @@ export function getAllowedVoiceRoutes(
 
   return routes;
 }
+
+const MONTH_MAP: Record<string, number> = {
+  januari: 1, jan: 1, january: 1,
+  februari: 2, feb: 2, february: 2,
+  maret: 3, mar: 3, march: 3,
+  april: 4, apr: 4,
+  mei: 5, may: 5,
+  juni: 6, jun: 6, june: 6,
+  juli: 7, jul: 7, july: 7,
+  agustus: 8, agu: 8, agt: 8, aug: 8, august: 8,
+  september: 9, sep: 9, sept: 9,
+  oktober: 10, okt: 10, oct: 10, october: 10,
+  november: 11, nov: 11,
+  desember: 12, des: 12, dec: 12, december: 12,
+};
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+export function parseNaturalDateToIso(text: string): string | null {
+  const lower = text.toLowerCase();
+
+  // Direct ISO YYYY-MM-DD
+  const isoMatch = lower.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${pad2(Number(isoMatch[2]))}-${pad2(Number(isoMatch[3]))}`;
+  }
+
+  // Relative dates
+  const now = new Date();
+  if (/\b(hari ini|today)\b/.test(lower)) return toIsoDate(now);
+  if (/\b(besok|tomorrow)\b/.test(lower)) {
+    now.setDate(now.getDate() + 1);
+    return toIsoDate(now);
+  }
+  if (/\b(lusa)\b/.test(lower)) {
+    now.setDate(now.getDate() + 2);
+    return toIsoDate(now);
+  }
+  if (/\b(kemarin|yesterday)\b/.test(lower)) {
+    now.setDate(now.getDate() - 1);
+    return toIsoDate(now);
+  }
+
+  // "26 november 2026" or "26 nov 2026"
+  const dmyMatch = lower.match(/\b(\d{1,2})\s+([a-z]+)\s+(20\d{2})\b/);
+  if (dmyMatch) {
+    const month = MONTH_MAP[dmyMatch[2]];
+    const day = Number(dmyMatch[1]);
+    if (month && day >= 1 && day <= 31) {
+      return `${dmyMatch[3]}-${pad2(month)}-${pad2(day)}`;
+    }
+  }
+
+  // "november 26 2026" or "november 26, 2026"
+  const mdyMatch = lower.match(/\b([a-z]+)\s+(\d{1,2}),?\s+(20\d{2})\b/);
+  if (mdyMatch) {
+    const month = MONTH_MAP[mdyMatch[1]];
+    const day = Number(mdyMatch[2]);
+    if (month && day >= 1 && day <= 31) {
+      return `${mdyMatch[3]}-${pad2(month)}-${pad2(day)}`;
+    }
+  }
+
+  // DD/MM/YYYY
+  const slashMatch = lower.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/);
+  if (slashMatch) {
+    const day = Number(slashMatch[1]);
+    const month = Number(slashMatch[2]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${slashMatch[3]}-${pad2(month)}-${pad2(day)}`;
+    }
+  }
+
+  return null;
+}
+
+function getFieldLabel(el: HTMLElement): string {
+  const id = el.id;
+  if (id) {
+    const label = document.querySelector(`label[for="${CSS.escape(id)}"]`)?.textContent?.trim();
+    if (label) return label;
+  }
+  const parentLabel = el.closest("label")?.textContent?.trim();
+  if (parentLabel) return parentLabel.slice(0, 60);
+  return (
+    el.getAttribute("aria-label") ||
+    el.getAttribute("placeholder") ||
+    el.getAttribute("name") ||
+    ""
+  ).trim();
+}
+
+export function setMatchingDateInput(isoDate: string, fieldQuery = ""): string | null {
+  if (typeof document === "undefined") return null;
+  const target = fieldQuery.trim().toLowerCase();
+
+  const dateInputs = Array.from(
+    document.querySelectorAll<HTMLInputElement>(
+      'input[type="date"], input[type="datetime-local"]',
+    ),
+  ).filter((el) => !el.closest("#a11y-voice-dialog") && !el.disabled && !el.readOnly);
+
+  if (dateInputs.length === 0) return null;
+
+  let chosen = dateInputs[0];
+  if (target) {
+    const matched = dateInputs.find((el) => {
+      const text = [
+        getFieldLabel(el),
+        el.name ?? "",
+        el.id ?? "",
+        el.getAttribute("aria-label") ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return text.includes(target);
+    });
+    if (matched) chosen = matched;
+  }
+
+  const finalValue =
+    chosen.type === "datetime-local" && !isoDate.includes("T")
+      ? `${isoDate}T${chosen.value.includes("T") ? chosen.value.split("T")[1] : "09:00"}`
+      : isoDate;
+
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  if (setter) {
+    setter.call(chosen, finalValue);
+  } else {
+    chosen.value = finalValue;
+  }
+  chosen.dispatchEvent(new Event("input", { bubbles: true }));
+  chosen.dispatchEvent(new Event("change", { bubbles: true }));
+  chosen.focus();
+
+  return getFieldLabel(chosen) || "tanggal";
+}
+
+export function selectMatchingOption(optionQuery: string, fieldQuery = ""): string | null {
+  if (typeof document === "undefined") return null;
+  const optTarget = optionQuery.trim().toLowerCase();
+  const fieldTarget = fieldQuery.trim().toLowerCase();
+  if (!optTarget) return null;
+
+  const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select")).filter(
+    (el) => !el.closest("#a11y-voice-dialog") && !el.disabled,
+  );
+
+  const orderedSelects = fieldTarget
+    ? [
+        ...selects.filter((s) =>
+          [getFieldLabel(s), s.name, s.id].join(" ").toLowerCase().includes(fieldTarget),
+        ),
+        ...selects,
+      ]
+    : selects;
+
+  const visited = new Set<HTMLSelectElement>();
+  for (const select of orderedSelects) {
+    if (visited.has(select)) continue;
+    visited.add(select);
+
+    const matchedOption = Array.from(select.options).find((opt) => {
+      const label = (opt.textContent ?? "").trim().toLowerCase();
+      const val = opt.value.trim().toLowerCase();
+      return label.includes(optTarget) || val === optTarget;
+    });
+
+    if (matchedOption) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+      if (setter) {
+        setter.call(select, matchedOption.value);
+      } else {
+        select.value = matchedOption.value;
+      }
+      select.dispatchEvent(new Event("input", { bubbles: true }));
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      select.focus();
+      return (matchedOption.textContent ?? matchedOption.value).trim();
+    }
+  }
+
+  return null;
+}
+
+export function extractInteractiveElements(): Array<{
+  kind: "date" | "select" | "input" | "button" | "link";
+  label: string;
+  value?: string;
+  options?: string[];
+  href?: string;
+}> {
+  if (typeof document === "undefined") return [];
+  const root = document.querySelector("main") ?? document.body;
+  const elements: Array<{
+    kind: "date" | "select" | "input" | "button" | "link";
+    label: string;
+    value?: string;
+    options?: string[];
+    href?: string;
+  }> = [];
+
+  for (const input of Array.from(root.querySelectorAll<HTMLInputElement>("input")).slice(0, 12)) {
+    if (input.closest("#a11y-voice-dialog") || input.type === "hidden" || input.disabled) continue;
+    const isDate = input.type === "date" || input.type === "datetime-local";
+    elements.push({
+      kind: isDate ? "date" : "input",
+      label: (getFieldLabel(input) || input.type).slice(0, 50),
+      value: input.value ? input.value.slice(0, 40) : undefined,
+    });
+  }
+
+  for (const select of Array.from(root.querySelectorAll<HTMLSelectElement>("select")).slice(0, 8)) {
+    if (select.closest("#a11y-voice-dialog") || select.disabled) continue;
+    elements.push({
+      kind: "select",
+      label: (getFieldLabel(select) || "pilihan").slice(0, 50),
+      options: Array.from(select.options)
+        .slice(0, 8)
+        .map((o) => (o.textContent ?? "").trim().slice(0, 40))
+        .filter(Boolean),
+    });
+  }
+
+  for (const link of Array.from(root.querySelectorAll<HTMLAnchorElement>("a[href]")).slice(0, 12)) {
+    if (link.closest("#a11y-voice-dialog")) continue;
+    const label = (link.textContent ?? link.getAttribute("aria-label") ?? "").trim().replace(/\s+/g, " ");
+    const href = link.getAttribute("href") ?? "";
+    if (!label || !href.startsWith("/")) continue;
+    elements.push({ kind: "link", label: label.slice(0, 50), href: href.slice(0, 100) });
+  }
+
+  return elements.slice(0, 30);
+}
