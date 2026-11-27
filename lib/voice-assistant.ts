@@ -472,6 +472,9 @@ function findClickableMatch(query: string): HTMLElement | null {
 
 export type VoiceAction =
   | { type: "navigate"; href: string; label: string }
+  | { type: "open_entity"; query: string; fallbackHref: string }
+  | { type: "set_date"; date: string; field?: string }
+  | { type: "select_option"; option: string; field?: string }
   | { type: "access_denied"; href: string; label: string }
   | { type: "auth_required"; label: string }
   | { type: "logout" }
@@ -495,18 +498,40 @@ export type VoiceAction =
   | { type: "fill_input"; field: string; value: string }
   | { type: "unknown"; transcript: string };
 
+const POLITE_SUFFIX_RE = /\s*\b(dong|ya|deh|sekarang|dulu|kak|nih|aja|saja|please|now|min|bro|bos)\b\s*$/gi;
+const POLITE_PREFIX_RE = /^(?:(?:eh|halo|hai|min|tolong|coba|bisa\s+tolong|mau|pengen|aku\s+mau|saya\s+ingin|saya\s+mau|mohon)\s+)+/i;
+
+function stripPoliteTail(value: string): string {
+  let out = value.trim();
+  for (let i = 0; i < 3; i++) {
+    // Pertahankan frasa tombol seperti "pesan sekarang" / "bayar sekarang" / "beli sekarang"
+    if (/\b(?:pesan|bayar|beli|daftar|mulai)\s+sekarang$/i.test(out)) {
+      break;
+    }
+    const next = out.replace(POLITE_SUFFIX_RE, "").trim();
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
 export function interpretConfirmation(raw: string): "yes" | "no" | "unknown" {
   const text = raw.trim().toLowerCase();
   if (!text) return "unknown";
+  // Check explicit negative first so "tidak tolong" / "ga usah" / "gak jadi" don't falsely match yes
   if (
-    /\b(ya|iya|yes|yeah|yep|ok|oke|okay|betul|benar|setuju|tolong|panggil|hubungi|telepon|call|confirm|konfirmasi|lanjut|cepat)\b/.test(
+    /\b(tidak|nggak|ngga|enggak|gak|ga|bukan|jangan|no|nope|cancel|batal|batalkan|stop|aman)\b/.test(
+      text,
+    )
+  ) {
+    return "no";
+  }
+  if (
+    /\b(ya|iya|yes|yeah|yep|ok|oke|okay|betul|benar|setuju|tolong|panggil|hubungi|telepon|call|confirm|konfirmasi|lanjut|cepat|cepet|gas|silakan|silahkan)\b/.test(
       text,
     )
   ) {
     return "yes";
-  }
-  if (/\b(tidak|nggak|enggak|gak|bukan|jangan|no|nope|cancel|batal|batalkan|stop)\b/.test(text)) {
-    return "no";
   }
   return "unknown";
 }
@@ -516,21 +541,21 @@ function detectEmergencyDistress(
 ): "cedera" | "kebakaran" | "satwa_agresif" | "tersesat" | "pemburu" | "lainnya" | null {
   // Do not hijack explicit page-navigation requests such as "buka halaman kontak darurat"
   if (
-    /^(?:tolong\s+)?(?:buka|lihat|tampilkan|arahkan\s+ke|pergi\s+ke|open|show|go\s+to)\s+(?:halaman\s+|menu\s+)?(?:kontak\s+darurat|emergency\s+contacts|ancaman|ai\s+threats)/.test(
+    /(?:buka|lihat|liat|tampilkan|arahkan\s+ke|pergi\s+ke|cek|open|show|go\s+to)\s+(?:halaman\s+|menu\s+)?(?:kontak\s+darurat|emergency\s+contacts|ancaman|ai\s+threats)/.test(
       text,
     )
   ) {
     return null;
   }
 
-  if (/(ada\s+pemburu|\bpemburu\b|\bpoacher\b|pembalak|suara\s+tembakan|orang\s+bersenjata)/.test(text)) {
+  if (/(ada\s+pemburu|\bpemburu\b|\bpoacher\b|pembalak|suara\s+tembakan|orang\s+bersenjata|bawa\s+senapan|ada\s+jerat)/.test(text)) {
     return "pemburu";
   }
   if (/(ada\s+kebakaran|\bkebakaran\b|\bterbakar\b|hutan\s+terbakar|api\s+besar|\bwildfire\b|\bfire\b)/.test(text)) {
     return "kebakaran";
   }
   if (
-    /(terluka|\bluka\b|patah\s+tulang|pingsan|berdarah|cedera|sakit\s+parah|sesak\s+napas|\binjured\b|\bbleeding\b|\bhurt\b|kecelakaan)/.test(
+    /(terluka|\bluka\b|patah|pingsan|berdarah|cedera|sakit\s+parah|sesak\s+napas|\binjured\b|\bbleeding\b|\bhurt\b|kecelakaan)/.test(
       text,
     )
   ) {
@@ -540,14 +565,14 @@ function detectEmergencyDistress(
     return "tersesat";
   }
   if (
-    /(diserang\s+satwa|dikejar\s+(?:harimau|beruang|gajah|badak)|satwa\s+agresif|animal\s+attack|wild\s+animal)/.test(
+    /(diserang\s+(?:satwa|harimau|beruang|gajah|badak|ular|buaya|babi)|dikejar\s+(?:harimau|beruang|gajah|badak|satwa)|(?:gajah|harimau|beruang|badak|satwa)\s+mengamuk|satwa\s+agresif|animal\s+attack)/.test(
       text,
     )
   ) {
     return "satwa_agresif";
   }
   if (
-    /(tolong\s+saya|selamatkan\s+saya|butuh\s+pertolongan|butuh\s+bantuan\s+(?:segera|darurat|medis|evakuasi)|keadaan\s+darurat|kondisi\s+darurat|\bhelp\s+me\b|\bsave\s+me\b|\bemergency\b|\bsos\b)/.test(
+    /(tolong\s+saya|selamatkan\s+saya|butuh\s+pertolongan|butuh\s+bantuan|panggil\s+ranger|keadaan\s+darurat|kondisi\s+darurat|\bdarurat\b|\bhelp\s+me\b|\bsave\s+me\b|\bemergency\b|\bsos\b)/.test(
       text,
     )
   ) {
@@ -564,20 +589,54 @@ export function interpretVoiceCommand(
 ): VoiceAction {
   const text = raw.trim().toLowerCase();
   if (!text) return { type: "unknown", transcript: raw };
+  const stripped = stripPoliteTail(text.replace(POLITE_PREFIX_RE, "").trim());
 
-  // 1. Stop speech
-  if (/^(diam|berhenti bicara|stop|hening|tutup suara|stop talking|be quiet)$/.test(text)) {
+  // 1. Stop speech (works with casual fillers like "eh diem dulu", "stop suaranya dong")
+  if (
+    /^(diam|diem|berhenti bicara|stop|stop suara(?:nya)?|hening|tutup suara|matikan suara|stop talking|be quiet)$/.test(
+      stripped,
+    )
+  ) {
     return { type: "stop_speech" };
   }
 
-  // 2. Emergency distress detection (prioritized BEFORE generic "bantuan" / help!)
-  const emergencyType = detectEmergencyDistress(text);
-  if (emergencyType) {
-    return { type: "emergency_distress", emergencyType, transcript: raw };
+  // 2. Explicit click button/UI control (prioritized so "klik batal" / "klik lanjutkan" / "klik ekspor" don't get hijacked)
+  const explicitClickMatch = stripped.match(
+    /^(?:klik|tekan|pencet|tap|click|press)\s+(?:tombol|button|menu|link|tautan)?\s*(.+)$/,
+  );
+  if (explicitClickMatch) {
+    const cleaned = stripPoliteTail(explicitClickMatch[1]);
+    if (cleaned) {
+      return { type: "click_element", query: cleaned };
+    }
   }
 
-  // 3. Logout / Sign out (supports ID, EN, and mixed phrases)
+  // 3. Natural date picker setting ("pilih tanggal 26 november 2026", "atur tanggal besok", "tgl 14 feb 2027")
+  const hasDateCue =
+    /\b(tanggal|tgl|besok|lusa|kemarin|hari ini|tomorrow|today|yesterday)\b/.test(text) ||
+    /\b20\d{2}-\d{1,2}-\d{1,2}\b/.test(text) ||
+    /\b\d{1,2}\/\d{1,2}\/20\d{2}\b/.test(text);
+  if (hasDateCue && !/\bcuaca\b/.test(text)) {
+    const isoDate = parseNaturalDateToIso(text);
+    if (isoDate) {
+      const fieldMatch = text.match(/\b(?:tanggal|tgl)\s+(mulai|akhir|kunjungan|berangkat|lahir|kejadian)\b/);
+      return { type: "set_date", date: isoDate, field: fieldMatch?.[1] };
+    }
+  }
+
+  // 4. Emergency distress detection (prioritized BEFORE generic "bantuan" / help!)
+  // Ignore if user is explicitly typing a form note ("ketik catatan luka...")
+  const isFormFillIntent = /^(?:isi|ketik|masukkan|masukin|tulis|fill|type|enter)\s+/.test(stripped);
+  if (!isFormFillIntent) {
+    const emergencyType = detectEmergencyDistress(text);
+    if (emergencyType) {
+      return { type: "emergency_distress", emergencyType, transcript: raw };
+    }
+  }
+
+  // 5. Logout / Sign out (avoid matching "keluar masuk zona"!)
   if (
+    !/(keluar\s+masuk|masuk\s+keluar|zona)/.test(text) &&
     /(logout|log out|sign out|signout|keluar akun|keluar dari akun|mau keluar|ingin keluar|tolong keluar|cabut sesi|\bkeluar\b)/.test(
       text,
     )
@@ -585,108 +644,140 @@ export function interpretVoiceCommand(
     return { type: "logout" };
   }
 
-  // 4. Help / command list
-  if (/(bantuan|perintah|menu apa saja|bisa apa|akses apa|help|commands|what can you do)/.test(text)) {
+  // 6. Help / command list
+  if (/(bantuan|daftar perintah|perintah apa|menu apa saja|bisa apa|akses apa|\bhelp\b|commands|what can you do)/.test(text)) {
     return { type: "list_commands" };
   }
 
-  // 5. Read / explain page content thoroughly (ID, EN, and mixed phrases)
+  // 7. Read / explain page content thoroughly (do not hijack "ringkasan pdf ai" / "ringkasan sistem")
   if (
-    /(bacakan|baca\s+(?:isi|semua|halaman|layar|konten|apa)|jelaskan|terangkan|deskripsikan|ceritakan|rangkum|ringkas|di mana saya|ini halaman apa|sedang di mana|read\s+(?:this\s+)?(?:page|screen|content|all|everything)|explain|describe|what\s+is\s+on\s+this\s+page|where\s+am\s+i|summarize)/.test(
+    /(bacakan|bacain|baca\s+(?:isi|semua|halaman|layar|konten|apa)|jelaskan|jelasin|terangkan|deskripsikan|ceritakan|rangkum|ringkas\s+(?:halaman|layar|ini)|di mana saya|ini halaman apa|sedang di mana|apa\s+(?:yg|yang)\s+ada\s+di\s+layar|read\s+(?:this\s+)?(?:page|screen|content|all|everything)|explain|describe|what\s+is\s+on\s+this\s+page|where\s+am\s+i|summarize)/.test(
       text,
     ) ||
-    /^(baca|read)$/.test(text)
+    /^(baca|read)$/.test(stripped)
   ) {
     return { type: "read_page" };
   }
 
-  // 5. History navigation (works inside polite sentences)
-  if (/(halaman sebelumnya|go back|previous page|\bkembali\b|\bback\b)/.test(text)) {
+  // 8. History navigation (works inside polite sentences)
+  if (/(halaman sebelumnya|go back|previous page|\bkembali\b|\bback\b)/.test(text) && !/paling\s+(?:atas|bawah)/.test(text)) {
     return { type: "history", direction: "back" };
   }
   if (/(halaman berikutnya|go forward|next page|\bmaju\b|\bforward\b)/.test(text)) {
     return { type: "history", direction: "forward" };
   }
 
-  // 6. Scroll
+  // 9. Scroll (including casual "geser ke bawah/atas")
   if (/(paling atas|scroll top|back to top|go to top)/.test(text)) {
     return { type: "scroll", direction: "top" };
   }
   if (/(paling bawah|scroll bottom|go to bottom)/.test(text)) {
     return { type: "scroll", direction: "bottom" };
   }
-  if (/(gulir ke bawah|scroll ke bawah|scroll down|turun ke bawah|\bturun\b)/.test(text)) {
+  if (/(gulir ke bawah|scroll ke bawah|geser ke bawah|scroll down|turun ke bawah|\bturun\b)/.test(text)) {
     return { type: "scroll", direction: "down" };
   }
-  if (/(gulir ke atas|scroll ke atas|scroll up|naik ke atas|\bnaik\b)/.test(text)) {
+  if (/(gulir ke atas|scroll ke atas|geser ke atas|scroll up|naik ke atas|\bnaik\b)/.test(text)) {
     return { type: "scroll", direction: "up" };
   }
 
-  // 7. Theme & Language
-  if (/(mode gelap|tema gelap|terlalu terang|silau|dark mode|switch to dark)/.test(text)) {
+  // 10. Theme & Language (including casual Indonesian "gelapin", "mode malam", "terangin")
+  if (/(mode gelap|tema gelap|mode malam|tema malam|gelapin|gelapkan|terlalu terang|silau|dark mode|switch to dark)/.test(text)) {
     return { type: "set_theme", scheme: "dark" };
   }
-  if (/(mode terang|tema terang|terlalu gelap|light mode|switch to light)/.test(text)) {
+  if (/(mode terang|tema terang|mode siang|terangin|terangkan layar|terlalu gelap|light mode|switch to light)/.test(text)) {
     return { type: "set_theme", scheme: "light" };
   }
-  if (/(bahasa inggris|ganti inggris|use english|switch to english|\benglish\b)/.test(text)) {
+  if (/(bahasa inggris|ganti inggris|pake inggris|use english|switch to english|\benglish\b)/.test(text)) {
     return { type: "set_locale", locale: "en" };
   }
-  if (/(bahasa indonesia|ganti indonesia|use indonesian|switch to indonesian|\bindonesian\b)/.test(text)) {
+  if (/(bahasa indonesia|ganti indonesia|pake indonesia|use indonesian|switch to indonesian|\bindonesian\b)/.test(text)) {
     return { type: "set_locale", locale: "id" };
   }
 
-  // 8. Speech rate
-  if (/(lebih cepat|percepat suara|kecepatan naik|faster|speak faster|speed up)/.test(text)) {
+  // 11. Speech rate (including casual "percepat", "pelanin", "terlalu lambat")
+  if (/(lebih cepat|percepat|terlalu lambat|kecepatan naik|faster|speak faster|speed up)/.test(text)) {
     return { type: "set_rate", delta: 0.2 };
   }
-  if (/(lebih lambat|perlambat suara|pelan-pelan|terlalu cepat|slower|speak slower|slow down)/.test(text)) {
+  if (/(lebih lambat|perlambat|pelanin|pelan-pelan|terlalu cepat|slower|speak slower|slow down)/.test(text)) {
     return { type: "set_rate", delta: -0.2 };
   }
   if (/(kecepatan normal|suara normal|normal speed)/.test(text)) {
     return { type: "set_rate", exact: 1.0 };
   }
 
-  // 9. Contrast, font size, & reset
-  if (/(kontras tinggi|high contrast|mode kontras|kurang jelas)/.test(text)) {
-    return { type: "set_contrast", high: true };
-  }
-  if (/(kontras normal|normal contrast|matikan kontras)/.test(text)) {
+  // 12. Contrast, font size, & reset (including casual "gedein", "perbesar", "normalin", "aktifin kontras")
+  if (/(matikan kontras|nonaktifkan kontras|kontras normal|normal contrast)/.test(text)) {
     return { type: "set_contrast", high: false };
   }
-  if (/(sangat besar|tulisan ekstra besar|extra large text)/.test(text)) {
+  if (/(kontras tinggi|aktifin kontras|aktifkan kontras|high contrast|mode kontras|kurang jelas)/.test(text)) {
+    return { type: "set_contrast", high: true };
+  }
+  if (/(sangat besar|tulisan ekstra besar|ekstra besar|extra large text)/.test(text)) {
     return { type: "set_font_scale", scale: "xl" };
   }
-  if (/(perbesar tulisan|tulisan besar|besarkan teks|tulisan kekecilan|huruf kecil|larger text|increase font|bigger text)/.test(text)) {
+  if (/(perbesar|gedein|besarkan|tulisan besar|kekecilan|huruf kecil|larger text|increase font|bigger text)/.test(text)) {
     return { type: "set_font_scale", scale: "lg" };
   }
-  if (/(perkecil tulisan|ukuran normal|tulisan normal|normal text|default font|smaller text)/.test(text)) {
+  if (/(perkecil|normalin|ukuran normal|tulisan normal|huruf normal|normal text|default font|smaller text)/.test(text)) {
     return { type: "set_font_scale", scale: "md" };
   }
   if (/(reset tampilan|reset aksesibilitas|reset accessibility)/.test(text)) {
     return { type: "reset_a11y" };
   }
 
-  // 10. Fill input (flexible ID/EN/mixed)
-  const fillMatch = text.match(
-    /(?:isi|ketik|masukkan|fill|type|enter)\s+(?:kolom|field|input)?\s*(.+?)\s+(?:dengan|with|ke|as)\s+(.+)$/,
+  // 13. Fill input & Search (flexible ID/EN/mixed: "isi ... dengan/jadi/ke ...", "cari ...")
+  const fillMatch = stripped.match(
+    /^(?:isi|ketik|masukkan|masukin|tulis|fill|type|enter)\s+(?:kolom|field|input)?\s*(.+?)\s+(?:dengan|jadi|menjadi|with|ke|as)\s+(.+)$/,
   );
   if (fillMatch) {
-    return { type: "fill_input", field: fillMatch[1].trim(), value: fillMatch[2].trim() };
+    return {
+      type: "fill_input",
+      field: fillMatch[1].trim(),
+      value: stripPoliteTail(fillMatch[2]),
+    };
   }
-
-  // 11. Click element (flexible ID/EN/mixed)
-  const clickMatch = text.match(
-    /(?:klik|tekan|pencet|pilih|click|press|tap)\s+(?:tombol|button|menu|link|tautan)?\s*(.+)$/,
-  );
-  if (clickMatch) {
-    const cleaned = clickMatch[1].replace(/\b(dong|ya|please|now|sekarang)\b/g, "").trim();
-    if (cleaned) {
-      return { type: "click_element", query: cleaned };
+  const searchMatch = stripped.match(/^(?:cari|carikan|search)\s+(.+)$/);
+  if (searchMatch) {
+    const val = stripPoliteTail(searchMatch[1]);
+    if (val) {
+      return { type: "fill_input", field: "cari", value: val };
     }
   }
 
-  // 12. Semantic + fuzzy intent matching across all app routes (with role priority)
+  // 14. Select dropdown / filter option ("pilih spesies orangutan", "filter ancaman kritis", "ganti filter ke belum dibaca", "ubah tipe ke kamera jebak", "set kondisi jadi sehat")
+  const selectMatch = stripped.match(
+    /^(?:pilih|filter|ganti\s+filter|ubah\s+filter|ubah|set)\s+(?:opsi\s+|pilihan\s+)?(?:(spesies|status|ancaman|kategori|filter|rute|peran|tipe|kondisi)\s+)?(?:(?:ke|jadi|menjadi)\s+)?(.+)$/,
+  );
+  if (selectMatch) {
+    const field = selectMatch[1]?.trim() ?? "";
+    const option = stripPoliteTail(selectMatch[2]);
+    if (option) {
+      return { type: "select_option", field, option };
+    }
+  }
+
+  // 15. Specific entity detail lookup ("cek kondisi orangutan", "lihat detail harimau sumatra", "cek tur bukit lawang")
+  const entityWildlifeMatch = stripped.match(
+    /(?:orangutan|harimau(?:\s+sumat(?:ra|era))?|gajah(?:\s+sumat(?:ra|era))?|badak(?:\s+sumat(?:ra|era))?|rusa(?:\s+sambar)?|beruang(?:\s+madu)?|siamang|rangkong(?:\s+badak)?)/i,
+  );
+  if (entityWildlifeMatch) {
+    return {
+      type: "open_entity",
+      query: entityWildlifeMatch[0].trim(),
+      fallbackHref: "/animals",
+    };
+  }
+  const entityTourMatch = stripped.match(/(?:bukit\s+lawang|tangkahan|ketambe|gunung\s+leuser\s+trek)/i);
+  if (entityTourMatch) {
+    return {
+      type: "open_entity",
+      query: entityTourMatch[0].trim(),
+      fallbackHref: "/tours",
+    };
+  }
+
+  // 16. Semantic + fuzzy intent matching across all app routes (with role priority)
   const rawTokens = tokenize(text);
   const userTokens = expandTokens(rawTokens);
   if (userTokens.length > 0) {
@@ -720,7 +811,7 @@ export function interpretVoiceCommand(
     }
   }
 
-  // 13. Smart DOM fallback: check if remaining meaningful words match a button/link on the current page
+  // 17. Smart DOM fallback: check if remaining meaningful words match a button/link on the current page
   const cleanedPhrase = rawTokens.join(" ");
   if (cleanedPhrase && findClickableMatch(cleanedPhrase)) {
     return { type: "click_element", query: cleanedPhrase };

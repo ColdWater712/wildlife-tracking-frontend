@@ -552,6 +552,55 @@ export function VoiceA11yWidget() {
           router.push(action.href);
           return;
         }
+        case "open_entity": {
+          const clicked = clickMatchingElement(action.query);
+          if (clicked) {
+            const reply =
+              locale === "en" ? `Opening ${clicked}.` : `Membuka ${clicked}.`;
+            appendChatTurn(rawText, reply);
+            speak(reply);
+            return;
+          }
+          const reply =
+            locale === "en"
+              ? `Opening section for ${action.query}.`
+              : `Membuka halaman untuk ${action.query}.`;
+          appendChatTurn(rawText, reply);
+          speak(reply);
+          router.push(action.fallbackHref);
+          return;
+        }
+        case "set_date": {
+          const updated = setMatchingDateInput(action.date, action.field ?? "");
+          const reply = updated
+            ? locale === "en"
+              ? `Date set to ${action.date}.`
+              : `Tanggal diatur ke ${action.date}.`
+            : locale === "en"
+              ? "No date picker found on this page."
+              : "Tidak ada pilihan tanggal di halaman ini.";
+          appendChatTurn(rawText, reply);
+          speak(reply);
+          return;
+        }
+        case "select_option": {
+          const chosen = selectMatchingOption(action.option, action.field ?? "");
+          const clicked = chosen ? null : clickMatchingElement(action.option);
+          const reply = chosen
+            ? locale === "en"
+              ? `Selected ${chosen}.`
+              : `Memilih ${chosen}.`
+            : clicked
+              ? locale === "en"
+                ? `Selected ${clicked}.`
+                : `Memilih ${clicked}.`
+              : locale === "en"
+                ? `Could not find option ${action.option}.`
+                : `Pilihan ${action.option} tidak ditemukan di halaman ini.`;
+          appendChatTurn(rawText, reply);
+          speak(reply);
+          return;
+        }
         case "history":
           if (action.direction === "back") {
             const reply = locale === "en" ? "Going back." : "Kembali ke halaman sebelumnya.";
